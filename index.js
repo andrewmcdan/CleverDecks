@@ -3,20 +3,38 @@ const app = express();
 const port = 3000;
 const path = require('path');
 const ai = require("openai");
-//const readlineSync = require("readline-sync");
 
 // this loads the API key from the .env file. 
 // For development, you should create a .env file in the root directory of the project and add the following line to it:
 // OPENAI_SECRET_KEY=your-api-key
 require("dotenv").config();
 
-let apiKeyFound = process.env.OPENAI_SECRET_KEY==undefined?false:true; // check to see if the API key is set in the environment variables. If the .env file is not found, this will be false.
-let openai = null;
-if(apiKeyFound){   
-    openai = new ai.OpenAI({ apiKey: process.env.OPENAI_SECRET_KEY });
+// This class is used to interface with OpenAI
+class ChatGPT {
+    constructor(key) {
+        this.openai = null;
+        this.setApiKey(key);
+    }
+
+    setApiKey(key) {
+        this.apiKeyFound = isValidOpenAIKey(key);
+        if (this.apiKeyFound) {
+            this.openai = new ai.OpenAI({ apiKey: key });
+        }
+    }
+
+    async generateResponse(inputText){
+        if(!this.apiKeyFound) return null;
+        const chatCompletion = await this.openai.chat.completions.create({
+            messages: [{ role: 'assistant', content: inputText }],
+            model: 'gpt-4-0125-preview',
+        });
+        return chatCompletion.choices[0].message.content;
+    }
 }
 
-//////////////////  testing ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+chatbot = new ChatGPT(process.env.OPENAI_SECRET_KEY);
+
 let exampleFlashCard = {
     question: "What is the capital of France?",
     answer: "Paris",
@@ -24,20 +42,6 @@ let exampleFlashCard = {
     difficulty: 2,
     collection: "World Geography"
 };
-let exampleInputText = "The capital of France is Paris. The Eiffel Tower is located in Paris. The Louvre is also located in Paris. The Seine River runs through Paris. Other various fact about France and paris. Extrapolate.";
-async function main() {
-    const chatCompletion = await openai.chat.completions.create({
-        messages: [{ role: 'assistant', content: 'Please create flash cards and return the data in the json format (an object of an array of objects like this ' + JSON.stringify(exampleFlashCard) + ') from the following text: ' + exampleInputText }],
-        model: 'gpt-4-0125-preview',
-    });
-    console.log(chatCompletion.choices[0].message.content);
-}
-if(apiKeyFound) main();
-////////////////// end testing ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-// TODO: "ChatGPT" class: make a class that interfaces with ChatGPT as a generic chatbot 
-// This class should check if the API key is found before trying to use it. 
-
 // TODO: "flashCardGenerator" function: interface with ChatGPT chatbot class to generate flash cards from text
 // It should take a string and returns an array of flash cards
 
@@ -179,7 +183,8 @@ app.post('/api/updateCard', (req, res) => {
 app.post('/api/generateCards', (req, res) => {
     req.on('data', (data) => {
         const text = data.toString();
-        // TODO: implement. Use ChatGPT class to generate flash cards from the text
+        // TODO: implement this
+        // call the flashCardGenerator function and send the generated cards
         res.send({ status: 'ok' }); // send the generated cards instead of 'ok'
     });
 });
@@ -193,7 +198,8 @@ app.post('/api/generateCards', (req, res) => {
 app.get('/api/getWrongAnswers', (req, res) => {
     const requestParams = req.query;
     // TODO: implement
-    res.send({ answers: [requestParams] });
+    // call the wrongAnswerGenerator function and send the generated wrong answers
+    res.send({ answers: [] });
 });
 
 // endpoint: /api/getCardCount
@@ -208,7 +214,7 @@ app.get('/api/getWrongAnswers', (req, res) => {
 // - dateModifiedRange: a string in the format "YYYY-MM-DD,YYYY-MM-DD" to filter by date modified
 app.get('/api/getCardCount', (req, res) => {
     const requestParams = req.query;
-    // TODO: implement
+    // TODO: implement this
     res.send({ count: 0 });
 });
 
@@ -216,8 +222,25 @@ app.get('/api/getCardCount', (req, res) => {
 // Type: GET
 // sends a JSON object with the value of apiKeyFound
 app.get('/api/getGPTenabled', (req, res) => {
-    res.send({ enabled: apiKeyFound });
+    res.send({ enabled: chatbot.apiKeyFound });
 });
+
+// endpoint: /api/setGPTapiKey
+// Type: POST
+// receives a JSON object with the API key and sets it in ChatGPT class
+app.post('/api/setGPTapiKey', (req, res) => {
+    req.on('data', (data) => {
+        const apiKey = JSON.parse(data).apiKey;
+        if(isValidOpenAIKey(apiKey)){
+            chatbot.setApiKey(apiKey);
+            writeApiKeyToFile(apiKey);            
+            res.send({ status: 'ok' });
+        }else{
+            res.send({ status: 'invalid' });
+        }
+    });
+});
+
 
 
 // Serve static files
@@ -232,7 +255,7 @@ app.use((req, res, next) => {
     res.status(404).sendFile(__dirname + '/web/404.html');
 });
 
-// listen on all available interfaces
+// Get the local IP addresses of the computer
 let interfaces = require('os').networkInterfaces();
 let addresses = [];
 for(let k in interfaces){
@@ -251,7 +274,6 @@ app.listen(port, () => {
     addresses.forEach((address)=>{
         console.log(`http://${address}:${port}`);
     });
-    
 });
 
 // This function is used to adjust the path when running the app as a standalone executable
@@ -261,3 +283,20 @@ function adjustPathForPKG(filePath){
     }
     return filePath;
 }
+
+function isValidOpenAIKey(key) {
+    if(typeof key !== 'string') return false;
+    // Regex explanation:
+    // ^sk- : Starts with "sk-"
+    // [a-zA-Z0-9]{54} : Followed by 54 alphanumeric characters (total length becomes 57 characters including "sk-")
+    const regex = /^sk-[a-zA-Z0-9]{54}$/;
+    return regex.test(key);
+}
+
+function writeApiKeyToFile(key) {
+    const fs = require('fs');
+    fs.writeFileSync(adjustPathForPKG('.env'), `OPENAI_SECRET_KEY=${key}`);
+}
+
+// Open the default web browser to the app
+const browse = require("browse-url")('http://localhost:3000/');

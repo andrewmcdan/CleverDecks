@@ -1,10 +1,10 @@
 {
-  "name": "swe-group4-project",
+  "name": "CleverDecks",
   "version": "1.0.0",
-  "description": "Intro to SWE Group 4 Project",
+  "description": "Intro to SWE Group 4 Project - CleverDecks",
   "main": "index.js",
   "bin": {
-    "swe-group4-project": "index.js"
+    "CleverDecks": "index.js"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -12,15 +12,16 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/andrewmcdan/SWE-Group4-Project.git"
+    "url": "git+https://github.com/andrewmcdan/CleverDecks.git"
   },
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/andrewmcdan/SWE-Group4-Project/issues"
+    "url": "https://github.com/andrewmcdan/CleverDecks/issues"
   },
-  "homepage": "https://github.com/andrewmcdan/SWE-Group4-Project#readme",
+  "homepage": "https://github.com/andrewmcdan/CleverDecks#readme",
   "dependencies": {
+    "browse-url": "^1.1.5",
     "dotenv": "^16.4.2",
     "express": "^4.18.2",
     "openai": "^4.27.0"
