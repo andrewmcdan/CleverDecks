@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "Intro to SWE Group 4 Project",
   "main": "index.js",
+  "bin": {
+    "swe-group4-project": "index.js"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node index.js"
@@ -22,5 +25,17 @@
     "express": "^4.18.2",
     "openai": "^4.27.0",
     "readline-sync": "^1.4.10"
+  },
+  "pkg":{
+    "assets": [
+      "node_modules/openai/**/*", "web/**/*"
+    ],
+    "scripts": "index.js",
+    "dependencies": {
+      "express": "^4.17.1",
+      "openai": "^4.27.0",
+      "readline-sync": "^1.4.10"
+    },
+    "outputPath": "dist"
   }
 }

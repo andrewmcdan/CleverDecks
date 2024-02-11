@@ -2,7 +2,7 @@ const express = require('express');
 const app = express();
 const port = 3000;
 
-const { OpenAI, Configuration } = require("openai");
+const ai = require("openai");
 //const readlineSync = require("readline-sync");
 
 // this loads the API key from the .env file. 
@@ -10,7 +10,7 @@ const { OpenAI, Configuration } = require("openai");
 // OPENAI_SECRET_KEY=your-api-key
 // The release version will have to check if the environment variable is set and if not, prompt the user to enter it.
 require("dotenv").config();
-const openai = new OpenAI({ apiKey: process.env.OPENAI_SECRET_KEY });
+const openai = new ai.OpenAI({ apiKey: process.env.OPENAI_SECRET_KEY });
 
 //////////////////  testing /////////////////////////
 let exampleFlashCard = {
@@ -119,9 +119,9 @@ app.post('/api/generateCards', (req, res) => {
 // Serve static files
 app.get('/', (req, res) => {
     // forward to /web/
-    res.redirect('/web/');
+    res.redirect('/web/index.html');
 });
-app.use('/web/', express.static('web', {
+app.use('/web', express.static('web', {
     extensions: ['html', 'htm', 'css', 'js', 'png', 'jpg', 'jpeg', 'gif', 'svg', 'ico', 'json', 'xml', 'webmanifest']
 }));
 
