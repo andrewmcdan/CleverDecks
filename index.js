@@ -1,7 +1,7 @@
 const express = require('express');
 const app = express();
 const port = 3000;
-
+const path = require('path');
 const ai = require("openai");
 //const readlineSync = require("readline-sync");
 
@@ -222,9 +222,7 @@ app.get('/', (req, res) => {
     // forward to /web/
     res.redirect('/web/index.html');
 });
-app.use('/web', express.static('web', {
-    extensions: ['html', 'htm', 'css', 'js', 'png', 'jpg', 'jpeg', 'gif', 'svg', 'ico', 'json', 'xml', 'webmanifest']
-}));
+app.use('/web',express.static(adjustPathForPKG('web')));
 
 // 404
 app.use((req, res, next) => {
@@ -234,3 +232,11 @@ app.use((req, res, next) => {
 app.listen(port, () => {
     console.log(`App running. Point your web browser to http://localhost:${port}`);
 });
+
+// This function is used to adjust the path when running the app as a standalone executable
+function adjustPathForPKG(filePath){
+    if(process.pkg){
+        return path.join(path.dirname(process.cwd()),filePath);
+    }
+    return filePath;
+}
