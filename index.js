@@ -16,7 +16,7 @@ if(apiKeyFound){
     openai = new ai.OpenAI({ apiKey: process.env.OPENAI_SECRET_KEY });
 }
 
-//////////////////  testing /////////////////////////
+//////////////////  testing ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 let exampleFlashCard = {
     question: "What is the capital of France?",
     answer: "Paris",
@@ -33,23 +33,26 @@ async function main() {
     console.log(chatCompletion.choices[0].message.content);
 }
 if(apiKeyFound) main();
-////////////////// end testing ///////////////////
+////////////////// end testing ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // TODO: "ChatGPT" class: make a class that interfaces with ChatGPT as a generic chatbot 
 // This class should check if the API key is found before trying to use it. 
 
-// TODO: "flashCardGenerator" class: make a class that interfaces with ChatGPT chatbot class to generate flash cards from text
-// It should have a method that takes a string and returns an array of flash cards
+// TODO: "flashCardGenerator" function: interface with ChatGPT chatbot class to generate flash cards from text
+// It should take a string and returns an array of flash cards
 
-// TODO: "wrongAnswerGenerator" class: make a class that creates wrong answers for cards for use in multiple choice questions
-// It should have a method that takes a card and returns an array of wrong answers
-
+// TODO: "wrongAnswerGenerator" function: creates wrong answers for cards for use in multiple choice questions
+// It should take a card and return an array of wrong answers
 
 // TODO: make a class that implements the flash card database. It should have methods for getting, adding, updating, and deleting cards.
 // Flash cards should be stored on disk as JSON file(s). The class should load the flash cards from disk into memory when it is created.
 // Whenever a card is added, updated, or deleted, the class should save the flash cards to disk.
 //
-// FlashCards class will have the following properties:
+// class properties:
+// - cards: an array of flash cards (or another data structure of your choice)
+// - largestId: the largest id number used so far
+//
+// each flash card in the FlashCards class will have the following properties:
 // - id: a unique identifier for the card
 // - question: the question on the front of the card
 // - answer: the answer on the back of the card
@@ -67,7 +70,7 @@ if(apiKeyFound) main();
 // 
 // METHODS:
 //
-// loadCards() - loads the flash cards from disk into memory
+// loadCards() - loads the flash cards from disk into memory. This should be called when the class is created and keep track of the largest id number used so far.
 // 
 // getCards(params) - returns an array of cards that match the given parameters
 // params is an object with the following properties:
