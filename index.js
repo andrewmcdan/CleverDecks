@@ -232,8 +232,26 @@ app.use((req, res, next) => {
     res.status(404).sendFile(__dirname + '/web/404.html');
 });
 
+// listen on all available interfaces
+let interfaces = require('os').networkInterfaces();
+let addresses = [];
+for(let k in interfaces){
+    for(let k2 in interfaces[k]){
+        let address = interfaces[k][k2];
+        if(address.family === 'IPv4' && !address.internal){
+            addresses.push(address.address);
+        }
+    }
+}
+
 app.listen(port, () => {
-    console.log(`App running. Point your web browser to http://localhost:${port}`);
+    console.log(`If you are using a web browser on the same computer as the app, you can use the following address:`)
+    console.log(`http://localhost:${port}`)
+    console.log(`If you are using a web browser on a different computer on the same network, you can try the following addresses:`)
+    addresses.forEach((address)=>{
+        console.log(`http://${address}:${port}`);
+    });
+    
 });
 
 // This function is used to adjust the path when running the app as a standalone executable

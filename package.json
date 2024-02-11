@@ -23,18 +23,17 @@
   "dependencies": {
     "dotenv": "^16.4.2",
     "express": "^4.18.2",
-    "openai": "^4.27.0",
-    "readline-sync": "^1.4.10"
+    "openai": "^4.27.0"
   },
-  "pkg":{
+  "pkg": {
     "assets": [
-      "node_modules/openai/**/*", "web/**/*"
+      "node_modules/openai/**/*",
+      "web/**/*"
     ],
     "scripts": "index.js",
     "dependencies": {
       "express": "^4.17.1",
-      "openai": "^4.27.0",
-      "readline-sync": "^1.4.10"
+      "openai": "^4.27.0"
     },
     "outputPath": "dist"
   }
