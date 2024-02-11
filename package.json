@@ -18,6 +18,9 @@
   },
   "homepage": "https://github.com/andrewmcdan/SWE-Group4-Project#readme",
   "dependencies": {
-    "express": "^4.18.2"
+    "dotenv": "^16.4.2",
+    "express": "^4.18.2",
+    "openai": "^4.27.0",
+    "readline-sync": "^1.4.10"
   }
 }
