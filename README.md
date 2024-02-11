@@ -1,5 +1,5 @@
-# SWE-Group4-Project
-Intro to SWE Group 4 Project
+# CleverDecks
+A modern flash card system that allows students to create flashcards using AI assistance (ChatGPT) and use this system to study flash cards using a novel progressive delivery system that allows for incremental learning of the content. The interface is web based and allows access from any device, while the backend is a locally run application that the user runs on their computer. This allows the user to save their flashcards on their computer or anywhere else.
 
 ## TODO's (in no particular order)
 1. Complete each of the support classes in the /index.js file.
@@ -16,11 +16,11 @@ To get this project running on your machine for development:
 1. Install [node.js and npm](https://nodejs.org/en/download). 
 2. Clone this repo
 ```
-git clone https://github.com/andrewmcdan/SWE-Group4-Project.git
+git clone https://github.com/andrewmcdan/CleverDecks.git
 ```
 3. cd into the repo and npm install it
 ```
-cd SWE-Group4-Project
+cd CleverDecks
 npm i
 ```
 4. At this point, you can run it as is with "npm start" but to have ChatGPT work immediately, create a .env file with the following line in it:
