@@ -29,7 +29,8 @@
   "pkg": {
     "assets": [
       "node_modules/openai/**/*",
-      "web/**/*"
+      "web/**/*",
+      "config-sets.json"
     ],
     "scripts": "index.js",
     "dependencies": {

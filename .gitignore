@@ -4,3 +4,4 @@ package-lock.json
 .vscode
 dist
 config-sets.json
+flashcards.json

@@ -42,21 +42,25 @@ let exampleFlashCard = {
     difficulty: 2,
     collection: "World Geography"
 };
-// TODO: "flashCardGenerator" function: interface with ChatGPT chatbot class to generate flash cards from text
+// TODO: function "flashCardGenerator": interface with ChatGPT chatbot class to generate flash cards from text
 // It should take a string and returns an array of flash cards
+// parameters:
+// - text: a string to generate flash cards from, maximum length 16,384 characters
+// returns:
+// - an array of flash cards
 
-// TODO: "wrongAnswerGenerator" function: creates wrong answers for cards for use in multiple choice questions
+
+// TODO: function "wrongAnswerGenerator": creates wrong answers for cards for use in multiple choice questions
 // It should take a card and return an array of wrong answers
+// parameters:
+// - card: a flash card object
+// - numberOfAnswers: the number of wrong answers to generate
+// returns:
+// - an array of strings that are wrong answers for the card
 
-// TODO: make a class that implements the flash card database. It should have methods for getting, adding, updating, and deleting cards.
-// Flash cards should be stored on disk as JSON file(s). The class should load the flash cards from disk into memory when it is created.
-// Whenever a card is added, updated, or deleted, the class should save the flash cards to disk.
-//
-// class properties:
-// - cards: an array of flash cards (or another data structure of your choice)
-// - largestId: the largest id number used so far
-//
-// each flash card in the FlashCards class will have the following properties:
+
+// TODO: class "FlashCard"
+// each flash card will have the following properties:
 // - id: a unique identifier for the card
 // - question: the question on the front of the card
 // - answer: the answer on the back of the card
@@ -71,10 +75,22 @@ let exampleFlashCard = {
 // - timesIncorrect: the number of times the card has been answered incorrectly
 // - timesSkipped: the number of times the card has been skipped
 // - timesFlagged: the number of times the card has been flagged
+
+
+// TODO: make a class that implements the flash card database. It should have methods for getting, adding, updating, and deleting cards.
+// Flash cards should be stored on disk as JSON file(s). The class should load the flash cards from disk into memory when it is created.
+// Whenever a card is added, updated, or deleted, the class should save the flash cards to disk.
+//
+// class properties:
+// - cards: an array of flash cards (or another data structure of your choice)
+// - largestId: the largest id number used so far
 // 
 // METHODS:
 //
-// loadCards() - loads the flash cards from disk into memory. This should be called when the class is created and keep track of the largest id number used so far.
+// loadCards() - loads the flash cards from flashcards.json into memory. 
+// This should be called when the class is created and keep track of the largest id number used so far.
+// This should make sure that the file exists and has valid JSON data before trying to load it.
+// Part of loading the cards will be to track the largest id number used so far.
 // 
 // getCards(params) - returns an array of cards that match the given parameters
 // params is an object with the following properties:
@@ -240,8 +256,6 @@ app.post('/api/setGPTapiKey', (req, res) => {
         }
     });
 });
-
-
 
 // Serve static files
 app.get('/', (req, res) => {
