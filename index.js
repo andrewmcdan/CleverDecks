@@ -4,14 +4,23 @@ const port = 3000;
 const path = require('path');
 const ai = require("openai");
 
-const flashCardMaxDifficulty = 5;
+const flashCardMaxDifficulty = 5; // Flash card difficulty is a number from 1 to 5
 
 // this loads the API key from the .env file. 
 // For development, you should create a .env file in the root directory of the project and add the following line to it:
 // OPENAI_SECRET_KEY=your-api-key
 require("dotenv").config();
 
-// This class is used to interface with OpenAI
+
+/**
+ * @class ChatGPT
+ * @description - a class to interface with OpenAI's GPT-4 chatbot
+ * @param {string} key - the OpenAI API key
+ * @property {boolean} apiKeyFound - a boolean to indicate if the API key is valid
+ * @property {Object} openai - an instance of the OpenAI API
+ * @method setApiKey - a method to set the API key
+ * @method generateResponse - a method to generate a response from the chatbot
+ */
 class ChatGPT {
     constructor(key) {
         this.openai = null;
@@ -53,15 +62,17 @@ class ChatGPT {
 
 chatbot = new ChatGPT(process.env.OPENAI_SECRET_KEY);
 
-// function "flashCardGenerator": interface with ChatGPT chatbot class to generate flash cards from text
-// It should take a string and returns an array of flash cards
-// parameters:
-// - text: a string to generate flash cards from, maximum length 16,384 characters
-// - numberOfCardsToGenerate: the number of flash cards to generate
-// - streamingData_cb: a callback function to receive streaming data from the chatbot. If not given, it will default to a function that logs the data to the console. Useful for showing progress to the user.
-// - enableExtrapolation: a boolean to enable the chatbot to extrapolate from the given text
-// returns:
-// - an array of flash cards
+
+/**
+ * @function flashCardGenerator
+ * @description - generates flash cards from text
+ * @async - this function is asynchronous and should be used with the "await" keyword
+ * @param {string} text - the text to generate flash cards from, maximum length 16,384 characters
+ * @param {number} numberOfCardsToGenerate - the number of flash cards to generate
+ * @param {Function} streamingData_cb - a callback function to receive streaming data from the chatbot. If not given, it will default to a function that logs the data to the console. Useful for showing progress to the user.
+ * @param {boolean} enableExtrapolation - a boolean to enable the chatbot to extrapolate from the given text
+ * @returns {Array} - an array of flash cards
+ */
 async function flashCardGenerator(text, numberOfCardsToGenerate, streamingData_cb, enableExtrapolation = false) {
     if (text === undefined || text === null) return null;
     if (typeof text !== 'string') return null;
@@ -76,16 +87,19 @@ async function flashCardGenerator(text, numberOfCardsToGenerate, streamingData_c
     return parseGPTjsonResponse(response);
 }
 
-// function "wrongAnswerGenerator": creates wrong answers for cards for use in multiple choice questions
-// It should take a card and return an array of wrong answers
-// As an synchronous function, be sure to use the "await" keyword when calling it
-// parameters:
-// - card: a flash card object
-// - numberOfAnswers: the number of wrong answers to generate
-// - streamingData_cb: a callback function to receive streaming data from the chatbot. If not given, it will default to a function that logs the data to the console. Useful for showing progress to the user.
-// returns:
-// - an array of strings that are wrong answers for the card
+
+/**
+ * @function wrongAnswerGenerator
+ * @description - creates wrong answers for cards for use in multiple choice questions
+ * @async - this function is asynchronous and should be used with the "await" keyword
+ * @param {FlashCard} card - the flash card to generate wrong answers for
+ * @param {number} numberOfAnswers - the number of wrong answers to generate
+ * @param {Function} streamingData_cb - a callback function to receive streaming data from the chatbot. If not given, it will default to a function that logs the data to the console. Useful for showing progress to the user.
+ * @returns {Array} - an array of strings that are wrong answers for the card
+ * @throws {Error} - if the card is not given
+ */
 async function wrongAnswerGenerator(card, numberOfAnswers, streamingData_cb) {
+    if (card === undefined || card === null) throw new Error("wrongAnswerGenerator requires a FlashCard object as an argument");
     if(typeof streamingData_cb !== 'function') streamingData_cb = (chunk) => process.stdout.write(chunk);
     let prompt = "Please generate " + numberOfAnswers + " wrong answers for the following flash card: \n";
     prompt += "Card front: " + card.question + "\nCorrect answer: " + card.answer + "\n";
@@ -99,22 +113,27 @@ async function wrongAnswerGenerator(card, numberOfAnswers, streamingData_cb) {
     return parseGPTjsonResponse(response);
 }
 
-// class "FlashCard"
-// each flash card will have the following properties:
-// - id: a unique identifier for the card
-// - question: the question on the front of the card
-// - answer: the answer on the back of the card
-// - tags: an array of strings that describe the card. used for searching, sorting, and filtering
-// - difficulty: a number from 1 to 5 that represents the difficulty of the card
-// - collection: the name of the collection the card belongs to
-// - dateCreated: the date the card was created
-// - dateModified: the date the card was last modified
-// - dateLastStudied: the date the card was last studied
-// - timesStudied: the number of times the card has been studied
-// - timesCorrect: the number of times the card has been answered correctly
-// - timesIncorrect: the number of times the card has been answered incorrectly
-// - timesSkipped: the number of times the card has been skipped
-// - timesFlagged: the number of times the card has been flagged
+
+/**
+ * @class FlashCard
+ * @param {Object} data - an object with the following properties:
+ * - id: a unique identifier for the card
+ * - question: the question on the front of the card
+ * - answer: the answer on the back of the card
+ * - tags: an array of strings that describe the card. used for searching, sorting, and filtering
+ * - difficulty: a number from 1 to 5 that represents the difficulty of the card
+ * - collection: the name of the collection the card belongs to
+ * - dateCreated: the date the card was created
+ * - dateModified: the date the card was last modified
+ * - dateLastStudied: the date the card was last studied
+ * - timesStudied: the number of times the card has been studied
+ * - timesCorrect: the number of times the card has been answered correctly
+ * - timesIncorrect: the number of times the card has been answered incorrectly
+ * - timesSkipped: the number of times the card has been skipped
+ * - timesFlagged: the number of times the card has been flagged
+ * @throws {Error} - if the data object is not given or if it is missing required properties
+ * @returns {FlashCard} - a new FlashCard object
+ */
 class FlashCard {
     constructor(data) {
         if (data === undefined || data === null) throw new Error("FlashCard constructor requires an object as an argument");
@@ -199,8 +218,8 @@ let testCard = new FlashCard({
     Measurements and units are the fundamental building blocks of physics, providing the means to quantify and understand the physical world. The SI system offers a universal standard for these measurements, ensuring that scientific observations and calculations are precise, accurate, and globally understood. As we delve deeper into the concepts of physics, the careful measurement and analysis of physical quantities will remain a cornerstone of our exploration.
     `;
     let res = await flashCardGenerator(testText, 50, true);
-    console.log(res);
-})()
+    // console.log(res); // uncomment to see the generated flash cards
+})();
 /////////////////// END TESTING /////////////////////////////////
 
 // TODO: make a class that implements the flash card database. It should have methods for getting, adding, updating, and deleting cards.
