@@ -87,7 +87,10 @@ let exampleFlashCard = {
 // 
 // METHODS:
 //
-// loadCards() - loads the flash cards from flashcards.json into memory. This should be called when the class is created and keep track of the largest id number used so far.
+// loadCards() - loads the flash cards from flashcards.json into memory. 
+// This should be called when the class is created and keep track of the largest id number used so far.
+// This should make sure that the file exists and has valid JSON data before trying to load it.
+// Part of loading the cards will be to track the largest id number used so far.
 // 
 // getCards(params) - returns an array of cards that match the given parameters
 // params is an object with the following properties:
