@@ -4,6 +4,8 @@ const port = 3000;
 const path = require('path');
 const ai = require("openai");
 
+const flashCardMaxDifficulty = 5;
+
 // this loads the API key from the .env file. 
 // For development, you should create a .env file in the root directory of the project and add the following line to it:
 // OPENAI_SECRET_KEY=your-api-key
@@ -17,7 +19,9 @@ class ChatGPT {
     }
 
     setApiKey(key) {
+        console.log("Setting OpenAI API key to: " + key);
         this.apiKeyFound = isValidOpenAIKey(key);
+        console.log("API key is valid: " + this.apiKeyFound);
         if (this.apiKeyFound) {
             this.openai = new ai.OpenAI({ apiKey: key });
         }
@@ -35,13 +39,6 @@ class ChatGPT {
 
 chatbot = new ChatGPT(process.env.OPENAI_SECRET_KEY);
 
-let exampleFlashCard = {
-    question: "What is the capital of France?",
-    answer: "Paris",
-    tags: ["geography", "Europe"],
-    difficulty: 2,
-    collection: "World Geography"
-};
 // TODO: function "flashCardGenerator": interface with ChatGPT chatbot class to generate flash cards from text
 // It should take a string and returns an array of flash cards
 // parameters:
@@ -50,16 +47,26 @@ let exampleFlashCard = {
 // - an array of flash cards
 
 
-// TODO: function "wrongAnswerGenerator": creates wrong answers for cards for use in multiple choice questions
+// function "wrongAnswerGenerator": creates wrong answers for cards for use in multiple choice questions
 // It should take a card and return an array of wrong answers
+// As an synchronous function, be sure to use the "await" keyword when calling it
 // parameters:
 // - card: a flash card object
 // - numberOfAnswers: the number of wrong answers to generate
 // returns:
 // - an array of strings that are wrong answers for the card
+async function wrongAnswerGenerator(card, numberOfAnswers){
+    let prompt = "Please generate " + numberOfAnswers + " wrong answers for the following flash card: \n";
+    prompt += "Card front: " + card.question + "\nCorrect answer: " + card.answer + "\n";
+    prompt += "Flash Card Tags: " + card.tags.join(", ") + "\n";
+    prompt += "Flash Card Collection: " + card.collection + "\n";
+    prompt += "Flash Card Difficulty: " + card.difficulty + " of " + flashCardMaxDifficulty + "\n";
+    prompt += "Return the wrong answers as a JSON array of strings.";
+    let response = await chatbot.generateResponse(prompt);
+    return parseGPTjsonResponse(response);
+}
 
-
-// TODO: class "FlashCard"
+// class "FlashCard"
 // each flash card will have the following properties:
 // - id: a unique identifier for the card
 // - question: the question on the front of the card
@@ -75,6 +82,48 @@ let exampleFlashCard = {
 // - timesIncorrect: the number of times the card has been answered incorrectly
 // - timesSkipped: the number of times the card has been skipped
 // - timesFlagged: the number of times the card has been flagged
+class FlashCard {
+    constructor(data) {
+        if(data === undefined || data === null) throw new Error("FlashCard constructor requires an object as an argument");
+        if(data.id === undefined || data.id === null) throw new Error("FlashCard constructor requires an id property in the object");
+        this.id = data.id;
+        if(data.question === undefined || data.question === null) throw new Error("FlashCard constructor requires a question property in the object");
+        this.question = data.question;
+        if(data.answer === undefined || data.answer === null) throw new Error("FlashCard constructor requires an answer property in the object");
+        this.answer = data.answer;
+        if(data.tags === undefined || data.tags === null) throw new Error("FlashCard constructor requires a tags property in the object");
+        this.tags = data.tags;
+        if(data.difficulty === undefined || data.difficulty === null) data.difficulty = 3;
+        this.difficulty = data.difficulty;
+        if(data.collection === undefined || data.collection === null) data.collection = "Uncategorized";
+        this.collection = data.collection;
+        if(data.dateCreated === undefined || data.dateCreated === null) data.dateCreated = new Date();
+        this.dateCreated = data.dateCreated;
+        if(data.dateModified === undefined || data.dateModified === null) data.dateModified = new Date();
+        this.dateModified = data.dateModified;
+        if(data.dateLastStudied === undefined || data.dateLastStudied === null) data.dateLastStudied = "";
+        this.dateLastStudied = data.dateLastStudied;
+        if(data.timesStudied === undefined || data.timesStudied === null) data.timesStudied = 0;
+        this.timesStudied = data.timesStudied;
+        if(data.timesCorrect === undefined || data.timesCorrect === null) data.timesCorrect = 0;
+        this.timesCorrect = data.timesCorrect;
+        if(data.timesIncorrect === undefined || data.timesIncorrect === null) data.timesIncorrect = 0;
+        this.timesIncorrect = data.timesIncorrect;
+        if(data.timesSkipped === undefined || data.timesSkipped === null) data.timesSkipped = 0;
+        this.timesSkipped = data.timesSkipped;
+        if(data.timesFlagged === undefined || data.timesFlagged === null) data.timesFlagged = 0;
+        this.timesFlagged = data.timesFlagged;
+    }
+}
+
+let testCard = new FlashCard({
+    id: 0,
+    question: "What is the capital of France?",
+    answer: "Paris",
+    tags: ["geography", "Europe"],
+    difficulty: 2,
+    collection: "World Geography"
+});
 
 
 // TODO: make a class that implements the flash card database. It should have methods for getting, adding, updating, and deleting cards.
@@ -184,7 +233,9 @@ app.post('/api/deleteCard', (req, res) => {
 
 // endpoint: /api/updateCard
 // Type: POST
-// receives a JSON object with the card data and updates it in the database
+// receives a JSON object with the card data and updates it in the database. The id property is required.
+// The other properties are optional and only the ones that are given will be updated.
+// This endpoint is useful for updating the timesStudied, timesCorrect, timesIncorrect, timesSkipped, and timesFlagged properties.
 app.post('/api/updateCard', (req, res) => {
     req.on('data', (data) => {
         const cardData = JSON.parse(data);
@@ -290,6 +341,12 @@ app.listen(port, () => {
     });
 });
 
+
+////////////////////////////////////////////////////////////////////////////////////////////
+/// Helper functions
+////////////////////////////////////////////////////////////////////////////////////////////
+
+
 // This function is used to adjust the path when running the app as a standalone executable
 function adjustPathForPKG(filePath){
     if(process.pkg){
@@ -303,13 +360,33 @@ function isValidOpenAIKey(key) {
     // Regex explanation:
     // ^sk- : Starts with "sk-"
     // [a-zA-Z0-9]{54} : Followed by 54 alphanumeric characters (total length becomes 57 characters including "sk-")
-    const regex = /^sk-[a-zA-Z0-9]{54}$/;
+    const regex = /sk-[a-zA-Z0-9]{48}/g;
     return regex.test(key);
 }
 
 function writeApiKeyToFile(key) {
     const fs = require('fs');
     fs.writeFileSync(adjustPathForPKG('.env'), `OPENAI_SECRET_KEY=${key}`);
+}
+
+function parseGPTjsonResponse(response){
+    if(response === undefined || response === null) return null;
+    if(typeof response !== 'string') return response;
+    if(response === "") return null;
+    if(response.indexOf("```") === 0) response = response.substring(response.indexOf('\n')+1);
+    if(response.indexOf("```") > 0) response = response.substring(0,response.lastIndexOf('\n'));
+    try{
+        let json = JSON.parse(response);
+        return json;
+    }catch(e){
+        console.error(e);
+        return response;
+    }
+}
+
+// wait x seconds
+function wait(seconds){
+    return new Promise(resolve => setTimeout(resolve, seconds*1000));
 }
 
 // Open the default web browser to the app
