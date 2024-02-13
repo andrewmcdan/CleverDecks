@@ -37,6 +37,7 @@ body {
     color: black; /* Black text color on hover */
 }
 
+/* Navigation bar logo */
 .logo img{
     float: left;
     display: block;
