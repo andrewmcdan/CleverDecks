@@ -36,3 +36,12 @@ body {
     background-color: #ddd; /* Light grey background on hover */
     color: black; /* Black text color on hover */
 }
+
+.logo img{
+    float: left;
+    display: block;
+    color: white;
+    text-align: center;
+    padding: 14px 20px;
+    text-decoration: none;
+}
