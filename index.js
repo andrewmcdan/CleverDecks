@@ -223,7 +223,8 @@ let testCard = new FlashCard({
 /////////////////// END TESTING /////////////////////////////////
 
 // TODO: make a class that implements the flash card database. It should have methods for getting, adding, updating, and deleting cards.
-// Flash cards should be stored on disk as JSON file(s). The class should load the flash cards from disk into memory when it is created.
+// Flash cards should be stored on disk as JSON file(s). Perhaps each collection should be saved to a separate file.
+// The class should load the flash cards from disk into memory when it is created.
 // Whenever a card is added, updated, or deleted, the class should save the flash cards to disk.
 //
 // class properties:
