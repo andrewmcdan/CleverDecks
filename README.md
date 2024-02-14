@@ -14,7 +14,7 @@ A modern flash card system that allows students to create flashcards using AI as
 # Getting Started
 To get this project running on your machine for development:
 1. Install [node.js and npm](https://nodejs.org/en/download). 
-2. Clone this repo
+2. Clone this repo (in the command prompt or powershell)
 ```
 git clone https://github.com/andrewmcdan/CleverDecks.git
 ```
@@ -27,13 +27,13 @@ npm i
 ```
 OPENAI_SECRET_KEY=your-api-key
 ```
-5. Run it
+5. Run it (from the command prompt / powershell)
 ```
 npm start
 ```
-6. Point your browser at http://localhost:3000/
+6. Point your browser at http://localhost:3000/ if it doesn't automatically open
 
 ## Run the binary
-If you just want to run it, download the precompiled binary (if it is available), run it, and point your browser to http://localhost:3000/
+If you just want to run it, download the precompiled binary (if it is available), run it, and point your browser to http://localhost:3000/ (if it doesn't automatically open)
 
 Note: The binaries may be out of date.
