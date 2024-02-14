@@ -397,7 +397,7 @@ app.post('/api/setGPTapiKey', (req, res) => {
         const apiKey = JSON.parse(data).apiKey;
         if (isValidOpenAIKey(apiKey)) {
             chatbot.setApiKey(apiKey);
-            writeApiKeyToFile(apiKey); // TODO: remove this line and use the "updateEnvFile" function instead
+            writeApiKeyToFile(apiKey);
             res.send({ status: 'ok' });
         } else {
             res.send({ status: 'invalid' });
@@ -438,9 +438,11 @@ app.listen(port, () => {
     });
 });
 
+
 ////////////////////////////////////////////////////////////////////////////////////////////
 /// Helper functions
 ////////////////////////////////////////////////////////////////////////////////////////////
+
 
 // This function is used to adjust the path when running the app as a standalone executable
 function adjustPathForPKG(filePath) {
@@ -459,23 +461,10 @@ function isValidOpenAIKey(key) {
     return regex.test(key);
 }
 
-// TODO: remove this function and use the "updateEnvFile" function instead
 function writeApiKeyToFile(key) {
     const fs = require('fs');
     fs.writeFileSync(adjustPathForPKG('.env'), `OPENAI_SECRET_KEY=${key}`);
 }
-
-
-// TODO: implement a function "updateEnvFile" that updates the .env file with the given key / value pair
-// parameters:
-// - key: the key to update
-// - value: the value to set
-// returns:
-// - true if the key / value pair was updated, false otherwise
-// 
-// This function should read the .env file, update the key / value pair, and write the file back to disk.
-// If the key does not exist in the file, it should be added to the end of the file.
-// If the file does not exist, it should be created with the key / value pair.
 
 function parseGPTjsonResponse(response) {
     if (response === undefined || response === null) return null;
