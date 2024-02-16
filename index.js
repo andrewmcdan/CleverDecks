@@ -20,6 +20,9 @@ require("dotenv").config();
  * @property {Object} openai - an instance of the OpenAI API
  * @method setApiKey - a method to set the API key
  * @method generateResponse - a method to generate a response from the chatbot
+ * 
+ * TODO: 
+ * 1. Need to add a mechanism that interrupts the streaming results.
  */
 class ChatGPT {
     constructor(key) {
@@ -217,7 +220,7 @@ let testCard = new FlashCard({
     Conclusion
     Measurements and units are the fundamental building blocks of physics, providing the means to quantify and understand the physical world. The SI system offers a universal standard for these measurements, ensuring that scientific observations and calculations are precise, accurate, and globally understood. As we delve deeper into the concepts of physics, the careful measurement and analysis of physical quantities will remain a cornerstone of our exploration.
     `;
-    let res = await flashCardGenerator(testText, 50, true);
+    let res = await flashCardGenerator(testText, 5, true);
     // console.log(res); // uncomment to see the generated flash cards
 })();
 /////////////////// END TESTING /////////////////////////////////
@@ -397,7 +400,7 @@ app.post('/api/setGPTapiKey', (req, res) => {
         const apiKey = JSON.parse(data).apiKey;
         if (isValidOpenAIKey(apiKey)) {
             chatbot.setApiKey(apiKey);
-            writeApiKeyToFile(apiKey); // TODO: remove this line and use the "updateEnvFile" function instead
+            updateEnvFile('OPENAI_SECRET_KEY', apiKey);
             res.send({ status: 'ok' });
         } else {
             res.send({ status: 'invalid' });
@@ -414,7 +417,8 @@ app.use('/web', express.static(adjustPathForPKG('web')));
 
 // 404
 app.use((req, res, next) => {
-    res.status(404).sendFile(__dirname + '/web/404.html');
+    // Create and send a response with a cookie that contains the requested URL, the HTTP status code of 404, and the 404.html page
+    res.cookie("originUrl", req.originalUrl).status(404).sendFile(`${__dirname}/web/404.html`);
 });
 
 // Get the local IP addresses of the computer
@@ -453,29 +457,48 @@ function adjustPathForPKG(filePath) {
 function isValidOpenAIKey(key) {
     if (typeof key !== 'string') return false;
     // Regex explanation:
-    // ^sk- : Starts with "sk-"
-    // [a-zA-Z0-9]{54} : Followed by 54 alphanumeric characters (total length becomes 57 characters including "sk-")
+    // sk- : Starts with "sk-"
+    // [a-zA-Z0-9]{48} : Followed by 48 alphanumeric characters (total length becomes 51 characters including "sk-")
     const regex = /sk-[a-zA-Z0-9]{48}/g;
     return regex.test(key);
 }
 
-// TODO: remove this function and use the "updateEnvFile" function instead
-function writeApiKeyToFile(key) {
+/**
+ * @function updateEnvFile
+ * @description - updates the .env file with the given key / value pair
+ * @param {string} key - the key to update
+ * @param {string} value - the value to set
+ * @returns {boolean} - true if the key / value pair was updated, false otherwise
+ */
+function updateEnvFile(key, value) {
+    if (typeof key !== 'string' || typeof value !== 'string') return false;
     const fs = require('fs');
-    fs.writeFileSync(adjustPathForPKG('.env'), `OPENAI_SECRET_KEY=${key}`);
+    const path = adjustPathForPKG('.env');
+    let fileContents = "";
+    if (fs.existsSync(path)) {
+        fileContents = fs.readFileSync(path, 'utf8');
+    }
+    let lines = fileContents.split('\n');
+    let found = false;
+    for (let i = 0; i < lines.length; i++) {
+        if (lines[i].indexOf(key) === 0) {
+            lines[i] = key + "=" + value;
+            found = true;
+            break;
+        }
+    }
+    if (!found) {
+        lines.push(key + "=" + value);
+    }
+    fileContents = lines.join('\n');
+    try {
+        fs.writeFileSync(path, fileContents);
+        return true;
+    } catch (e) {
+        console.error(e);
+        return false;
+    }
 }
-
-
-// TODO: implement a function "updateEnvFile" that updates the .env file with the given key / value pair
-// parameters:
-// - key: the key to update
-// - value: the value to set
-// returns:
-// - true if the key / value pair was updated, false otherwise
-// 
-// This function should read the .env file, update the key / value pair, and write the file back to disk.
-// If the key does not exist in the file, it should be added to the end of the file.
-// If the file does not exist, it should be created with the key / value pair.
 
 function parseGPTjsonResponse(response) {
     if (response === undefined || response === null) return null;
@@ -499,6 +522,3 @@ function wait(seconds) {
 
 // Open the default web browser to the app
 const browse = require("browse-url")('http://localhost:3000/');
-
-
-/////
