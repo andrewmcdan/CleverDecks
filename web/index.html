@@ -3,11 +3,12 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <link rel="stylesheet" href="styles.css">
+        <script src="common.js"></script>
         <title>CleverDecks - Home</title>
     </head>
     <body>
-        <nav class="navbar" onclick="window.location.href = 'index.html'">
-            <div class="logo">
+        <nav class="navbar">
+            <div class="logo" onclick="window.location.href = 'index.html'">
                 <img src="logo.png" alt="CleverDecks">
             </div>
             <div class="navBtn" onclick="window.location.href = 'index.html'">
@@ -25,6 +26,9 @@
         </nav>
         <h1>Hello World</h1>
         <p>My first web page.</p>
+        <div id="cardCount">
+            
+        </div>
     </body>
     <style>
         /*
@@ -34,5 +38,41 @@
     <script>
         console.log('Hello World');
         // TODO: Add all the Javascript here to make the page interactive
+
+        ////////////////// TESTING //////////////////
+        let cardCountDiv = document.getElementById('cardCount');
+        let cardCountDivHTML = "";
+        let cardCount = 0;
+        fetch('../api/getCollections').then((response) => {
+            return response.json();
+        }).then((data) => {
+            console.log(data.collections);
+            let collectionCount = data.collections.length;
+            cardCountDivHTML += `<p>There are ${collectionCount} collections available to study.</p>`;
+            console.log({collectionCount});
+            for (let i = 0; i < collectionCount; i++) {
+                fetch(`../api/getCards?collection=${data.collections[i].name}`).then((response) => {
+                    return response.json();
+                }).then((data2) => {
+                    cardCount += data2.length;
+                    cardCountDivHTML += `<p>Collection ${i + 1} (${data.collections[i].name}) has ${data2.length} cards.</p>`;
+                }).finally(() => {
+                    cardCountDiv.innerHTML = cardCountDivHTML;
+                });
+            }
+        });
+        /////////////////////////////////////////////
+
+        // FlashCard class provided by common.js
+        testFlashCard = new FlashCard({
+            id: 1,
+            question: "What is the capital of France?",
+            answer: "Paris",
+            collection: "Countries",
+            tags: ["Geography", "Europe"],
+            dateCreated: "2021-09-01",
+            difficulty: 3
+        });
+        console.log(testFlashCard);
     </script>
 </html>

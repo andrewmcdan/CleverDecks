@@ -3,6 +3,10 @@ const app = express();
 const port = 3000;
 const path = require('path');
 const ai = require("openai");
+const fs = require('fs');
+
+const commonClasses = require('./web/common.js');
+const FlashCard = commonClasses.FlashCard;
 
 const flashCardMaxDifficulty = 5; // Flash card difficulty is a number from 1 to 5
 
@@ -10,7 +14,6 @@ const flashCardMaxDifficulty = 5; // Flash card difficulty is a number from 1 to
 // For development, you should create a .env file in the root directory of the project and add the following line to it:
 // OPENAI_SECRET_KEY=your-api-key
 require("dotenv").config();
-
 
 /**
  * @class ChatGPT
@@ -117,62 +120,8 @@ async function wrongAnswerGenerator(card, numberOfAnswers, streamingData_cb) {
 }
 
 
-/**
- * @class FlashCard
- * @param {Object} data - an object with the following properties:
- * - id: a unique identifier for the card
- * - question: the question on the front of the card
- * - answer: the answer on the back of the card
- * - tags: an array of strings that describe the card. used for searching, sorting, and filtering
- * - difficulty: a number from 1 to 5 that represents the difficulty of the card
- * - collection: the name of the collection the card belongs to
- * - dateCreated: the date the card was created
- * - dateModified: the date the card was last modified
- * - dateLastStudied: the date the card was last studied
- * - timesStudied: the number of times the card has been studied
- * - timesCorrect: the number of times the card has been answered correctly
- * - timesIncorrect: the number of times the card has been answered incorrectly
- * - timesSkipped: the number of times the card has been skipped
- * - timesFlagged: the number of times the card has been flagged
- * @throws {Error} - if the data object is not given or if it is missing required properties
- * @returns {FlashCard} - a new FlashCard object
- */
-class FlashCard {
-    constructor(data) {
-        if (data === undefined || data === null) throw new Error("FlashCard constructor requires an object as an argument");
-        if (data.id === undefined || data.id === null) throw new Error("FlashCard constructor requires an id property in the object");
-        this.id = data.id;
-        if (data.question === undefined || data.question === null) throw new Error("FlashCard constructor requires a question property in the object");
-        this.question = data.question;
-        if (data.answer === undefined || data.answer === null) throw new Error("FlashCard constructor requires an answer property in the object");
-        this.answer = data.answer;
-        if (data.tags === undefined || data.tags === null) throw new Error("FlashCard constructor requires a tags property in the object");
-        this.tags = data.tags;
-        if (data.difficulty === undefined || data.difficulty === null) data.difficulty = 3;
-        this.difficulty = data.difficulty;
-        if (data.collection === undefined || data.collection === null) data.collection = "Uncategorized";
-        this.collection = data.collection;
-        if (data.dateCreated === undefined || data.dateCreated === null) data.dateCreated = new Date();
-        this.dateCreated = data.dateCreated;
-        if (data.dateModified === undefined || data.dateModified === null) data.dateModified = new Date();
-        this.dateModified = data.dateModified;
-        if (data.dateLastStudied === undefined || data.dateLastStudied === null) data.dateLastStudied = "";
-        this.dateLastStudied = data.dateLastStudied;
-        if (data.timesStudied === undefined || data.timesStudied === null) data.timesStudied = 0;
-        this.timesStudied = data.timesStudied;
-        if (data.timesCorrect === undefined || data.timesCorrect === null) data.timesCorrect = 0;
-        this.timesCorrect = data.timesCorrect;
-        if (data.timesIncorrect === undefined || data.timesIncorrect === null) data.timesIncorrect = 0;
-        this.timesIncorrect = data.timesIncorrect;
-        if (data.timesSkipped === undefined || data.timesSkipped === null) data.timesSkipped = 0;
-        this.timesSkipped = data.timesSkipped;
-        if (data.timesFlagged === undefined || data.timesFlagged === null) data.timesFlagged = 0;
-        this.timesFlagged = data.timesFlagged;
-    }
-}
-
-
 //////////////////////////// TESTING ///////////////////////////////////
+// FlashCard class provided by web/common.js
 let testCard = new FlashCard({
     id: -Number.MAX_VALUE,
     question: "What is the capital of France?",
@@ -224,6 +173,8 @@ let testCard = new FlashCard({
     // console.log(res); // uncomment to see the generated flash cards
 })();
 /////////////////// END TESTING /////////////////////////////////
+
+
 
 // TODO: make a class that implements the flash card database. It should have methods for getting, adding, updating, and deleting cards.
 // Flash cards should be stored on disk as JSON file(s). Perhaps each collection should be saved to a separate file.
@@ -304,9 +255,17 @@ app.get('/api/getCards', (req, res) => {
     // TODO: implement
     let requestParams = req.query; // if no query parameters are given, we should get all cards
     // we should validate the query parameters and set defaults of null or 0 if they are not given
-
     // let cards = get cards from the flash card database class using the above parameters
     res.send({ cards: [requestParams] });
+});
+
+// endpoint: /api/getCollections
+// Type: GET
+// sends a JSON object with the names of the collections
+app.get('/api/getCollections', (req, res) => {
+    // TODO: implement
+    // get the collection names from the flash card database class
+    res.send({ collections: [{name:"test"}] });
 });
 
 // endpoint: /api/saveNewCards
