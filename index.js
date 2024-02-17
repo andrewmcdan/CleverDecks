@@ -40,7 +40,7 @@ class ChatGPT {
             if (typeof stream_cb !== 'function') stream_cb = (chunk) => console.log(chunk);
             if (typeof completion_cb !== 'function') completion_cb = (response) => console.log(response);
             let response = "";
-            const stream = await this.openai.chat.completions.create({
+            const stream = await this.openai?.chat.completions.create({
                 model: 'gpt-4-0125-preview',
                 messages: [{ role: 'assistant', content: inputText }],
                 stream: true,
@@ -51,7 +51,7 @@ class ChatGPT {
             }
             completion_cb(response);
         } else {
-            const chatCompletion = await this.openai.chat.completions.create({
+            const chatCompletion = await this.openai?.chat.completions.create({
                 messages: [{ role: 'assistant', content: inputText }],
                 model: 'gpt-4-0125-preview',
             });
