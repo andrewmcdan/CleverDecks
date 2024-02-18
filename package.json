@@ -37,6 +37,13 @@
       "express": "^4.17.1",
       "openai": "^4.27.0"
     },
-    "outputPath": "dist"
+    "outputPath": "dist",
+    "targets": [
+      "node18-linux-x64",
+      "node18-macos-x64",
+      "node18-win-x64",
+      "node18-linux-arm64",
+      "node18-macos-arm64"
+    ]
   }
 }

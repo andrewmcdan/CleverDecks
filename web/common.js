@@ -15,6 +15,8 @@
  * - timesIncorrect: the number of times the card has been answered incorrectly
  * - timesSkipped: the number of times the card has been skipped
  * - timesFlagged: the number of times the card has been flagged
+ * @method toJSON - returns a plain object representation of the FlashCard
+ * @method toString - returns a string representation of the FlashCard
  * @throws {Error} - if the data object is not given or if it is missing required properties
  * @returns {FlashCard} - a new FlashCard object
  */
@@ -49,6 +51,37 @@ class FlashCard {
         this.timesSkipped = data.timesSkipped;
         if (data.timesFlagged === undefined || data.timesFlagged === null) data.timesFlagged = 0;
         this.timesFlagged = data.timesFlagged;
+    }
+
+    /**
+     * @method toJSON
+     * @returns {Object} - a plain object representation of the FlashCard
+     */
+    toJSON() {
+        return {
+            id: this.id,
+            question: this.question,
+            answer: this.answer,
+            tags: this.tags,
+            difficulty: this.difficulty,
+            collection: this.collection,
+            dateCreated: this.dateCreated,
+            dateModified: this.dateModified,
+            dateLastStudied: this.dateLastStudied,
+            timesStudied: this.timesStudied,
+            timesCorrect: this.timesCorrect,
+            timesIncorrect: this.timesIncorrect,
+            timesSkipped: this.timesSkipped,
+            timesFlagged: this.timesFlagged
+        };
+    }
+
+    /**
+     * @method toString
+     * @returns {String} - the question on the front of the card
+     */
+    toString() {
+        // TODO: implement a better toString method. It should return a string representation that includes localestrings for the date properties
     }
 }
 
