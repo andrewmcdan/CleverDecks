@@ -52,11 +52,12 @@
             cardCountDivHTML += `<p>There are ${collectionCount} collections available to study.</p>`;
             console.log({collectionCount});
             for (let i = 0; i < collectionCount; i++) {
-                fetch(`../api/getCards?collection=${data.collections[i].name}`).then((response) => {
+                fetch(`../api/getCards?collection=${data.collections[i]}`).then((response) => {
                     return response.json();
                 }).then((data2) => {
+                    console.log({data2});
                     cardCount += data2.length;
-                    cardCountDivHTML += `<p>Collection ${i + 1} (${data.collections[i].name}) has ${data2.length} cards.</p>`;
+                    cardCountDivHTML += `<p>Collection ${i + 1} (${data.collections[i]}) has ${data2.total} cards.</p>`;
                 }).finally(() => {
                     cardCountDiv.innerHTML = cardCountDivHTML;
                 });
@@ -74,6 +75,24 @@
             dateCreated: "2021-09-01",
             difficulty: 3
         });
+
+        fetch('../api/saveNewCards', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify([testFlashCard])
+        }).then((response) => {
+            return response.json();
+        }).then((data) => {
+            console.log(data);
+        });
         console.log(testFlashCard);
+
+        fetch('../api/tagMatch?tag=Geography').then((response) => {
+            return response.json();
+        }).then((data) => {
+            console.log(data);
+        });
     </script>
 </html>
