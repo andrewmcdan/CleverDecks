@@ -10,21 +10,110 @@ const FlashCard = commonClasses.FlashCard;
 
 const flashCardMaxDifficulty = 5; // Flash card difficulty is a number from 1 to 5
 
+const consoleLogging = true;
+const logFile = 'logs.txt';
+// logLevel, 0-5 or "off", "info", "warn", "error", "debug", "trace"
+const logLevel = 1;
+const logLevels = ["off", "info", "warn", "error", "debug", "trace"];
+
+
 // this loads the API key from the .env file. 
 // For development, you should create a .env file in the root directory of the project and add the following line to it:
 // OPENAI_SECRET_KEY=your-api-key
 require("dotenv").config();
 
-
+/**
+ * @class Logger
+ * @description - a class to log messages to the console and to a file
+ * @param {boolean} con - a boolean to indicate if console logging is enabled
+ * @property {Array} logs - an array of log entries
+ * @property {boolean} consoleLogging - a boolean to indicate if console logging is enabled
+ * @method log - a method to log a message
+ * @method writeOutLogs - a method to write out the logs to a file
+ * @method finalize - a method to write out the logs to a file when the object is destroyed
+ */
 class Logger {
-    constructor() {
+    constructor(con = true, logLevel = 1) {
         this.logs = [];
+        this.consoleLogging = con;
+        this.logLevel = logLevel;
     }
-    log(message) {
-        this.logs.push(message);
+
+    /**
+     * @method log
+     * @description - logs a message
+     * @param {string} message - the message to log
+     * @param {string} level - the log level, one of "info", "warn", "error", "debug", "trace"
+     * @returns - nothing
+     * @throws - nothing
+     * @sideEffects - adds a log entry to the logs array
+     * @sideEffects - writes out the logs to a file if the logs array has 10 or more entries
+     * @sideEffects - writes out the logs to the console if consoleLogging is true
+     */
+    log(message, level = "info") {
+        if(typeof level === 'string') level = logLevels.indexOf(level); // convert level to a number
+        if(level > this.logLevel) return; // if the level is higher than the log level, don't log the message
+        let newEntry = { date: new Date().toLocaleString(), message: message }; // create a new log entry
+        this.logs.push(newEntry); // add the new log entry to the logs array
+        if (this.consoleLogging) console.log(newEntry.date + " - " + newEntry.message); // log the message to the console
+        if(this.logs.length >= 10) this.writeOutLogs(); // write out the logs to a file if there are 10 or more entries
+    }
+
+    /**
+     * @method writeOutLogs
+     * @description - writes out the logs to a file
+     * @returns - nothing
+     * @throws - nothing
+     * @sideEffects - writes out the logs to a file
+     * @sideEffects - clears the logs array
+     * @sideEffects - writes a message to the logs array if there is an error writing out the logs
+     * @sideEffects - writes a message to the console if there is an error writing out the logs
+     */
+    writeOutLogs() {
+        let localLogs = this.logs;
+        this.logs = [];
+        let logString = "";
+        localLogs.forEach((entry) => {
+            logString += entry.date + " - " + entry.message + "\n";
+        });
+        fs.appendFile('logs.txt', logString, (err) => {
+            if (err) {
+                console.error(err);
+                let tempLog = this.logs;
+                this.logs = localLogs.concat(tempLog);
+                this.logs.push({ date: new Date().toLocaleString(), message: "Failed to write logs to file" });
+            }else{
+                if(this.consoleLogging) console.log("Logs written to file");
+                let logfile = fs.readFileSync('logs.txt', 'utf8');
+                let logLines = logfile.split('\n');
+                if(logLines.length > 10000) {
+                    fs.writeFileSync('logs.txt', logLines.slice(logLines.length - 10000).join('\n'));
+                }
+            }
+        }); 
+    }
+    
+    /**
+     * @method finalize
+     * @description - writes out the logs to a file when the object is destroyed
+     * @returns - nothing
+     * @throws - nothing
+     * @sideEffects - writes out the logs to a file
+     */
+    finalize() {
+        let logString = "";
+        this.logs.forEach((entry) => {
+            logString += entry.date + " - " + entry.message + "\n";
+        });
+        fs.appendFileSync('logs.txt', logString, (err) => {
+            if (err) {
+                console.error(err);
+            }
+        }); 
     }
 }
 
+const logger = new Logger(consoleLogging);
 
 /**
  * @class ChatGPT
@@ -44,6 +133,15 @@ class ChatGPT {
         this.setApiKey(key);
     }
 
+    /**
+     * @method setApiKey
+     * @description - sets the API key
+     * @param {string} key - the OpenAI API key
+     * @returns - nothing
+     * @throws - nothing
+     * @sideEffects - sets the apiKeyFound property to true if the key is valid
+     * @sideEffects - sets the openai property to an instance of the OpenAI API if the key is valid
+     */
     setApiKey(key) {
         this.apiKeyFound = isValidOpenAIKey(key);
         if (this.apiKeyFound) {
@@ -51,11 +149,24 @@ class ChatGPT {
         }
     }
 
+    /**
+     * @method generateResponse
+     * @description - generates a response from the chatbot
+     * @async - this method is asynchronous and can be used with the "await" keyword
+     * @param {string} inputText - the text to generate a response from
+     * @param {boolean} stream_enabled - a boolean to enable streaming
+     * @param {Function} stream_cb - a callback function to receive streaming data from the chatbot
+     * @param {Function} completion_cb - a callback function to receive the completion response from the chatbot
+     * @returns {string} - the response from the chatbot
+     * @throws - nothing
+     * @sideEffects - calls the stream_cb function with streaming data from the chatbot
+     * @sideEffects - calls the completion_cb function with the completion response from the chatbot
+     */
     async generateResponse(inputText, stream_enabled, stream_cb, completion_cb) {
         if (!this.apiKeyFound) return null;
         if (stream_enabled) {
-            if (typeof stream_cb !== 'function') stream_cb = (chunk) => console.log(chunk);
-            if (typeof completion_cb !== 'function') completion_cb = (response) => console.log(response);
+            if (typeof stream_cb !== 'function') stream_cb = (chunk) => logger.log(chunk);
+            if (typeof completion_cb !== 'function') completion_cb = (response) => logger.log(response);
             let response = "";
             const stream = await this.openai?.chat.completions.create({
                 model: 'gpt-4-0125-preview',
@@ -100,7 +211,7 @@ async function flashCardGenerator(text, numberOfCardsToGenerate, streamingData_c
     prompt += "{\"question\":\"the flash card question\",\"answer\":\"the flash card answer\",\"tags\":[\"tag1\",\"tag2\"],\"difficulty\":N,\"collection\":\"The broad category the card belong to such as world geography\"} (difficulty is a number from 1 to " + flashCardMaxDifficulty + ").";
     prompt += " all based on the following text (it is important that the flash cards be based on the following text)" + (enableExtrapolation?", extrapolating on the given text to generate the desired number of cards":"") + ": \n" + text;
     let response = "";
-    console.log("Generating flash cards from text...\n");
+    logger.log("Generating flash cards from text...\n");
     await chatbot.generateResponse(prompt, true, streamingData_cb, (res)=>{response = res;});
     return parseGPTjsonResponse(response);
 }
@@ -127,7 +238,7 @@ async function wrongAnswerGenerator(card, numberOfAnswers, streamingData_cb) {
     prompt += "Flash Card Difficulty: " + card.difficulty + " of " + flashCardMaxDifficulty + "\n";
     prompt += "Return the wrong answers as a JSON array of strings.";
     let response = "";
-    console.log("Generating wrong answers for flash card...\n");
+    logger.log("Generating wrong answers for flash card...\n");
     await chatbot.generateResponse(prompt, true, streamingData_cb, (res)=>{response = res;});
     return parseGPTjsonResponse(response);
 }
@@ -183,7 +294,7 @@ let testCard = new FlashCard({
     Measurements and units are the fundamental building blocks of physics, providing the means to quantify and understand the physical world. The SI system offers a universal standard for these measurements, ensuring that scientific observations and calculations are precise, accurate, and globally understood. As we delve deeper into the concepts of physics, the careful measurement and analysis of physical quantities will remain a cornerstone of our exploration.
     `;
     let res = await flashCardGenerator(testText, 5, true);
-    // console.log(res); // uncomment to see the generated flash cards
+    // logger.log(res); // uncomment to see the generated flash cards
 })();
 /////////////////// END TESTING /////////////////////////////////
 
@@ -406,11 +517,11 @@ for (let k in interfaces) {
 }
 
 app.listen(port, () => {
-    console.log(`If you are using a web browser on the same computer as the app, you can use the following address:`)
-    console.log(`http://localhost:${port}`)
-    console.log(`If you are using a web browser on a different computer on the same network, you can try the following addresses:`)
+    logger.log(`If you are using a web browser on the same computer as the app, you can use the following address:`)
+    logger.log(`http://localhost:${port}`)
+    logger.log(`If you are using a web browser on a different computer on the same network, you can try the following addresses:`)
     addresses.forEach((address) => {
-        console.log(`http://${address}:${port}`);
+        logger.log(`http://${address}:${port}`);
     });
 });
 
@@ -418,7 +529,16 @@ app.listen(port, () => {
 /// Support functions
 ////////////////////////////////////////////////////////////////////////////////////////////
 
-// This function is used to adjust the path when running the app as a standalone executable
+/**
+ * @function adjustPathForPKG
+ * @description - adjusts the path when running the app as a standalone executable
+ * @param {string} filePath - the file path to adjust
+ * @returns {string} - the adjusted file path
+ * @throws - nothing
+ * @sideEffects - nothing
+ * @notes - this function is used to adjust the path when running the app as a standalone executable
+ * @notes - it is necessary because when the app is run as a standalone executable, the current working directory is different
+ */
 function adjustPathForPKG(filePath) {
     if (process.pkg) {
         return path.join(path.dirname(process.cwd()), filePath);
@@ -426,6 +546,17 @@ function adjustPathForPKG(filePath) {
     return filePath;
 }
 
+/**
+ * @function isValidOpenAIKey
+ * @description - checks if the given key is a valid OpenAI API key
+ * @param {string} key - the key to check
+ * @returns {boolean} - true if the key is valid, false otherwise
+ * @throws - nothing
+ * @sideEffects - nothing
+ * @notes - this function checks if the given key is a valid OpenAI API key
+ * @notes - it uses a regular expression to check the key
+ * @notes - the key must start with "sk-" and be followed by 48 alphanumeric characters
+ */
 function isValidOpenAIKey(key) {
     if (typeof key !== 'string') return false;
     // Regex explanation:
@@ -441,6 +572,10 @@ function isValidOpenAIKey(key) {
  * @param {string} key - the key to update
  * @param {string} value - the value to set
  * @returns {boolean} - true if the key / value pair was updated, false otherwise
+ * @throws - nothing
+ * @notes - this function updates the .env file with the given key / value pair
+ * @notes - if the key does not exist, it is added
+ * @notes - if the key exists, its value is updated
  */
 function updateEnvFile(key, value) {
     if (typeof key !== 'string' || typeof value !== 'string') return false;
@@ -467,11 +602,22 @@ function updateEnvFile(key, value) {
         fs.writeFileSync(path, fileContents);
         return true;
     } catch (e) {
-        console.error(e);
+        logger.error(e);
         return false;
     }
 }
 
+/**
+ * @function parseGPTjsonResponse
+ * @description - parses a JSON response from the GPT chatbot
+ * @param {string} response - the response to parse
+ * @returns {Object} - the parsed JSON response
+ * @throws - nothing
+ * @notes - this function parses a JSON response from the GPT chatbot
+ * @notes - if the response is not a string, it is returned as is
+ * @notes - if the response is an empty string, it is returned as is
+ * @notes - if the response is a string that starts with "```" and ends with "```", the response is parsed as JSON
+ */
 function parseGPTjsonResponse(response) {
     if (response === undefined || response === null) return null;
     if (typeof response !== 'string') return response;
@@ -482,7 +628,7 @@ function parseGPTjsonResponse(response) {
         let json = JSON.parse(response);
         return json;
     } catch (e) {
-        console.error(e);
+        logger.error(e);
         return response;
     }
 }
@@ -494,3 +640,9 @@ function wait(seconds) {
 
 // Open the default web browser to the app
 const browse = require("browse-url")('http://localhost:3000/');
+
+// When the app is closed, finalize the logger
+process.on('exit', async() => {
+    logger.finalize();
+    await wait(2); // Gives the logger time to write out the logs
+});
