@@ -726,8 +726,31 @@ function wait(seconds) {
 // Open the default web browser to the app
 const browse = require("browse-url")('http://localhost:3000/');
 
+
 // When the app is closed, finalize the logger
-process.on('exit', async() => {
+const EXIT = async() => {
+    logger.log("Exiting...", "info");
     logger.finalize();
     await wait(2); // Gives the logger time to write out the logs
+}
+
+// Catch all the ways the program can exit
+process.on('SIGINT', async() => {
+    await EXIT();
+    process.exit();
+});
+process.on('SIGTERM', async() => {
+    await EXIT();
+    process.exit();
+});
+process.on('uncaughtException', async() => {
+    await EXIT();
+    process.exit();
+});
+process.on('SIGHUP', async() => {
+    await EXIT();
+    process.exit();
+});
+process.on('exit', async() => {
+    // await EXIT();
 });
