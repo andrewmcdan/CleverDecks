@@ -21,7 +21,7 @@ const consoleLogging = true;
 // logLevel, 0-5 or "off", "info", "warn", "error", "debug", "trace"
 const logLevel = process.env.LOG_LEVEL; // "trace"
 const Logger = require('./logger.js');
-const logger = new Logger(consoleLogging, logLevel); // create a new logger object. This must remain at the top of the file.
+const logger = new Logger(consoleLogging, logLevel); // create a new logger object. This must remain at/near the top of the file.
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /**

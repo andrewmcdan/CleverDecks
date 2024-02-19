@@ -1,5 +1,4 @@
 const Logger = require('../logger');
-const fs = require('fs');
 
 test('Logger class exists', () => {
     expect(Logger).toBeDefined();
