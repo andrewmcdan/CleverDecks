@@ -13,8 +13,16 @@ const flashCardMaxDifficulty = 5; // Flash card difficulty is a number from 1 to
 const consoleLogging = true;
 const logFile = 'logs.txt';
 // logLevel, 0-5 or "off", "info", "warn", "error", "debug", "trace"
-const logLevel = 1;
+const logLevel = 1; // "info"
 const logLevels = ["off", "info", "warn", "error", "debug", "trace"];
+/**
+ * "off" - no logging
+ * "info" - logs info messages that should be shown all the time
+ * "warn" - logs info and warning messages
+ * "error" - logs info, warning, and error messages
+ * "debug" - logs info, warning, error, and debug messages
+ * "trace" - logs everything, including trace messages. this is the most verbose level.
+ */
 
 
 // this loads the API key from the .env file. 
@@ -31,9 +39,13 @@ require("dotenv").config();
  * @method log - a method to log a message
  * @method writeOutLogs - a method to write out the logs to a file
  * @method finalize - a method to write out the logs to a file when the object is destroyed
+ * @notes - Because this is used for logging, this class must remain at the top of the file, and the logger object must be created before any other objects are created.
  */
 class Logger {
     constructor(con = true, logLevel = 1) {
+        if(typeof con !== 'boolean') con = true;
+        if(typeof logLevel === 'string') logLevel = logLevels.indexOf(logLevel);
+        if(typeof logLevel !== 'number') logLevel = 1;
         this.logs = [];
         this.consoleLogging = con;
         this.logLevel = logLevel;
@@ -53,6 +65,7 @@ class Logger {
     log(message, level = "info") {
         if(typeof level === 'string') level = logLevels.indexOf(level); // convert level to a number
         if(level > this.logLevel) return; // if the level is higher than the log level, don't log the message
+        if(this.logLevel === 0) return; // if the log level is 0, don't log the message (this is the "off" level)
         let newEntry = { date: new Date().toLocaleString(), message: message }; // create a new log entry
         this.logs.push(newEntry); // add the new log entry to the logs array
         if (this.consoleLogging) console.log(newEntry.date + " - " + newEntry.message); // log the message to the console
@@ -84,8 +97,8 @@ class Logger {
                 this.logs.push({ date: new Date().toLocaleString(), message: "Failed to write logs to file" });
             }else{
                 if(this.consoleLogging) console.log("Logs written to file");
-                let logfile = fs.readFileSync('logs.txt', 'utf8');
-                let logLines = logfile.split('\n');
+                let logFile = fs.readFileSync('logs.txt', 'utf8');
+                let logLines = logFile.split('\n');
                 if(logLines.length > 10000) {
                     fs.writeFileSync('logs.txt', logLines.slice(logLines.length - 10000).join('\n'));
                 }
@@ -113,7 +126,9 @@ class Logger {
     }
 }
 
-const logger = new Logger(consoleLogging);
+const logger = new Logger(consoleLogging, logLevel); // create a new logger object. This must remain at the top of the file.
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /**
  * @class ChatGPT
@@ -145,7 +160,10 @@ class ChatGPT {
     setApiKey(key) {
         this.apiKeyFound = isValidOpenAIKey(key);
         if (this.apiKeyFound) {
+            logger.log("OpenAI API key found", "warn");
             this.openai = new ai.OpenAI({ apiKey: key });
+        }else{
+            logger.log("OpenAI API key not found", "warn");
         }
     }
 
@@ -163,7 +181,10 @@ class ChatGPT {
      * @sideEffects - calls the completion_cb function with the completion response from the chatbot
      */
     async generateResponse(inputText, stream_enabled, stream_cb, completion_cb) {
-        if (!this.apiKeyFound) return null;
+        if (!this.apiKeyFound) {
+            logger.log("OpenAI API key not found", "error");
+            return null;
+        }
         if (stream_enabled) {
             if (typeof stream_cb !== 'function') stream_cb = (chunk) => logger.log(chunk);
             if (typeof completion_cb !== 'function') completion_cb = (response) => logger.log(response);
@@ -203,10 +224,22 @@ chatbot = new ChatGPT(process.env.OPENAI_SECRET_KEY);
  */
 async function flashCardGenerator(text, numberOfCardsToGenerate, streamingData_cb, enableExtrapolation = false) {
     // TODO: rework this to return a promise instead of using async / await
-    if (text === undefined || text === null) return null;
-    if (typeof text !== 'string') return null;
-    if (text.length > 16384) return null;
-    if(typeof streamingData_cb !== 'function') streamingData_cb = (chunk) => process.stdout.write(chunk);
+    if (text === undefined || text === null) {
+        logger.log("flashCardGenerator requires a string as an argument", "error");
+        return null;
+    }
+    if (typeof text !== 'string') {
+        logger.log("flashCardGenerator requires a string as an argument", "error");
+        return null;
+    }
+    if (text.length > 16384) {
+        logger.log("The text is too long. Maximum length is 16,384 characters", "error");
+        return null;
+    }
+    if(typeof streamingData_cb !== 'function') {
+        logger.log("streamingData_cb is not a function. Using default streaming data callback", "warn");
+        streamingData_cb = (chunk) => process.stdout.write(chunk);
+    }
     let prompt = "Please generate " + numberOfCardsToGenerate + " flash cards (based on the text below) with concise answers, returning the data in JSON format following the schema ";
     prompt += "{\"question\":\"the flash card question\",\"answer\":\"the flash card answer\",\"tags\":[\"tag1\",\"tag2\"],\"difficulty\":N,\"collection\":\"The broad category the card belong to such as world geography\"} (difficulty is a number from 1 to " + flashCardMaxDifficulty + ").";
     prompt += " all based on the following text (it is important that the flash cards be based on the following text)" + (enableExtrapolation?", extrapolating on the given text to generate the desired number of cards":"") + ": \n" + text;
@@ -229,8 +262,14 @@ async function flashCardGenerator(text, numberOfCardsToGenerate, streamingData_c
  */
 async function wrongAnswerGenerator(card, numberOfAnswers, streamingData_cb) {
     // TODO: rework this to return a promise instead of using async / await
-    if (card === undefined || card === null) throw new Error("wrongAnswerGenerator requires a FlashCard object as an argument");
-    if(typeof streamingData_cb !== 'function') streamingData_cb = (chunk) => process.stdout.write(chunk);
+    if (card === undefined || card === null) {
+        logger.log("wrongAnswerGenerator requires a FlashCard object as an argument", "error");
+        throw new Error("wrongAnswerGenerator requires a FlashCard object as an argument");
+    }
+    if(typeof streamingData_cb !== 'function') {
+        logger.log("streamingData_cb is not a function. Using default streaming data callback", "warn");
+        streamingData_cb = (chunk) => process.stdout.write(chunk);
+    }
     let prompt = "Please generate " + numberOfAnswers + " wrong answers for the following flash card: \n";
     prompt += "Card front: " + card.question + "\nCorrect answer: " + card.answer + "\n";
     prompt += "Flash Card Tags: " + card.tags.join(", ") + "\n";
@@ -376,6 +415,7 @@ let testCard = new FlashCard({
 // - dateCreatedRange: a string in the format "YYYY-MM-DD,YYYY-MM-DD" to filter by date created
 // - dateModifiedRange: a string in the format "YYYY-MM-DD,YYYY-MM-DD" to filter by date modified
 app.get('/api/getCards', (req, res) => {
+    logger.log("GET /api/getCards", "debug");
     // TODO: implement
     let requestParams = req.query; // if no query parameters are given, we should get all cards
     // we should validate the query parameters and set defaults of null or 0 if they are not given
@@ -387,6 +427,7 @@ app.get('/api/getCards', (req, res) => {
 // Type: GET
 // sends a JSON object with the names of the collections
 app.get('/api/getCollections', (req, res) => {
+    logger.log("GET /api/getCollections", "debug");
     // TODO: implement
     // get the collection names from the flash card database class
     res.send({ collections: [{name:"test"}] });
@@ -396,6 +437,7 @@ app.get('/api/getCollections', (req, res) => {
 // Type: POST
 // receives a JSON object with the card data and saves it to the database
 app.post('/api/saveNewCards', (req, res) => {
+    logger.log("POST /api/saveNewCards", "debug");
     req.on('data', (data) => {
         const cardData = JSON.parse(data);
         // TODO: implement
@@ -407,6 +449,7 @@ app.post('/api/saveNewCards', (req, res) => {
 // Type: POST
 // receives a JSON object with the card data and deletes it from the database
 app.post('/api/deleteCard', (req, res) => {
+    logger.log("POST /api/deleteCard", "debug");
     req.on('data', (data) => {
         const cardData = JSON.parse(data);
         // TODO: implement
@@ -420,6 +463,7 @@ app.post('/api/deleteCard', (req, res) => {
 // The other properties are optional and only the ones that are given will be updated.
 // This endpoint is useful for updating the timesStudied, timesCorrect, timesIncorrect, timesSkipped, and timesFlagged properties.
 app.post('/api/updateCard', (req, res) => {
+    logger.log("POST /api/updateCard", "debug");
     req.on('data', (data) => {
         const cardData = JSON.parse(data);
         // TODO: implement
@@ -431,6 +475,7 @@ app.post('/api/updateCard', (req, res) => {
 // Type: POST
 // receives a string and generates flash cards from it
 app.post('/api/generateCards', (req, res) => {
+    logger.log("POST /api/generateCards", "debug");
     req.on('data', (data) => {
         const text = data.toString();
         // TODO: implement this
@@ -446,6 +491,7 @@ app.post('/api/generateCards', (req, res) => {
 // - cardId: the id of the card to get wrong answers for
 // - numberOfAnswers: the number of wrong answers to get
 app.get('/api/getWrongAnswers', (req, res) => {
+    logger.log("GET /api/getWrongAnswers", "debug");
     const requestParams = req.query;
     // TODO: implement
     // call the wrongAnswerGenerator function and send the generated wrong answers
@@ -463,6 +509,7 @@ app.get('/api/getWrongAnswers', (req, res) => {
 // - dateCreatedRange: a string in the format "YYYY-MM-DD,YYYY-MM-DD" to filter by date created
 // - dateModifiedRange: a string in the format "YYYY-MM-DD,YYYY-MM-DD" to filter by date modified
 app.get('/api/getCardCount', (req, res) => {
+    logger.log("GET /api/getCardCount", "debug");
     const requestParams = req.query;
     // TODO: implement this
     res.send({ count: 0 });
@@ -472,6 +519,7 @@ app.get('/api/getCardCount', (req, res) => {
 // Type: GET
 // sends a JSON object with the value of apiKeyFound
 app.get('/api/getGPTenabled', (req, res) => {
+    logger.log("GET /api/getGPTenabled", "debug");
     res.send({ enabled: chatbot.apiKeyFound });
 });
 
@@ -479,8 +527,10 @@ app.get('/api/getGPTenabled', (req, res) => {
 // Type: POST
 // receives a JSON object with the API key and sets it in ChatGPT class
 app.post('/api/setGPTapiKey', (req, res) => {
+    logger.log("POST /api/setGPTapiKey", "debug");
     req.on('data', (data) => {
         const apiKey = JSON.parse(data).apiKey;
+        logger.log("Setting OpenAI API key, " + apiKey, "debug");
         if (isValidOpenAIKey(apiKey)) {
             chatbot.setApiKey(apiKey);
             updateEnvFile('OPENAI_SECRET_KEY', apiKey);
@@ -491,8 +541,21 @@ app.post('/api/setGPTapiKey', (req, res) => {
     });
 });
 
+// endpoint: /api/addLogEntry
+// Type: POST
+// receives a JSON object with the log entry and adds it to the logs
+app.post('/api/addLogEntry', (req, res) => {
+    logger.log("POST /api/addLogEntry", "debug");
+    req.on('data', (data) => {
+        const logEntry = JSON.parse(data).logEntry;
+        logger.log(logEntry);
+        res.send({ status: 'ok' });
+    });
+});
+
 // Serve static files
 app.get('/', (req, res) => {
+    logger.log("GET /", "debug");
     // forward to /web/
     res.redirect('/web/index.html');
 });
@@ -500,6 +563,7 @@ app.use('/web', express.static(adjustPathForPKG('web')));
 
 // 404
 app.use((req, res, next) => {
+    logger.log("404 - " + req.originalUrl, "warn");
     // Create and send a response with a cookie that contains the requested URL, the HTTP status code of 404, and the 404.html page
     res.cookie("originUrl", req.originalUrl).status(404).sendFile(`${__dirname}/web/404.html`);
 });
@@ -558,7 +622,10 @@ function adjustPathForPKG(filePath) {
  * @notes - the key must start with "sk-" and be followed by 48 alphanumeric characters
  */
 function isValidOpenAIKey(key) {
+    logger.log("Checking OpenAI API key", "debug");
+    logger.log(key, "trace");
     if (typeof key !== 'string') return false;
+    logger.log("Key is a string. Key length: " + key.length, "trace");
     // Regex explanation:
     // sk- : Starts with "sk-"
     // [a-zA-Z0-9]{48} : Followed by 48 alphanumeric characters (total length becomes 51 characters including "sk-")
@@ -578,17 +645,22 @@ function isValidOpenAIKey(key) {
  * @notes - if the key exists, its value is updated
  */
 function updateEnvFile(key, value) {
+    logger.log("Updating .env file", "debug");
     if (typeof key !== 'string' || typeof value !== 'string') return false;
     const fs = require('fs');
     const path = adjustPathForPKG('.env');
+    logger.log("Path: " + path, "trace");
     let fileContents = "";
     if (fs.existsSync(path)) {
         fileContents = fs.readFileSync(path, 'utf8');
+        logger.log("File read", "trace");
     }
     let lines = fileContents.split('\n');
     let found = false;
     for (let i = 0; i < lines.length; i++) {
+        logger.log("Line " + i + ": " + lines[i], "trace");
         if (lines[i].indexOf(key) === 0) {
+            logger.log("Key found", "trace");
             lines[i] = key + "=" + value;
             found = true;
             break;
@@ -600,6 +672,7 @@ function updateEnvFile(key, value) {
     fileContents = lines.join('\n');
     try {
         fs.writeFileSync(path, fileContents);
+        logger.log("File written", "trace");
         return true;
     } catch (e) {
         logger.error(e);
@@ -619,13 +692,24 @@ function updateEnvFile(key, value) {
  * @notes - if the response is a string that starts with "```" and ends with "```", the response is parsed as JSON
  */
 function parseGPTjsonResponse(response) {
-    if (response === undefined || response === null) return null;
-    if (typeof response !== 'string') return response;
-    if (response === "") return null;
+    logger.log("Parsing GPT JSON response", "debug");
+    if (response === undefined || response === null) {
+        logger.log("Response is undefined or null", "warn");
+        return null;
+    }
+    if (typeof response !== 'string') {
+        logger.log("Response is not a string", "warn");
+        return response;
+    }
+    if (response === "") {
+        logger.log("Response is an empty string", "warn");
+        return null;
+    }
     if (response.indexOf("```") === 0) response = response.substring(response.indexOf('\n') + 1);
     if (response.indexOf("```") > 0) response = response.substring(0, response.lastIndexOf('\n'));
     try {
         let json = JSON.parse(response);
+        logger.log("Response parsed", "trace");
         return json;
     } catch (e) {
         logger.error(e);
@@ -635,6 +719,7 @@ function parseGPTjsonResponse(response) {
 
 // wait x seconds
 function wait(seconds) {
+    logger.log("Waiting " + seconds + " seconds", "trace");
     return new Promise(resolve => setTimeout(resolve, seconds * 1000));
 }
 
