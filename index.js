@@ -15,6 +15,17 @@ const flashCardMaxDifficulty = 5; // Flash card difficulty is a number from 1 to
 // OPENAI_SECRET_KEY=your-api-key
 require("dotenv").config();
 
+
+class Logger {
+    constructor() {
+        this.logs = [];
+    }
+    log(message) {
+        this.logs.push(message);
+    }
+}
+
+
 /**
  * @class ChatGPT
  * @description - a class to interface with OpenAI's GPT-4 chatbot
@@ -80,6 +91,7 @@ chatbot = new ChatGPT(process.env.OPENAI_SECRET_KEY);
  * @returns {Array} - an array of flash cards
  */
 async function flashCardGenerator(text, numberOfCardsToGenerate, streamingData_cb, enableExtrapolation = false) {
+    // TODO: rework this to return a promise instead of using async / await
     if (text === undefined || text === null) return null;
     if (typeof text !== 'string') return null;
     if (text.length > 16384) return null;
@@ -105,6 +117,7 @@ async function flashCardGenerator(text, numberOfCardsToGenerate, streamingData_c
  * @throws {Error} - if the card is not given
  */
 async function wrongAnswerGenerator(card, numberOfAnswers, streamingData_cb) {
+    // TODO: rework this to return a promise instead of using async / await
     if (card === undefined || card === null) throw new Error("wrongAnswerGenerator requires a FlashCard object as an argument");
     if(typeof streamingData_cb !== 'function') streamingData_cb = (chunk) => process.stdout.write(chunk);
     let prompt = "Please generate " + numberOfAnswers + " wrong answers for the following flash card: \n";
@@ -402,7 +415,7 @@ app.listen(port, () => {
 });
 
 ////////////////////////////////////////////////////////////////////////////////////////////
-/// Helper functions
+/// Support functions
 ////////////////////////////////////////////////////////////////////////////////////////////
 
 // This function is used to adjust the path when running the app as a standalone executable

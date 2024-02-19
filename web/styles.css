@@ -19,6 +19,7 @@ body {
 .navbar {
     overflow: hidden;
     background-color: #333; /* Dark background color */
+    height: 100px;
 }
 
 /* Navigation bar links */
@@ -29,6 +30,7 @@ body {
     text-align: center;
     padding: 14px 20px; /* Padding for spacing */
     text-decoration: none; /* No underline on links */
+    height: 100%;
 }
 
 /* Change color on hover */
@@ -38,11 +40,15 @@ body {
 }
 
 /* Navigation bar logo */
-.logo img{
+#logo {
+    padding: 0px;
+}
+#logo img{
     float: left;
     display: block;
     color: white;
     text-align: center;
-    padding: 14px 20px;
+    padding: 0px;
     text-decoration: none;
+    width: 100px;
 }
