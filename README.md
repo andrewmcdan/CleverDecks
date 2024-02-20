@@ -1,3 +1,8 @@
+<p align="center">
+  <img src="https://github.com/andrewmcdan/CleverDecks/blob/main/web/img/favicon-180x180.png?raw=true" alt="Image CleverDecks Logo" width="180"/>
+</p>
+
+
 # CleverDecks
 A modern flash card system that allows students to create flashcards using AI assistance (ChatGPT) and use this system to study flash cards using a novel progressive delivery system that allows for incremental learning of the content. The interface is web based and allows access from any device, while the backend is a locally run application that the user runs on their computer. This allows the user to save their flashcards on their computer or anywhere else.
 
