@@ -7,7 +7,7 @@
     "CleverDecks": "index.js"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "jest",
     "start": "node index.js"
   },
   "repository": {
@@ -24,6 +24,7 @@
     "browse-url": "^1.1.5",
     "dotenv": "^16.4.2",
     "express": "^4.18.2",
+    "fastest-levenshtein": "^1.0.16",
     "openai": "^4.27.0"
   },
   "pkg": {
@@ -38,5 +39,8 @@
       "openai": "^4.27.0"
     },
     "outputPath": "dist"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0"
   }
 }
