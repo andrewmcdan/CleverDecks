@@ -52,7 +52,7 @@
             cardCountDivHTML += `<p>There are ${collectionCount} collections available to study.</p>`;
             console.log({collectionCount});
             for (let i = 0; i < collectionCount; i++) {
-                fetch(`../api/getCards?collection=${data.collections[i]}`).then((response) => {
+                fetch(`../api/getCards?collection=${data.collections[i]}&numberOfCards=100`).then((response) => {
                     return response.json();
                 }).then((data2) => {
                     console.log({data2});
@@ -90,6 +90,12 @@
         console.log(testFlashCard);
 
         fetch('../api/tagMatch?tag=Geography').then((response) => {
+            return response.json();
+        }).then((data) => {
+            console.log(data);
+        });
+
+        fetch('../api/getWrongAnswers?cardId=1&numberOfAnswers=10').then((response) => {
             return response.json();
         }).then((data) => {
             console.log(data);

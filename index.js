@@ -1,15 +1,15 @@
+// TODO: Move the flashcard database to database.js. This includes the FlashCardCollection and FlashCardDatabase classes. Once that is done, tests can be written for the database.
+
+
+
 const express = require('express');
 const app = express();
 const port = 3000;
 const path = require('path');
-
 const fs = require('fs');
 const fuzzyMatch = require('fastest-levenshtein');
-
 const commonClasses = require('./web/common.js');
 const FlashCard = commonClasses.FlashCard;
-
-const flashCardMaxDifficulty = 5; // Flash card difficulty is a number from 1 to 5
 
 // this loads the API key from the .env file. 
 // For development, you should create a .env file in the root directory of the project and add the following line to it:
@@ -282,7 +282,7 @@ class FlashCardCollection {
      */
     getCardById(id) {
         logger.log("Getting card by id: " + id, "debug");
-        return this.cards.find(card => card.id === id);
+        return this.cards.find(card => card.id == id);
     }
 
     /**
@@ -639,7 +639,7 @@ class FlashCardDatabase {
      */
     getCardById(id) {
         let card = null;
-        forEach(this.collections, (collection) => {
+        this.collections.forEach((collection) => {
             card = collection.getCardById(id);
             if (card !== null) return;
         });
@@ -701,6 +701,7 @@ app.post('/api/saveNewCards', (req, res) => {
     req.on('data', (data) => {
         const cardData = JSON.parse(data);
         logger.log("Saving new flash card: \n" + JSON.stringify(cardData,2,null), "debug");
+        // TODO: fix so that this iterates over all the cards in the array
         let card = new FlashCard(cardData[0]);
         if(flashcard_db.addCard(card)){
             res.send({ status: 'ok' });
@@ -755,12 +756,27 @@ app.post('/api/generateCards', (req, res) => {
 // query parameters:
 // - cardId: the id of the card to get wrong answers for
 // - numberOfAnswers: the number of wrong answers to get
-app.get('/api/getWrongAnswers', (req, res) => {
+app.get('/api/getWrongAnswers', async(req, res) => {
     logger.log("GET /api/getWrongAnswers", "debug");
     const requestParams = req.query;
-    // TODO: implement
     // call the wrongAnswerGenerator function and send the generated wrong answers
-    res.send({ answers: [] });
+    const numberOfAnswers = requestParams.numberOfAnswers;
+    const cardId = requestParams.cardId;
+    console.log({numberOfAnswers, cardId});
+    const card = flashcard_db.getCardById(cardId);
+    console.log({card})
+    if(card !== null && card !== undefined){
+        let chatRes;
+        try{
+            chatRes = await chatbot.wrongAnswerGenerator(card, numberOfAnswers,()=>{});
+        }catch(err){
+            logger.log("Error generating wrong answers: " + err, "error");
+            res.send({ answers: [] });
+        }
+        res.send({ answers: chatRes });
+    }else{
+        res.send({ answers: [] });
+    }
 });
 
 // endpoint: /api/getCardCount
