@@ -2,7 +2,7 @@ const express = require('express');
 const app = express();
 const port = 3000;
 const path = require('path');
-const ai = require("openai");
+
 const fs = require('fs');
 const fuzzyMatch = require('fastest-levenshtein');
 
@@ -15,168 +15,16 @@ const flashCardMaxDifficulty = 5; // Flash card difficulty is a number from 1 to
 // For development, you should create a .env file in the root directory of the project and add the following line to it:
 // OPENAI_SECRET_KEY=your-api-key
 require("dotenv").config();
-
+//////////////////////////////////////////////////////////////////// Logging //////////////////////////////////////////////////////////////////////////////////////////
 const consoleLogging = true;
 // const logFile = 'logs.txt';
 // logLevel, 0-5 or "off", "info", "warn", "error", "debug", "trace"
 const logLevel = process.env.LOG_LEVEL; // "trace"
 const Logger = require('./logger.js');
 const logger = new Logger(consoleLogging, logLevel); // create a new logger object. This must remain at/near the top of the file.
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-/**
- * @class ChatGPT
- * @description - a class to interface with OpenAI's GPT-4 chatbot
- * @param {string} key - the OpenAI API key
- * @property {boolean} apiKeyFound - a boolean to indicate if the API key is valid
- * @property {Object} openai - an instance of the OpenAI API
- * @method setApiKey - a method to set the API key
- * @method generateResponse - a method to generate a response from the chatbot
- * 
- * TODO: 
- * 1. Need to add a mechanism that interrupts the streaming results.
- */
-class ChatGPT {
-    constructor(key) {
-        this.openai = null;
-        this.setApiKey(key);
-    }
-
-    /**
-     * @method setApiKey
-     * @description - sets the API key
-     * @param {string} key - the OpenAI API key
-     * @returns - nothing
-     * @throws - nothing
-     * @sideEffects - sets the apiKeyFound property to true if the key is valid
-     * @sideEffects - sets the openai property to an instance of the OpenAI API if the key is valid
-     */
-    setApiKey(key) {
-        this.apiKeyFound = isValidOpenAIKey(key);
-        if (this.apiKeyFound) {
-            logger.log("OpenAI API key found", "warn");
-            this.openai = new ai.OpenAI({ apiKey: key });
-        }else{
-            logger.log("OpenAI API key not found", "warn");
-        }
-    }
-
-    /**
-     * @method generateResponse
-     * @description - generates a response from the chatbot
-     * @async - this method is asynchronous and can be used with the "await" keyword
-     * @param {string} inputText - the text to generate a response from
-     * @param {boolean} stream_enabled - a boolean to enable streaming
-     * @param {Function} stream_cb - a callback function to receive streaming data from the chatbot
-     * @param {Function} completion_cb - a callback function to receive the completion response from the chatbot
-     * @returns {string} - the response from the chatbot
-     * @throws - nothing
-     * @sideEffects - calls the stream_cb function with streaming data from the chatbot
-     * @sideEffects - calls the completion_cb function with the completion response from the chatbot
-     */
-    async generateResponse(inputText, stream_enabled, stream_cb, completion_cb) {
-        if (!this.apiKeyFound) {
-            logger.log("OpenAI API key not found", "error");
-            return null;
-        }
-        if (stream_enabled) {
-            if (typeof stream_cb !== 'function') stream_cb = (chunk) => logger.log(chunk);
-            if (typeof completion_cb !== 'function') completion_cb = (response) => logger.log(response);
-            let response = "";
-            const stream = await this.openai?.chat.completions.create({
-                model: 'gpt-4-0125-preview',
-                messages: [{ role: 'assistant', content: inputText }],
-                stream: true,
-            });
-            for await (const chunk of stream) {
-                stream_cb(chunk.choices[0]?.delta?.content || '');
-                response += chunk.choices[0]?.delta?.content || '';
-            }
-            completion_cb(response);
-        } else {
-            const chatCompletion = await this.openai?.chat.completions.create({
-                messages: [{ role: 'assistant', content: inputText }],
-                model: 'gpt-4-0125-preview',
-            });
-            return chatCompletion.choices[0]?.message?.content || "";
-        }
-    }
-}
-
-chatbot = new ChatGPT(process.env.OPENAI_SECRET_KEY);
-
-
-/**
- * @function flashCardGenerator
- * @description - generates flash cards from text
- * @async - this function is asynchronous and should be used with the "await" keyword
- * @param {string} text - the text to generate flash cards from, maximum length 16,384 characters
- * @param {number} numberOfCardsToGenerate - the number of flash cards to generate
- * @param {Function} streamingData_cb - a callback function to receive streaming data from the chatbot. If not given, it will default to a function that logs the data to the console. Useful for showing progress to the user.
- * @param {boolean} enableExtrapolation - a boolean to enable the chatbot to extrapolate from the given text
- * @returns {Array} - an array of flash cards
- */
-async function flashCardGenerator(text, numberOfCardsToGenerate, streamingData_cb, enableExtrapolation = false) {
-    // TODO: rework this to return a promise instead of using async / await
-    if (text === undefined || text === null) {
-        logger.log("flashCardGenerator requires a string as an argument", "error");
-        return null;
-    }
-    if (typeof text !== 'string') {
-        logger.log("flashCardGenerator requires a string as an argument", "error");
-        return null;
-    }
-    if (text.length > 16384) {
-        logger.log("The text is too long. Maximum length is 16,384 characters", "error");
-        return null;
-    }
-    if(typeof streamingData_cb !== 'function') {
-        logger.log("streamingData_cb is not a function. Using default streaming data callback", "warn");
-        streamingData_cb = (chunk) => process.stdout.write(chunk);
-    }
-    let prompt = "Please generate " + numberOfCardsToGenerate + " flash cards (based on the text below) with concise answers, returning the data in JSON format following the schema ";
-    prompt += "{\"question\":\"the flash card question\",\"answer\":\"the flash card answer\",\"tags\":[\"tag1\",\"tag2\"],\"difficulty\":N,\"collection\":\"The broad category the card belong to such as world geography\"} (difficulty is a number from 1 to " + flashCardMaxDifficulty + ").";
-    prompt += " all based on the following text (it is important that the flash cards be based on the following text)" + (enableExtrapolation?", extrapolating on the given text to generate the desired number of cards":"") + ": \n" + text;
-    let response = "";
-    logger.log("Generating flash cards from text...\n");
-    await chatbot.generateResponse(prompt, true, streamingData_cb, (res)=>{response = res;});
-    return parseGPTjsonResponse(response);
-}
-
-
-/**
- * @function wrongAnswerGenerator
- * @description - creates wrong answers for cards for use in multiple choice questions
- * @async - this function is asynchronous and should be used with the "await" keyword
- * @param {FlashCard} card - the flash card to generate wrong answers for
- * @param {number} numberOfAnswers - the number of wrong answers to generate
- * @param {Function} streamingData_cb - a callback function to receive streaming data from the chatbot. If not given, it will default to a function that logs the data to the console. Useful for showing progress to the user.
- * @returns {Array} - an array of strings that are wrong answers for the card
- * @throws {Error} - if the card is not given
- */
-async function wrongAnswerGenerator(card, numberOfAnswers, streamingData_cb) {
-    // TODO: rework this to return a promise instead of using async / await
-    if (card === undefined || card === null) {
-        logger.log("wrongAnswerGenerator requires a FlashCard object as an argument", "error");
-        throw new Error("wrongAnswerGenerator requires a FlashCard object as an argument");
-    }
-    if(typeof streamingData_cb !== 'function') {
-        logger.log("streamingData_cb is not a function. Using default streaming data callback", "warn");
-        streamingData_cb = (chunk) => process.stdout.write(chunk);
-    }
-    let prompt = "Please generate " + numberOfAnswers + " wrong answers for the following flash card: \n";
-    prompt += "Card front: " + card.question + "\nCorrect answer: " + card.answer + "\n";
-    prompt += "Flash Card Tags: " + card.tags.join(", ") + "\n";
-    prompt += "Flash Card Collection: " + card.collection + "\n";
-    prompt += "Flash Card Difficulty: " + card.difficulty + " of " + flashCardMaxDifficulty + "\n";
-    prompt += "Return the wrong answers as a JSON array of strings.";
-    let response = "";
-    logger.log("Generating wrong answers for flash card...\n");
-    await chatbot.generateResponse(prompt, true, streamingData_cb, (res)=>{response = res;});
-    return parseGPTjsonResponse(response);
-}
-
-
+///////////////////////////////////////////////////////////////////// ChatGPT /////////////////////////////////////////////////////////////////////////////////////////
+const ChatGPT = require('./chatGPT.js');
+const chatbot = new ChatGPT(process.env.OPENAI_SECRET_KEY, logger);
 //////////////////////////// TESTING ///////////////////////////////////
 // FlashCard class provided by web/common.js
 let testCard = new FlashCard({
@@ -226,7 +74,7 @@ let testCard = new FlashCard({
     Conclusion
     Measurements and units are the fundamental building blocks of physics, providing the means to quantify and understand the physical world. The SI system offers a universal standard for these measurements, ensuring that scientific observations and calculations are precise, accurate, and globally understood. As we delve deeper into the concepts of physics, the careful measurement and analysis of physical quantities will remain a cornerstone of our exploration.
     `;
-    let res = await flashCardGenerator(testText, 5, ()=>{}, false);
+    let res = await chatbot.flashCardGenerator(testText, 5, ()=>{}, false);
     // logger.log(res); // uncomment to see the generated flash cards
 })();
 /////////////////// END TESTING /////////////////////////////////
@@ -975,7 +823,7 @@ app.post('/api/setGPTapiKey', (req, res) => {
     req.on('data', (data) => {
         const apiKey = JSON.parse(data).apiKey;
         logger.log("Setting OpenAI API key, " + apiKey, "debug");
-        if (isValidOpenAIKey(apiKey)) {
+        if (chatbot.isValidOpenAIKey(apiKey)) {
             chatbot.setApiKey(apiKey);
             updateEnvFile('OPENAI_SECRET_KEY', apiKey);
             res.send({ status: 'ok' });
@@ -1054,28 +902,7 @@ function adjustPathForPKG(filePath) {
     return filePath;
 }
 
-/**
- * @function isValidOpenAIKey
- * @description - checks if the given key is a valid OpenAI API key
- * @param {string} key - the key to check
- * @returns {boolean} - true if the key is valid, false otherwise
- * @throws - nothing
- * @sideEffects - nothing
- * @notes - this function checks if the given key is a valid OpenAI API key
- * @notes - it uses a regular expression to check the key
- * @notes - the key must start with "sk-" and be followed by 48 alphanumeric characters
- */
-function isValidOpenAIKey(key) {
-    logger.log("Checking OpenAI API key", "debug");
-    logger.log(key, "trace");
-    if (typeof key !== 'string') return false;
-    logger.log("Key is a string. Key length: " + key.length, "trace");
-    // Regex explanation:
-    // sk- : Starts with "sk-"
-    // [a-zA-Z0-9]{48} : Followed by 48 alphanumeric characters (total length becomes 51 characters including "sk-")
-    const regex = /sk-[a-zA-Z0-9]{48}/g;
-    return regex.test(key);
-}
+
 
 /**
  * @function updateEnvFile
@@ -1124,42 +951,7 @@ function updateEnvFile(key, value) {
     }
 }
 
-/**
- * @function parseGPTjsonResponse
- * @description - parses a JSON response from the GPT chatbot
- * @param {string} response - the response to parse
- * @returns {Object} - the parsed JSON response
- * @throws - nothing
- * @notes - this function parses a JSON response from the GPT chatbot
- * @notes - if the response is not a string, it is returned as is
- * @notes - if the response is an empty string, it is returned as is
- * @notes - if the response is a string that starts with "```" and ends with "```", the response is parsed as JSON
- */
-function parseGPTjsonResponse(response) {
-    logger.log("Parsing GPT JSON response", "debug");
-    if (response === undefined || response === null) {
-        logger.log("Response is undefined or null", "warn");
-        return null;
-    }
-    if (typeof response !== 'string') {
-        logger.log("Response is not a string", "warn");
-        return response;
-    }
-    if (response === "") {
-        logger.log("Response is an empty string", "warn");
-        return null;
-    }
-    if (response.indexOf("```") === 0) response = response.substring(response.indexOf('\n') + 1);
-    if (response.indexOf("```") > 0) response = response.substring(0, response.lastIndexOf('\n'));
-    try {
-        let json = JSON.parse(response);
-        logger.log("Response parsed", "trace");
-        return json;
-    } catch (e) {
-        logger.error(e);
-        return response;
-    }
-}
+
 
 // wait x seconds
 function wait(seconds) {
