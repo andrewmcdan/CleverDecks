@@ -4,6 +4,7 @@ const flashCardMaxDifficulty = 5;
  * @class ChatGPT
  * @description - a class to interface with OpenAI's GPT-4 chatbot
  * @param {string} key - the OpenAI API key
+ * @param {Logger} logger - a Logger object from logger.js
  * @property {boolean} apiKeyFound - a boolean to indicate if the API key is valid
  * @property {Object} openai - an instance of the OpenAI API
  * @method setApiKey - a method to set the API key
@@ -18,6 +19,7 @@ const flashCardMaxDifficulty = 5;
 class ChatGPT {
     constructor(key, logger) {
         this.openai = null;
+        if(logger === undefined && logger === null) throw new Error("ChatGPT constructor requires a logger object as an argument");
         this.logger = logger;
         this.setApiKey(key);
     }

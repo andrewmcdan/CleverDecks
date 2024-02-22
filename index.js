@@ -1,7 +1,7 @@
 // TODO: Move the flashcard database to database.js. This includes the FlashCardCollection and FlashCardDatabase classes. Once that is done, tests can be written for the database.
 
 
-
+const os = require('node:os');
 const express = require('express');
 const app = express();
 const port = 3000;
@@ -126,19 +126,20 @@ class FlashCardCollection {
         }
     }
 
-    moveCollectionLocation(newPath) {
-        logger.log("Moving flash card collection: " + this.name + " to " + newPath, "debug");
-        if(fs.existsSync(newPath)) {
-            try{
-                logger.log("File already exists, renaming to .bak", "debug");
-                fs.renameSync(newPath, newPath + ".bak");
-            }catch(err){
-                logger.log("Error renaming file: " + err, "error");
-            }
-        }
-        fs.renameSync(this.filePath, newPath);
-        logger.log("File moved", "debug");
-    }
+    // this method moved into the FlashCardDatabase class
+    // moveCollectionLocation(newPath) {
+    //     logger.log("Moving flash card collection: " + this.name + " to " + newPath, "debug");
+    //     if(fs.existsSync(newPath)) {
+    //         try{
+    //             logger.log("File already exists, renaming to .bak", "debug");
+    //             fs.renameSync(newPath, newPath + ".bak");
+    //         }catch(err){
+    //             logger.log("Error renaming file: " + err, "error");
+    //         }
+    //     }
+    //     fs.renameSync(this.filePath, newPath);
+    //     logger.log("File moved", "debug");
+    // }
 
     /**
      * @method loadCollection
@@ -356,8 +357,9 @@ class FlashCardDatabase {
      * @notes - If the metadata.json file is not found, this method creates a new metadata.json file.
      */
     loadCollections() {
-        let metadataPath = path.join(__dirname, 'flashcards', 'metadata.json');
-        metadataPath = adjustPathForPKG(metadataPath);
+        let metadataFolder = path.join(os.homedir(), 'CleverDecks', 'flashcards');
+        let metadataPath = path.join(metadataFolder, 'metadata.json');
+        // metadataPath = adjustPathForPKG(metadataPath);
         if (fs.existsSync(metadataPath)) {
             let data = fs.readFileSync(metadataPath, 'utf8');
             try {
@@ -382,10 +384,17 @@ class FlashCardDatabase {
         }else{
             logger.log("Flash card collections metadata.json not found", "warn");
             logger.log("Creating new flash card collections metadata.json", "debug");
+            // get current directory
+            if(!fs.existsSync(metadataFolder)){
+                // recursively create the directory
+                fs.mkdirSync(metadataFolder, { recursive: true });
+            }
             fs.writeFileSync(metadataPath, "[]", 'utf8');
             return true;
         }
     }
+
+    // TODO: add a method to move a collection to a new location and update the metadata.json file
 
     /**
      * @method tagExistsExact
@@ -477,7 +486,8 @@ class FlashCardDatabase {
         if (collection === undefined) {
             // add a new collection
             logger.log("Collection not found (715): " + cardData.collection, "warn");
-            collection = new FlashCardCollection(cardData.collection, path.join(__dirname, 'flashcards', cardData.collection + '.json'));
+            let metadataFolder = path.join(os.homedir(), 'CleverDecks', 'flashcards');
+            collection = new FlashCardCollection(cardData.collection, path.join(metadataFolder, cardData.collection + '.json'));
             this.collections.push(collection);
         }
         cardData.id = ++this.largestId;
@@ -614,8 +624,9 @@ class FlashCardDatabase {
      * @sideEffects - logs a message to the console
      */
     saveCollections(onlySaveMetadata = false) {
-        let metadataPath = path.join(__dirname, 'flashcards', 'metadata.json');
-        metadataPath = adjustPathForPKG(metadataPath);
+        let metadataFolder = path.join(os.homedir(), 'CleverDecks', 'flashcards');
+        let metadataPath = path.join(metadataFolder, 'metadata.json');
+        // metadataPath = adjustPathForPKG(metadataPath);
         let collectionNames = this.collections.map(collection => collection.name);
         let collectionPaths = this.collections.map(collection => collection.filePath);
         let collections = collectionNames.map((name, index) => {
