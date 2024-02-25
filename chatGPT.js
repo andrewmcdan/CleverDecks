@@ -117,7 +117,7 @@ class ChatGPT {
      * @param {boolean} enableExtrapolation - a boolean to enable the chatbot to extrapolate from the given text
      * @returns {Array} - an array of flash cards
      */
-    async flashCardGenerator(text, numberOfCardsToGenerate, streamingData_cb, enableExtrapolation = false) {
+    async flashCardGenerator(text, numberOfCardsToGenerate, difficulty, streamingData_cb, enableExtrapolation = false) {
         // TODO: rework this to return a promise instead of using async / await
         if (text === undefined || text === null) {
             this.logger?.log("flashCardGenerator requires a string as an argument", "error");
@@ -136,10 +136,10 @@ class ChatGPT {
             streamingData_cb = (chunk) => process.stdout.write(chunk);
         }
         let prompt = "Please generate " + numberOfCardsToGenerate + " flash cards (based on the text below) with concise answers, returning the data in JSON format following the schema ";
-        prompt += "{\"question\":\"the flash card question\",\"answer\":\"the flash card answer\",\"tags\":[\"tag1\",\"tag2\"],\"difficulty\":N,\"collection\":\"The broad category the card belong to such as world geography\"} (difficulty is a number from 1 to " + flashCardMaxDifficulty + ").";
+        prompt += "{\"question\":\"the flash card question\",\"answer\":\"the flash card answer\",\"tags\":[\"tag1\",\"tag2\"],\"difficulty\":" + difficulty + ",\"collection\":\"The broad category the card belong to such as world geography\"} (difficulty is a number from 1 to " + flashCardMaxDifficulty + ").";
         prompt += " all based on the following text (it is important that the flash cards be based on the following text)" + (enableExtrapolation ? ", extrapolating on the given text to generate the desired number of cards" : "") + ": \n" + text;
         let response = "";;
-        this.logger?.log("Generating flash cards from text...\n");
+        this.logger?.log("Generating flash cards from text...");
         await this.generateResponse(prompt, true, streamingData_cb, (res) => { response = res; });
         return this.parseGPTjsonResponse(response);
     }
@@ -172,9 +172,43 @@ class ChatGPT {
         prompt += "Flash Card Difficulty: " + card.difficulty + " of " + flashCardMaxDifficulty + "\n";
         prompt += "Return the wrong answers as a JSON array of strings.";
         let response = "";
-        this.logger?.log("Generating wrong answers for flash card...\n");
+        this.logger?.log("Generating wrong answers for flash card...");
         await this.generateResponse(prompt, true, streamingData_cb, (res) => { response = res; });
         return this.parseGPTjsonResponse(response);
+    }
+
+    /**
+     * @function interpretMathExpression
+     * @description - interprets a mathematical expression and returns it as MathML expressions wrapped in $$...$$ delimiters which can be rendered via MathJax
+     * @async - this function is asynchronous and should be used with the "await" keyword
+     * @param {string} expression - the mathematical expression to interpret
+     * @returns {Array} - an array of MathML expressions wrapped in $$...$$ delimiters
+     * @throws {Error} - if the expression is not a string or an array of strings
+     */
+    async interpretMathExpression(expression) {
+        let prompt = "Please convert the following mathematical expression(s) into LaTeX expression(s) for use in MathJax and wrap them in $$...$$ delimiters. I only need the wrapped expressions, nothing else.\n";
+        if(Array.isArray(expression)) {
+            for(let i = 0; i < expression.length; i++) {
+                prompt += expression[i] + "\n";
+            }
+        } else if(typeof expression === 'string') {
+            prompt += expression;
+        } else {
+            throw new Error("interpretMathExpression requires a string or an array of strings as an argument");
+        }
+        // let response = "";
+        this.logger?.log("Interpreting math expression(s)...");
+        let response = await this.generateResponse(prompt, false, () => {}, (res) => { response = res; });
+        // read through response and find the MathML expressions
+        let returnedExpressions = [];
+        let start = response.indexOf("$$");
+        let end = response.indexOf("$$", start + 2);
+        while(start >= 0 && end > start) {
+            returnedExpressions.push(response.substring(start, end + 2));
+            start = response.indexOf("$$", end + 2);
+            end = response.indexOf("$$", start + 2);
+        }
+        return returnedExpressions;
     }
 
     /**

@@ -15,23 +15,23 @@
     "url": "git+https://github.com/andrewmcdan/CleverDecks.git"
   },
   "author": "",
-  "license": "ISC",
+  "license": "AGPL-3.0-only",
   "bugs": {
     "url": "https://github.com/andrewmcdan/CleverDecks/issues"
   },
   "homepage": "https://github.com/andrewmcdan/CleverDecks#readme",
   "dependencies": {
-    "browse-url": "^1.1.5",
     "dotenv": "^16.4.2",
     "express": "^4.18.2",
     "fastest-levenshtein": "^1.0.16",
-    "openai": "^4.27.0"
+    "http2-express-bridge": "^1.0.7",
+    "openai": "^4.27.0",
+    "socket.io": "^4.7.4"
   },
   "pkg": {
     "assets": [
       "node_modules/openai/**/*",
-      "web/**/*",
-      "config-sets.json"
+      "web/**/*"
     ],
     "scripts": "index.js",
     "dependencies": {

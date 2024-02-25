@@ -3,7 +3,11 @@
 
 const os = require('node:os');
 const express = require('express');
+const http = require('http');
+const socketio = require('socket.io');
 const app = express();
+const server = http.createServer(app);
+const io = socketio(server);
 const port = 3000;
 const path = require('path');
 const fs = require('fs');
@@ -26,56 +30,17 @@ const logger = new Logger(consoleLogging, logLevel); // create a new logger obje
 const ChatGPT = require('./chatGPT.js');
 const chatbot = new ChatGPT(process.env.OPENAI_SECRET_KEY, logger);
 //////////////////////////// TESTING ///////////////////////////////////
-// FlashCard class provided by web/common.js
-let testCard = new FlashCard({
-    id: -Number.MAX_VALUE,
-    question: "What is the capital of France?",
-    answer: "Paris",
-    tags: ["geography", "Europe"],
-    difficulty: 2,
-    collection: "World Geography"
-});
 
 (async () => {
-    let testText = `
-    Page 1: Introduction to Physics
-    Physics is a captivating and fundamental science that seeks to understand the natural world. At its core, physics is the study of matter, energy, and the interactions between them. It is a discipline that strives to uncover the laws governing the universe, from the smallest particles to the vastness of the cosmos. Physics is divided into various branches, including mechanics, thermodynamics, electromagnetism, and quantum mechanics, each focusing on specific aspects of physical phenomena.
-    The Essence of Physics
-    The essence of physics lies in its quest to formulate universal principles that can explain the behavior of the natural world. It uses a combination of empirical evidence, mathematical models, and theoretical reasoning to understand the fundamental forces of nature, such as gravity, electromagnetism, and nuclear forces. Through this understanding, physics aims to uncover the underlying simplicity and symmetry in the universe.
-    The Role of Experimentation and Theory
-    Experimentation and theory are the twin pillars of physics. Experiments involve the observation of phenomena under controlled conditions, allowing physicists to test hypotheses and measure physical quantities. Theoretical physics, on the other hand, involves the development of models and frameworks to explain these observations and predict new phenomena. The interplay between theory and experiment drives the advancement of physics, with each informing and refining the other.
-    Physics and Mathematics
-    Mathematics is the language of physics. It provides the tools needed to formulate physical laws in a precise and concise manner. Equations in physics not only describe how physical quantities are related but also allow predictions about future behavior. For example, Newton's second law of motion, 
-    F=ma, succinctly encapsulates the relationship between force, mass, and acceleration, enabling the prediction of an object's motion under the influence of forces.
-    The Impact of Physics on Technology and Society
-    The discoveries of physics have profound implications beyond the scientific community. Advances in physics have led to technological innovations that shape our daily lives, from the electricity that powers our homes to the electronics at the heart of our mobile devices. Physics also plays a crucial role in addressing global challenges, such as energy sustainability and climate change, by providing the foundation for renewable energy technologies and environmental monitoring.
-    The Journey Through Physics
-    As we embark on this journey through physics, we will explore the fundamental concepts that underpin this discipline. From the mechanics of motion to the principles of energy and heat, and from the forces that hold atoms together to the gravitational pull that governs the orbits of planets, this exploration will reveal the elegance and complexity of the physical world. Physics is not just a pathway to understanding the universe; it is a way of thinking critically about the world and our place within it.
-    This introduction serves as the gateway to the fascinating world of physics, setting the stage for a deeper exploration of its principles, laws, and the myriad ways they manifest in the natural world.
-    
-    Page 2: Measurements and Units
-    The foundation of physics, and indeed all of science, rests on the accurate measurement of physical quantities. These measurements allow us to understand the universe in quantifiable terms, leading to the formulation of physical laws and principles. The system of measurements used in physics is standardized to ensure consistency and accuracy across the scientific community.
-    The International System of Units (SI)
-    The International System of Units (SI) is the standard metric system used in science and engineering. It comprises seven base units from which all other units of measurement are derived. These base units are:
-    Meter (m): The unit of length, defined by the speed of light in a vacuum.
-    Kilogram (kg): The unit of mass, defined by the Planck constant
-    Second (s): The unit of time, defined by the transition frequency of cesium-133 atoms.
-    Ampere (A): The unit of electric current, defined by the elementary charge per second.
-    Kelvin (K): The unit of temperature, defined by the Boltzmann constant.
-    Mole (mol): The unit of the amount of substance, defined by the number of atoms in 12 grams of carbon-12.
-    Candela (cd): The unit of luminous intensity, defined by the luminous efficacy of monochromatic radiation of frequency 
-    Dimensional Analysis
-    Dimensional analysis is a powerful tool in physics used to check the consistency of equations and calculations. It involves the study of the dimensions of physical quantities, which are derived from the base units. By ensuring that the dimensions match on both sides of an equation, physicists can verify that their equations are dimensionally consistent, which is a crucial step in validating physical laws and formulas.
-    The Importance of Units in Calculations
-    Units play a critical role in physics calculations. Every physical quantity is expressed with a unit, which provides a standard for comparison and ensures that calculations are meaningful. For instance, when calculating velocity, which is distance divided by time, the units of meters per second (m/s) provide a clear understanding of the speed at which an object is moving.
-    The correct use of units also facilitates the conversion between different measurement systems, such as converting temperatures from Celsius to Kelvin or distances from miles to kilometers. This is essential for communication and collaboration in the global scientific community.
-    Precision and Accuracy in Measurements
-    Precision and accuracy are key concepts in the measurement of physical quantities. Precision refers to the consistency of repeated measurements, while accuracy indicates how close a measurement is to the true value. Both are affected by the measurement tools and techniques used, highlighting the importance of choosing appropriate instruments and methods for scientific investigations.
-    Conclusion
-    Measurements and units are the fundamental building blocks of physics, providing the means to quantify and understand the physical world. The SI system offers a universal standard for these measurements, ensuring that scientific observations and calculations are precise, accurate, and globally understood. As we delve deeper into the concepts of physics, the careful measurement and analysis of physical quantities will remain a cornerstone of our exploration.
-    `;
-    let res = await chatbot.flashCardGenerator(testText, 5, ()=>{}, false);
-    // logger.log(res); // uncomment to see the generated flash cards
+    let mathExp = ["x=(-b+-sqrt(b^2-4ac))/2a", "a!=0", "ax^2+bx+c=0", "integral of(x^2)dx", "derivative of(x^2)", "sum of(1,2,3,4,5,6,7,8,9,10)", "integral of(x^2)dx from 0 to 1", "limit of(x^2) as x approaches 0"];
+    let res2 = await chatbot.interpretMathExpression(mathExp);
+    logger.log("//////////////////////////////////////////////////////////////////////////////")
+    logger.log(mathExp);
+    logger.log(res2);
+    if (res2.length === mathExp.length) {
+        logger.log("All math expressions appear to have been interpreted correctly", "debug");
+    }
+    logger.log("//////////////////////////////////////////////////////////////////////////////")
 })();
 /////////////////// END TESTING /////////////////////////////////
 
@@ -110,17 +75,17 @@ class FlashCardCollection {
      * @sideEffects - calls the loadCollection method which loads the flashcards from the collection into memory
      * @sideEffects - logs a message to the console
      */
-    constructor(name, filePath) {
+    constructor(name, filePath, largestId = 0) {
         this.name = name;
         logger.log("Creating flash card collection: " + name, "debug");
         logger.log("File path (268): " + filePath, "trace");
         this.cards = [];
-        this.largestId = 0;
+        this.largestId = largestId;
         this.filePath = filePath;
         logger.log("File path (272): " + this.filePath, "trace");
         // adjust the file path for the environment
         // this.filePath = adjustPathForPKG(this.filePath);
-        if(!this.loadCollection()) {
+        if (!this.loadCollection()) {
             logger.log("Flash card collection not found (380): " + name, "warn");
             // throw new Error("Flash card collection not found: " + name);
         }
@@ -155,17 +120,41 @@ class FlashCardCollection {
         logger.log("File path: " + this.filePath, "trace");
         if (fs.existsSync(this.filePath)) {
             let data = fs.readFileSync(this.filePath, 'utf8');
+            let backupPath = this.filePath + "-" + (new Date().toLocaleString().replace(/:/g, '-').replace(/ /g, '_').replace(/\//g, '-')) + '.bak';
+            try {
+                fs.copyFileSync(this.filePath, backupPath);
+                logger.log("Created backup of " + this.filePath, "debug");
+                // delete old backups. We keep the 2 most recent backups
+                let metadataFolder = path.join(os.homedir(), 'CleverDecks', 'flashcards');
+                let files = fs.readdirSync(path.join(metadataFolder));
+                files = files.filter((file) => file.startsWith(this.name + '.json-'));
+                if (files.length > 2) {
+                    // delete the oldest backups. We keep the 2 most recent backups
+                    logger.log("Deleting old backups of " + this.name + ".json", "debug");
+                    // sort the files by creation date
+                    files.sort((a, b) => {
+                        let aDate = new Date(a.split('-').pop().split('.').shift().replace(/_/g, ' '));
+                        let bDate = new Date(b.split('-').pop().split('.').shift().replace(/_/g, ' '));
+                        return aDate - bDate;
+                    });
+                    for (let i = 0; i < files.length - 2; i++) {
+                        fs.unlinkSync(path.join(metadataFolder, files[i]));
+                    }
+                }
+            } catch (err) {
+                logger.log("Error creating backup of " + this.name + ".json: " + err, "error");
+            }
             try {
                 let cards = JSON.parse(data);
                 logger.log("Loaded flash card collection: " + this.name, "debug");
-                cards.forEach( (card) => {
+                cards.forEach((card) => {
                     let newCard;
-                    try{
+                    try {
                         newCard = new FlashCard(card);
-                    }catch(err){
+                    } catch (err) {
                         logger.log("Error loading flash card: " + card.id + " - " + err, "error");
                     }
-                    if (newCard.id > this.largestId) this.largestId = newCard.id;
+                    newCard.id = ++this.largestId;
                     this.cards.push(newCard);
                 });
                 return true;
@@ -173,7 +162,7 @@ class FlashCardCollection {
                 logger.log("Error loading flash card collection: " + this.name + " - " + err, "error");
                 return false;
             }
-        }else{
+        } else {
             logger.log("Flash card collection not found (415): " + this.name, "warn");
             return false;
         }
@@ -192,7 +181,7 @@ class FlashCardCollection {
     addCard(cardData) {
         // TODO: do a search to see if the card or a similar one already exists
         this.cards.push(cardData);
-        if(cardData.id > this.largestId) this.largestId = cardData.id;
+        if (cardData.id > this.largestId) this.largestId = cardData.id;
         return this.saveCollection();
     }
 
@@ -206,11 +195,11 @@ class FlashCardCollection {
      * @sideEffects - calls the saveCollection method which saves the collection to disk
      */
     updateCard(cardData) {
-        if(cardData.collection !== this.name) {
+        if (cardData.collection !== this.name) {
             logger.log("Card does not belong to this collection: " + this.name, "error");
             return false;
         }
-        if(cardData.id === undefined || cardData.id === null) {
+        if (cardData.id === undefined || cardData.id === null) {
             logger.log("Card id is required to update a card", "error");
             return false;
         }
@@ -218,7 +207,7 @@ class FlashCardCollection {
         if (index !== -1) {
             this.cards[index] = cardData;
             return this.saveCollection();
-        }else{
+        } else {
             logger.log("Card not found in collection: " + this.name, "error");
             return false;
         }
@@ -234,11 +223,11 @@ class FlashCardCollection {
      * @sideEffects - calls the saveCollection method which saves the collection to disk
      */
     deleteCard(cardID) {
-        if(cardID === undefined || cardID === null) {
+        if (cardID === undefined || cardID === null) {
             logger.log("Card id is required to delete a card", "error");
             return false;
         }
-        if(cardData.collection !== this.name) {
+        if (cardData.collection !== this.name) {
             logger.log("Card does not belong to this collection: " + this.name, "error");
             return false;
         }
@@ -246,7 +235,7 @@ class FlashCardCollection {
         if (index !== -1) {
             this.cards.splice(index, 1);
             return this.saveCollection();
-        }else{
+        } else {
             logger.log("Card not found in collection: " + this.name, "error");
             return false;
         }
@@ -341,8 +330,8 @@ class FlashCardDatabase {
     constructor() {
         this.collections = [];
         this.largestId = 0;
-        this.loadCollections();
         this.allTags = [];
+        this.loadCollections();
     }
 
     /**
@@ -362,30 +351,54 @@ class FlashCardDatabase {
         // metadataPath = adjustPathForPKG(metadataPath);
         if (fs.existsSync(metadataPath)) {
             let data = fs.readFileSync(metadataPath, 'utf8');
+            // save a backup of the metadata file
+            let backupPath = path.join(metadataFolder, 'metadata.json-' + (new Date().toLocaleString().replace(/:/g, '-').replace(/ /g, '_').replace(/\//g, '-') + '.bak'));
+            try {
+                fs.copyFileSync(metadataPath, backupPath);
+                logger.log("Created backup of metadata.json", "debug");
+                // delete old backups. We keep the 5 most recent backups
+                let files = fs.readdirSync(path.join(metadataFolder));
+                files = files.filter((file) => file.startsWith('metadata.json-'));
+                if (files.length > 5) {
+                    // delete the oldest backups
+                    logger.log("Deleting old backups of metadata.json", "debug");
+                    // sort the files by creation date
+                    files.sort((a, b) => {
+                        let aDate = new Date(a.split('-').pop().split('.').shift().replace(/_/g, ' '));
+                        let bDate = new Date(b.split('-').pop().split('.').shift().replace(/_/g, ' '));
+                        return aDate - bDate;
+                    });
+                    for (let i = 0; i < files.length - 5; i++) {
+                        fs.unlinkSync(path.join(metadataFolder, files[i]));
+                    }
+                }
+            } catch (err) {
+                logger.log("Error creating backup of metadata.json: " + err, "error");
+            }
             try {
                 let collections = JSON.parse(data);
                 logger.log("Loaded flash card collections metadata.json", "debug");
                 collections.forEach((collection) => {
-                    let newCollection = new FlashCardCollection(collection.name, collection.path);
+                    let newCollection = new FlashCardCollection(collection.name, collection.path, this.largestId);
                     if (newCollection.largestId > this.largestId) this.largestId = newCollection.largestId;
                     newCollection.cards.forEach((card) => {
                         card.tags.forEach((tag) => {
-                            if(this.allTags !== undefined && !this.allTags.includes(tag)) this.allTags.push(tag);
+                            if (!this.allTags?.includes(tag)) this.allTags.push(tag);
                         });
                     });
-                    logger.log("Alltags: \n"+JSON.stringify(this.allTags,2,null), "debug");
                     this.collections.push(newCollection);
                 });
+                logger.log("Alltags: \n" + JSON.stringify(this.allTags, 2, null), "debug");
                 return true;
             } catch (err) {
                 logger.log("Error loading flash card collections: " + err, "error");
                 return false;
             }
-        }else{
+        } else {
             logger.log("Flash card collections metadata.json not found", "warn");
             logger.log("Creating new flash card collections metadata.json", "debug");
             // get current directory
-            if(!fs.existsSync(metadataFolder)){
+            if (!fs.existsSync(metadataFolder)) {
                 // recursively create the directory
                 fs.mkdirSync(metadataFolder, { recursive: true });
             }
@@ -459,10 +472,10 @@ class FlashCardDatabase {
      * @sideEffects - logs a message to the console
      * @notes - This method gets an array of collection names from the collections in the database 
      */
-    getCollectionNames(){
+    getCollectionNames() {
         logger.log("Getting collection names", "debug");
         let names = [];
-        if(this.collections === undefined || this.collections === null || this.collections.length==0) return names;
+        if (this.collections === undefined || this.collections === null || this.collections.length == 0) return names;
         this.collections.forEach((collection) => {
             names.push(collection.name);
         });
@@ -481,7 +494,7 @@ class FlashCardDatabase {
      */
     addCard(cardData) {
         logger.log("Adding card to database (711):", "debug");
-        logger.log(JSON.stringify(cardData,2,null), "debug");
+        logger.log(JSON.stringify(cardData, 2, null), "debug");
         let collection = this.collections.find(collection => collection.name === cardData.collection);
         if (collection === undefined) {
             // add a new collection
@@ -495,7 +508,7 @@ class FlashCardDatabase {
         this.saveCollections(true);
         // add tags
         cardData.tags.forEach((tag) => {
-            if(!this.allTags.includes(tag)) this.allTags.push(tag);
+            if (!this.allTags.includes(tag)) this.allTags.push(tag);
         });
         return true;
     }
@@ -505,6 +518,7 @@ class FlashCardDatabase {
      * @description - updates a card in the database
      * @param {Object} cardData - a FlashCard or FlashCard-like object. must contain an id property and at least one other property to update
      * @returns {boolean} - true if the card was updated, false if it was not
+     * @sideEffects - calls saveCollections(true)
      */
     updateCard(cardData) {
         // TODO: maybe rewrite this function so that it finds the card by id first, then checks if the collection exists, then updates the card
@@ -633,7 +647,7 @@ class FlashCardDatabase {
             return { name: name, path: collectionPaths[index] };
         });
         fs.writeFileSync(metadataPath, JSON.stringify(collections, null, 2), 'utf8');
-        if(onlySaveMetadata) return;
+        if (onlySaveMetadata) return;
         this.collections.forEach(collection => collection.saveCollection());
     }
 
@@ -679,19 +693,19 @@ const flashcard_db = new FlashCardDatabase();
 app.get('/api/getCards', (req, res) => {
     logger.log("GET /api/getCards", "debug");
     let requestParams = req.query;
-    if(requestParams.numberOfCards === undefined) requestParams.numberOfCards = 10;
-    if(requestParams.offset === undefined) requestParams.offset = 0;
-    if(requestParams.collection === undefined) requestParams.collection = null;
-    if(requestParams.tags === undefined) requestParams.tags = null;
-    if(requestParams.difficulty === undefined) requestParams.difficulty = null;
-    if(requestParams.search === undefined) requestParams.search = null;
-    if(requestParams.dateCreatedRange === undefined) requestParams.dateCreatedRange = null;
-    if(requestParams.dateModifiedRange === undefined) requestParams.dateModifiedRange = null;
+    if (requestParams.numberOfCards === undefined) requestParams.numberOfCards = 10;
+    if (requestParams.offset === undefined) requestParams.offset = 0;
+    if (requestParams.collection === undefined) requestParams.collection = null;
+    if (requestParams.tags === undefined) requestParams.tags = null;
+    if (requestParams.difficulty === undefined) requestParams.difficulty = null;
+    if (requestParams.search === undefined) requestParams.search = null;
+    if (requestParams.dateCreatedRange === undefined) requestParams.dateCreatedRange = null;
+    if (requestParams.dateModifiedRange === undefined) requestParams.dateModifiedRange = null;
     let cards = flashcard_db.getCards(requestParams);
     let offset = requestParams.offset;
     let numberOfCards = requestParams.numberOfCards;
     cards = cards.slice(offset, offset + numberOfCards);
-    res.send({ cards: cards , count: flashcard_db.getCountOfCards(requestParams) , total: flashcard_db.getCountOfAllCards() });
+    res.send({ cards: cards, count: flashcard_db.getCountOfCards(requestParams), total: flashcard_db.getCountOfAllCards() });
 });
 
 // endpoint: /api/getCollections
@@ -711,12 +725,12 @@ app.post('/api/saveNewCards', (req, res) => {
     logger.log("POST /api/saveNewCards", "debug");
     req.on('data', (data) => {
         const cardData = JSON.parse(data);
-        logger.log("Saving new flash card: \n" + JSON.stringify(cardData,2,null), "debug");
+        logger.log("Saving new flash card: \n" + JSON.stringify(cardData, 2, null), "debug");
         // TODO: fix so that this iterates over all the cards in the array
         let card = new FlashCard(cardData[0]);
-        if(flashcard_db.addCard(card)){
+        if (flashcard_db.addCard(card)) {
             res.send({ status: 'ok' });
-        }else{
+        } else {
             res.send({ status: 'error' });
         }
     });
@@ -753,11 +767,19 @@ app.post('/api/updateCard', (req, res) => {
 // receives a string and generates flash cards from it
 app.post('/api/generateCards', (req, res) => {
     logger.log("POST /api/generateCards", "debug");
-    req.on('data', (data) => {
-        const text = data.toString();
-        // TODO: implement this
-        // call the flashCardGenerator function and send the generated cards
-        res.send({ status: 'ok' }); // send the generated cards instead of 'ok'
+    req.on('data', async (data) => {
+        const dataObj = JSON.parse(data);
+        if (dataObj.text === undefined) res.send({ status: 'error' });
+        else if (dataObj.text === '') res.send({ status: 'empty' });
+        else {
+            let text = dataObj.text;
+            let numberOfCards = dataObj.numberOfCards;
+            let difficulty = dataObj.difficulty;
+            let cards = await chatbot.flashCardGenerator(text, numberOfCards, difficulty, () => {
+                ioServer?.emit('message', {type:'cardGeneratorUpdate', data: {status: 'working'}});
+            }, true);
+            res.send({ cards: cards, status: 'ok' });
+        }
     });
 });
 
@@ -767,25 +789,23 @@ app.post('/api/generateCards', (req, res) => {
 // query parameters:
 // - cardId: the id of the card to get wrong answers for
 // - numberOfAnswers: the number of wrong answers to get
-app.get('/api/getWrongAnswers', async(req, res) => {
+app.get('/api/getWrongAnswers', async (req, res) => {
     logger.log("GET /api/getWrongAnswers", "debug");
     const requestParams = req.query;
     // call the wrongAnswerGenerator function and send the generated wrong answers
     const numberOfAnswers = requestParams.numberOfAnswers;
     const cardId = requestParams.cardId;
-    console.log({numberOfAnswers, cardId});
     const card = flashcard_db.getCardById(cardId);
-    console.log({card})
-    if(card !== null && card !== undefined){
+    if (card !== null && card !== undefined) {
         let chatRes;
-        try{
-            chatRes = await chatbot.wrongAnswerGenerator(card, numberOfAnswers,()=>{});
-        }catch(err){
+        try {
+            chatRes = await chatbot.wrongAnswerGenerator(card, numberOfAnswers, () => { });
+        } catch (err) {
             logger.log("Error generating wrong answers: " + err, "error");
             res.send({ answers: [] });
         }
         res.send({ answers: chatRes });
-    }else{
+    } else {
         res.send({ answers: [] });
     }
 });
@@ -803,12 +823,12 @@ app.get('/api/getWrongAnswers', async(req, res) => {
 app.get('/api/getCardCount', (req, res) => {
     logger.log("GET /api/getCardCount", "debug");
     const requestParams = req.query;
-    if(requestParams.collection === undefined) requestParams.collection = null;
-    if(requestParams.tags === undefined) requestParams.tags = null;
-    if(requestParams.difficulty === undefined) requestParams.difficulty = null;
-    if(requestParams.search === undefined) requestParams.search = null;
-    if(requestParams.dateCreatedRange === undefined) requestParams.dateCreatedRange = null;
-    if(requestParams.dateModifiedRange === undefined) requestParams.dateModifiedRange = null;
+    if (requestParams.collection === undefined) requestParams.collection = null;
+    if (requestParams.tags === undefined) requestParams.tags = null;
+    if (requestParams.difficulty === undefined) requestParams.difficulty = null;
+    if (requestParams.search === undefined) requestParams.search = null;
+    if (requestParams.dateCreatedRange === undefined) requestParams.dateCreatedRange = null;
+    if (requestParams.dateModifiedRange === undefined) requestParams.dateModifiedRange = null;
     let count = flashcard_db.getCountOfCards(requestParams);
     res.send({ count: count });
 });
@@ -822,7 +842,7 @@ app.get('/api/tagMatch', (req, res) => {
     logger.log("GET /api/tagMatch", "debug");
     logger.log("Query: " + JSON.stringify(req.query), "trace");
     const tag = req.query.tag;
-    if(typeof tag !== 'string') {
+    if (typeof tag !== 'string') {
         logger.log("Invalid tag: " + tag, "error");
         res.send({ tags: [] });
     }
@@ -887,6 +907,24 @@ app.use((req, res, next) => {
     res.cookie("originUrl", req.originalUrl).status(404).sendFile(`${__dirname}/web/404.html`);
 });
 
+var ioServer = null;
+var connectedCount = 0;
+io.on('connection', (socket) => {
+    ioServer = socket;
+    connectedCount++;
+    logger.log('A user connected', "debug");
+    socket.on('disconnect', () => {
+        connectedCount--;
+        if(connectedCount === 0) ioServer = null;
+        logger.log('User disconnected', "debug");
+    });
+    socket.on('message', (msg) => {
+        logger.log('Message: ' + msg, "debug");
+    });
+});
+
+
+
 // Get the local IP addresses of the computer
 let interfaces = require('os').networkInterfaces();
 let addresses = [];
@@ -899,14 +937,16 @@ for (let k in interfaces) {
     }
 }
 
-app.listen(port, () => {
-    logger.log(`If you are using a web browser on the same computer as the app, you can use the following address:`)
-    logger.log(`http://localhost:${port}`)
+server.listen(port, () => {
+    // logger.log(`If you are using a web browser on the same computer as the app, you can use the following address:`)
+    // logger.log(`http://localhost:${port}`)
     logger.log(`If you are using a web browser on a different computer on the same network, you can try the following addresses:`)
     addresses.forEach((address) => {
         logger.log(`http://${address}:${port}`);
     });
 });
+
+
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 /// Support functions
@@ -959,13 +999,13 @@ function updateEnvFile(key, value) {
         logger.log("Line " + i + ": " + lines[i], "trace");
         if (lines[i].indexOf(key) === 0) {
             logger.log("Key found", "trace");
-            lines[i] = key + (typeof value=="string"?"=\"":"=")  + value + (typeof value=="string"?"\"":"");
+            lines[i] = key + (typeof value == "string" ? "=\"" : "=") + value + (typeof value == "string" ? "\"" : "");
             found = true;
             break;
         }
     }
     if (!found) {
-        lines.push(key + (typeof value=="string"?"=\"":"=")  + value + (typeof value=="string"?"\"":""));
+        lines.push(key + (typeof value == "string" ? "=\"" : "=") + value + (typeof value == "string" ? "\"" : ""));
     }
     fileContents = lines.join('\n');
     try {
@@ -978,44 +1018,61 @@ function updateEnvFile(key, value) {
     }
 }
 
-
-
 // wait x seconds
 function wait(seconds) {
     logger.log("Waiting " + seconds + " seconds", "trace");
     return new Promise(resolve => setTimeout(resolve, seconds * 1000));
 }
 
-// Open the default web browser to the app
-const browse = require("browse-url")('http://localhost:3000/');
+(() => {
+    // Open the default web browser to the app
+    logger.log("Opening the default web browser to the app", "info");
+    let child_process = require("child_process");
+    let _url = require("url");
+    function browseURL(url) {
+        logger.log("Browsing URL: " + url, "debug");
+        var validatePath = isValidateUrl(url);
+        logger.log("Is URL valid: " + validatePath, "debug");
+        if (!validatePath) { return null; }
+        logger.log("Process platform: " + process.platform, "debug");
+        var start = (process.platform == "darwin" ? "open" : process.platform == "win32" ? "start" : "xdg-open");
+        logger.log("Start command: " + start, "trace");
+        var childProcess = child_process.exec(start + " " + validatePath, function (err) {
+            if (err) { console.error("\r\n", err); }
+        });
+        return childProcess;
+
+    }
+    function isValidateUrl(url) {
+        let strPath = _url.toString(url);
+        logger.log("URL: " + strPath, "trace");
+        try { strPath = decodeURI(strPath); } catch (err) { return false; }
+        if (strPath.indexOf('\0') !== -1) { return false; }
+        if (strPath.indexOf('..') !== -1) { return false; }
+        if (strPath.indexOf('/.') !== -1) { return false; }
+        if (strPath.indexOf('\\.') !== -1) { return false; }
+        if (strPath === '/') { return url; }
+        strPath = path.normalize(strPath);
+        if (strPath.indexOf('\\.') !== -1) { return false; }
+        return url;
+    }
+    browseURL('http://localhost:3000/');
+})();
 
 
 // When the app is closed, finalize the logger
-const EXIT = async() => {
+const EXIT = () => {
     logger.log("Saving FlashCards...", "info");
     flashcard_db.saveCollections();
     logger.log("Exiting...", "info");
     logger.finalize();
-    await wait(2); // Gives the logger time to write out the logs
+    process.exit();
 }
 
 // Catch all the ways the program can exit
-process.on('SIGINT', async() => {
-    await EXIT();
-    process.exit();
-});
-process.on('SIGTERM', async() => {
-    await EXIT();
-    process.exit();
-});
-process.on('uncaughtException', async() => {
-    await EXIT();
-    process.exit();
-});
-process.on('SIGHUP', async() => {
-    await EXIT();
-    process.exit();
-});
-process.on('exit', async() => {
-    // await EXIT();
+process.on('SIGINT', EXIT);
+process.on('SIGTERM', EXIT);
+process.on('uncaughtException', EXIT);
+process.on('SIGHUP', EXIT);
+process.on('exit', async () => {
 });
