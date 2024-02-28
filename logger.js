@@ -52,6 +52,14 @@ class Logger {
         if(this.logs.length >= 10) this.writeOutLogs(); // write out the logs to a file if there are 10 or more entries
     }
 
+    setLogLevel(level) {
+        if(typeof level === 'string') level = logLevels.indexOf(level);
+        if(typeof level !== 'number') return false;
+        if(level < 0) level = 0;
+        if(level > 5) level = 5;
+        this.logLevel = level;
+    }
+
     /**
      * @method writeOutLogs
      * @description - writes out the logs to a file

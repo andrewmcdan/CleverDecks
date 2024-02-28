@@ -52,3 +52,45 @@ body {
     text-decoration: none;
     width: 100px;
 }
+
+
+.content {
+    min-height: calc(100% - 100px);
+    /* Equal to footer height */
+    margin-bottom: -50px; 
+}
+
+.content:after {
+    content: "";
+    display: block;
+}
+
+.footer, .content:after {
+    min-height: 50px; 
+}
+
+/* footer */
+footer {
+    background-color: #333;
+    color: #ffffff;
+    text-align: center;
+    padding: 20px 0;
+    position: relative;
+    width: 100%;
+    clear: both;
+}
+
+.footer-content a {
+    color: #ffffff;
+    text-decoration: none;
+    margin: 0 10px;
+}
+
+.footer-content a:hover {
+    text-decoration: underline;
+}
+
+.footer-logo img {
+    height: 100px; /* Adjust based on your preference */
+    width: auto;
+}

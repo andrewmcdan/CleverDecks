@@ -17,9 +17,9 @@ const flashCardMaxDifficulty = 5;
  * 1. Need to add a mechanism that interrupts the streaming results.
  */
 class ChatGPT {
-    constructor(key, logger) {
+    constructor(logger, key) {
         this.openai = null;
-        if(logger === undefined && logger === null) throw new Error("ChatGPT constructor requires a logger object as an argument");
+        if(logger === undefined || logger === null) throw new Error("ChatGPT constructor requires a logger object as an argument");
         this.logger = logger;
         this.setApiKey(key);
     }
@@ -40,6 +40,7 @@ class ChatGPT {
             this.openai = new ai.OpenAI({ apiKey: key });
         } else {
             this.logger?.log("OpenAI API key not found", "warn");
+            this.openai = null;
         }
     }
 
@@ -61,9 +62,13 @@ class ChatGPT {
             this.logger?.log("OpenAI API key not found", "error");
             return "";
         }
+        if(inputText === undefined || inputText === null || typeof inputText !== 'string' || inputText === "") {
+            this.logger?.log("generateResponse requires a string as an argument", "error");
+            return "";
+        }
         if (stream_enabled) {
-            if (typeof stream_cb !== 'function') stream_cb = (chunk) => this.logger?.log(chunk);
-            if (typeof completion_cb !== 'function') completion_cb = (response) => this.logger?.log(response);
+            if (typeof stream_cb !== 'function') stream_cb = (chunk) => this.logger?.log(chunk,"trace");
+            if (typeof completion_cb !== 'function') completion_cb = (response) => this.logger?.log(response, "trace");
             let response = "";
             const stream = await this.openai?.chat.completions.create({
                 model: 'gpt-4-0125-preview',

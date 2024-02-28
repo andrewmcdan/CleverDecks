@@ -28,11 +28,30 @@
                 <p>Create</p>
             </div>
         </nav>
-        <h1>Hello World</h1>
-        <p>My first web page.</p>
-        <div id="cardCount">
-            
+        <div class="content">
+            <h1>Hello World</h1>
+            <p>My first web page.</p>
+            <div id="cardCount">
+                
+            </div>
         </div>
+        
+        <footer>
+            <p>
+                <div class="footer-content">
+                    <a href="https://github.com/andrewmcdan/CleverDecks" target="_blank">GitHub</a> |
+                    <a href="https://github.com/andrewmcdan/CleverDecks?tab=AGPL-3.0-1-ov-file" target="_blank">License</a> |
+                    <a href="about-us.html" target="_blank">About Us</a> |
+                    <a href="web/flashcards.html" target="_blank">My FlashCards</a>
+                </div>
+                <div class="footer-logo">
+                    <a href="/">
+                        <img src="img/CD_logo_1024x1024.png" alt="CleverDecks Logo" style="height: 100px;"> <!-- Adjust size as needed -->
+                    </a>
+                </div>
+            </p>
+            <p>Copyright &copy; 2024 by Edwin Maldonado, Andrew McDaniel, Bryce Martin-White, Elizabeth King, and Uday Kadarla. All rights reserved.</p>
+        </footer>
     </body>
     <style>
         /*
@@ -76,14 +95,21 @@
             cardCountDivHTML += `<p>There are ${collectionCount} collections available to study.</p>`;
             console.log({collectionCount});
             for (let i = 0; i < collectionCount; i++) {
-                fetch(`../api/getCards?collection=${data.collections[i]}&numberOfCards=100`).then((response) => {
+                fetch(`../api/getCards?collection=${data.collections[i]}&numberOfCards=20`).then((response) => {
                     return response.json();
-                }).then((data2) => {
-                    console.log({data2});
-                    cardCount += data2.length;
-                    cardCountDivHTML += `<p>Collection ${i + 1} (${data.collections[i]}) has ${data2.cards.length} cards.</p>`;
+                }).then(async (data2) => {
+                    let countRes = await fetch(`../api/getCardCount?collection=${data.collections[i]}`);
+                    let countJson = await countRes.json();
+                    let count = countJson.count;
+                    cardCount += count;
+                    cardCountDivHTML += `<p>Collection ${i + 1} (${data.collections[i]}) has ${count} cards.</p>`;
                 }).finally(() => {
+                    console.log({cardCount});
                     cardCountDiv.innerHTML = cardCountDivHTML;
+                    if(i === collectionCount - 1) {
+                        cardCountDivHTML += `<p>There are ${cardCount} cards total available to study.</p>`;
+                        cardCountDiv.innerHTML = cardCountDivHTML;
+                    }
                 });
             }
         });
@@ -127,7 +153,7 @@ Measurements and units are the fundamental building blocks of physics, providing
 `;
 
         // FlashCard class provided by common.js
-        testFlashCard = new FlashCard({
+        let testFlashCard = new FlashCard({
             id: 1,
             question: "What is the capital of France?",
             answer: "Paris",

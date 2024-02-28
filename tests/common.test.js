@@ -34,19 +34,23 @@ test('FlashCard class has a toJSON method', () => {
     expect(flashCard.toJSON).toBeDefined();
 });
 
-test('FlashCard class has a toString method', () => {
+test('FlashCard class toJSON method returns an object', () => {
     const flashCard = new commonClasses.FlashCard(testFlashCardData);
-    expect(flashCard.toString).toBeDefined();
+    const result = flashCard.toJSON();
+    expect(typeof result).toBe('object');
 });
 
-test('FlashCard class has an id property', () => {
+test('FlashCard class toJSON method returns an object with the correct properties', () => {
     const flashCard = new commonClasses.FlashCard(testFlashCardData);
-    expect(flashCard.id).toBeDefined();
+    const result = flashCard.toJSON();
+    expect(result.id).toBe(1);
+    expect(result.question).toBe("What is the capital of France?");
+    expect(result.answer).toBe("Paris");
+    expect(result.collection).toBe("Countries");
+    expect(result.tags).toStrictEqual(["Geography", "Europe"]);
+    expect(result.dateCreated).toBe("2021-09-01");
+    expect(result.difficulty).toBe(3);
 });
 
-test('FlashCard class has a question property', () => {
-    const flashCard = new commonClasses.FlashCard(testFlashCardData);
-    expect(flashCard.question).toBeDefined();
-});
 
-test
+
