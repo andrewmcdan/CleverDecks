@@ -313,7 +313,6 @@ test('ChatGPT class has a flashCardGenerator method', () => {
     expect(chatGPT.flashCardGenerator).toBeDefined();
 });
 
-
 test('ChatGPT class flashCardGenerator method returns an array of flashcards', async() => {
     const chatGPT = new ChatGPT(logger,envVars.parsed.OPENAI_SECRET_KEY);
     const numberOfCards = 5;
@@ -339,10 +338,196 @@ test('ChatGPT class flashCardGenerator method returns an array of flashcards', a
     expect(streaming_cb).toHaveBeenCalled();
 }, 120000);
 
-// TODO: input text too long, not a string, empty string, null, undefined
-// TODO: difficulty too high, too low, not a number, empty string, null, undefined
+test('ChatGPT class flashCardGenerator method returns null if the input text is too long', async() => {
+    const chatGPT = new ChatGPT(logger,envVars.parsed.OPENAI_SECRET_KEY);
+    const numberOfCards = 5;
+    const difficulty = 3;
+    const streaming_cb = jest.fn();
+    const response = await chatGPT.flashCardGenerator('a'.repeat(1000000), numberOfCards, difficulty, streaming_cb, false);
+    expect(response).toBeNull();
+    expect(streaming_cb).not.toHaveBeenCalled();
+});
+
+test('ChatGPT class flashCardGenerator method returns null if the input text is null', async() => {
+    const chatGPT = new ChatGPT(logger,envVars.parsed.OPENAI_SECRET_KEY);
+    const numberOfCards = 5;
+    const difficulty = 3;
+    const streaming_cb = jest.fn();
+    const response = await chatGPT.flashCardGenerator(null, numberOfCards, difficulty, streaming_cb, false);
+    expect(response).toBeNull();
+    expect(streaming_cb).not.toHaveBeenCalled();
+});
+
+test('ChatGPT class flashCardGenerator method returns null if the input text is undefined', async() => {
+    const chatGPT = new ChatGPT(logger,envVars.parsed.OPENAI_SECRET_KEY);
+    const numberOfCards = 5;
+    const difficulty = 3;
+    const streaming_cb = jest.fn();
+    const response = await chatGPT.flashCardGenerator(undefined, numberOfCards, difficulty, streaming_cb, false);
+    expect(response).toBeNull();
+    expect(streaming_cb).not.toHaveBeenCalled();
+});
+
+test('ChatGPT class flashCardGenerator method returns null if the input text is an empty string', async() => {
+    const chatGPT = new ChatGPT(logger,envVars.parsed.OPENAI_SECRET_KEY);
+    const numberOfCards = 5;
+    const difficulty = 3;
+    const streaming_cb = jest.fn();
+    const response = await chatGPT.flashCardGenerator("", numberOfCards, difficulty, streaming_cb, false);
+    expect(response).toBeNull();
+    expect(streaming_cb).not.toHaveBeenCalled();
+});
+
+test('ChatGPT class flashCardGenerator method returns null if the input text is not a string', async() => {
+    const chatGPT = new ChatGPT(logger,envVars.parsed.OPENAI_SECRET_KEY);
+    const numberOfCards = 5;
+    const difficulty = 3;
+    const streaming_cb = jest.fn();
+    const response = await chatGPT.flashCardGenerator(123, numberOfCards, difficulty, streaming_cb, false);
+    expect(response).toBeNull();
+    expect(streaming_cb).not.toHaveBeenCalled();
+});
+
+test('ChatGPT class flashCardGenerator method returns null if the difficulty is too high', async() => {
+    const chatGPT = new ChatGPT(logger,envVars.parsed.OPENAI_SECRET_KEY);
+    const numberOfCards = 5;
+    const difficulty = 6;
+    const streaming_cb = jest.fn();
+    const response = await chatGPT.flashCardGenerator(testText, numberOfCards, difficulty, streaming_cb, false);
+    expect(response).toBeNull();
+    expect(streaming_cb).not.toHaveBeenCalled();
+});
+
+test('ChatGPT class flashCardGenerator method returns null if the difficulty is too low', async() => {
+    const chatGPT = new ChatGPT(logger,envVars.parsed.OPENAI_SECRET_KEY);
+    const numberOfCards = 5;
+    const difficulty = 0;
+    const streaming_cb = jest.fn();
+    const response = await chatGPT.flashCardGenerator(testText, numberOfCards, difficulty, streaming_cb, false);
+    expect(response).toBeNull();
+    expect(streaming_cb).not.toHaveBeenCalled();
+});
+
+test('ChatGPT class flashCardGenerator method returns null if the difficulty is not a number', async() => {
+    const chatGPT = new ChatGPT(logger,envVars.parsed.OPENAI_SECRET_KEY);
+    const numberOfCards = 5;
+    const difficulty = "test";
+    const streaming_cb = jest.fn();
+    const response = await chatGPT.flashCardGenerator(testText, numberOfCards, difficulty, streaming_cb, false);
+    expect(response).toBeNull();
+    expect(streaming_cb).not.toHaveBeenCalled();
+});
+
+test('ChatGPT class flashCardGenerator method returns null if the difficulty is an empty string', async() => {
+    const chatGPT = new ChatGPT(logger,envVars.parsed.OPENAI_SECRET_KEY);
+    const numberOfCards = 5;
+    const difficulty = "";
+    const streaming_cb = jest.fn();
+    const response = await chatGPT.flashCardGenerator(testText, numberOfCards, difficulty, streaming_cb, false);
+    expect(response).toBeNull();
+    expect(streaming_cb).not.toHaveBeenCalled();
+});
+
+test('ChatGPT class flashCardGenerator method returns null if the difficulty is null', async() => {
+    const chatGPT = new ChatGPT(logger,envVars.parsed.OPENAI_SECRET_KEY);
+    const numberOfCards = 5;
+    const difficulty = null;
+    const streaming_cb = jest.fn();
+    const response = await chatGPT.flashCardGenerator(testText, numberOfCards, difficulty, streaming_cb, false);
+    expect(response).toBeNull();
+    expect(streaming_cb).not.toHaveBeenCalled();
+});
+
+test('ChatGPT class flashCardGenerator method returns null if the difficulty is undefined', async() => {
+    const chatGPT = new ChatGPT(logger,envVars.parsed.OPENAI_SECRET_KEY);
+    const numberOfCards = 5;
+    const difficulty = undefined;
+    const streaming_cb = jest.fn();
+    const response = await chatGPT.flashCardGenerator(testText, numberOfCards, difficulty, streaming_cb, false);
+    expect(response).toBeNull();
+    expect(streaming_cb).not.toHaveBeenCalled();
+});
+
 // TODO: number of cards too high, too low, not a number, empty string, null, undefined
-// TODO: streaming_cb not a function, null, undefined
+test('ChatGPT class flashCardGenerator method returns null if the number of cards is too high', async() => {
+    const chatGPT = new ChatGPT(logger,envVars.parsed.OPENAI_SECRET_KEY);
+    const numberOfCards = 100;
+    const difficulty = 3;
+    const streaming_cb = jest.fn();
+    const response = await chatGPT.flashCardGenerator(testText, numberOfCards, difficulty, streaming_cb, false);
+    expect(response).toBeNull();
+    expect(streaming_cb).not.toHaveBeenCalled();
+});
+
+test('ChatGPT class flashCardGenerator method returns null if the number of cards is too low', async() => {
+    const chatGPT = new ChatGPT(logger,envVars.parsed.OPENAI_SECRET_KEY);
+    const numberOfCards = 0;
+    const difficulty = 3;
+    const streaming_cb = jest.fn();
+    const response = await chatGPT.flashCardGenerator(testText, numberOfCards, difficulty, streaming_cb, false);
+    expect(response).toBeNull();
+    expect(streaming_cb).not.toHaveBeenCalled();
+});
+
+test('ChatGPT class flashCardGenerator method returns null if the number of cards is not a number', async() => {
+    const chatGPT = new ChatGPT(logger,envVars.parsed.OPENAI_SECRET_KEY);
+    const numberOfCards = "test";
+    const difficulty = 3;
+    const streaming_cb = jest.fn();
+    const response = await chatGPT.flashCardGenerator(testText, numberOfCards, difficulty, streaming_cb, false);
+    expect(response).toBeNull();
+    expect(streaming_cb).not.toHaveBeenCalled();
+});
+
+test('ChatGPT class flashCardGenerator method returns null if the number of cards is an empty string', async() => {
+    const chatGPT = new ChatGPT(logger,envVars.parsed.OPENAI_SECRET_KEY);
+    const numberOfCards = "";
+    const difficulty = 3;
+    const streaming_cb = jest.fn();
+    const response = await chatGPT.flashCardGenerator(testText, numberOfCards, difficulty, streaming_cb, false);
+    expect(response).toBeNull();
+    expect(streaming_cb).not.toHaveBeenCalled();
+});
+
+test('ChatGPT class flashCardGenerator method returns null if the number of cards is null', async() => {
+    const chatGPT = new ChatGPT(logger,envVars.parsed.OPENAI_SECRET_KEY);
+    const numberOfCards = null;
+    const difficulty = 3;
+    const streaming_cb = jest.fn();
+    const response = await chatGPT.flashCardGenerator(testText, numberOfCards, difficulty, streaming_cb, false);
+    expect(response).toBeNull();
+    expect(streaming_cb).not.toHaveBeenCalled();
+});
+
+test('ChatGPT class flashCardGenerator method returns null if the number of cards is undefined', async() => {
+    const chatGPT = new ChatGPT(logger,envVars.parsed.OPENAI_SECRET_KEY);
+    const numberOfCards = undefined;
+    const difficulty = 3;
+    const streaming_cb = jest.fn();
+    const response = await chatGPT.flashCardGenerator(testText, numberOfCards, difficulty, streaming_cb, false);
+    expect(response).toBeNull();
+    expect(streaming_cb).not.toHaveBeenCalled();
+});
+
+test('ChatGPT class flashCardGenerator method writes to logger if the streaming_cb is not a function', async() => {
+    const chatGPT = new ChatGPT(logger,envVars.parsed.OPENAI_SECRET_KEY);
+    const numberOfCards = 5;
+    const difficulty = 3;
+    const streaming_cb = null;
+    const response = await chatGPT.flashCardGenerator(testText, numberOfCards, difficulty, streaming_cb, false);
+    expect(response).toBeNull();
+    expect(logger.logs.length).toBeGreaterThan(0);
+}, 60000);
+
+test('ChatGPT class flashCardGenerator method writes to logger if the streaming_cb is undefined', async() => {
+    const chatGPT = new ChatGPT(logger,envVars.parsed.OPENAI_SECRET_KEY);
+    const numberOfCards = 5;
+    const difficulty = 3;
+    const streaming_cb = undefined;
+    const response = await chatGPT.flashCardGenerator(testText, numberOfCards, difficulty, streaming_cb, false);
+    expect(response).toBeNull();
+    expect(logger.logs.length).toBeGreaterThan(0);
+}, 60000);
 
 /////////////////////////////////////////////////////////////
 // ChatGPT class wrongAnswerGenerator method tests

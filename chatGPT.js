@@ -1,5 +1,6 @@
 const ai = require("openai");
 const flashCardMaxDifficulty = 5;
+const maxNumberOfCardsToGenerate = 50;
 /**
  * @class ChatGPT
  * @description - a class to interface with OpenAI's GPT-4 chatbot
@@ -124,11 +125,7 @@ class ChatGPT {
      */
     async flashCardGenerator(text, numberOfCardsToGenerate, difficulty, streamingData_cb, enableExtrapolation = false) {
         // TODO: rework this to return a promise instead of using async / await
-        if (text === undefined || text === null) {
-            this.logger?.log("flashCardGenerator requires a string as an argument", "error");
-            return null;
-        }
-        if (typeof text !== 'string') {
+        if (text === undefined || text === null || typeof text !== 'string' || text === "") {
             this.logger?.log("flashCardGenerator requires a string as an argument", "error");
             return null;
         }
@@ -138,7 +135,15 @@ class ChatGPT {
         }
         if (typeof streamingData_cb !== 'function') {
             this.logger?.log("streamingData_cb is not a function. Using default streaming data callback", "warn");
-            streamingData_cb = (chunk) => process.stdout.write(chunk);
+            streamingData_cb = null;
+        }
+        if(difficulty === undefined || difficulty === null || typeof difficulty !== 'number' || difficulty < 1 || difficulty > flashCardMaxDifficulty) {
+            this.logger?.log("Difficulty is not a number or is out of range.", "error");
+            return null;
+        }
+        if(numberOfCardsToGenerate === undefined || numberOfCardsToGenerate === null || typeof numberOfCardsToGenerate !== 'number' || numberOfCardsToGenerate < 1 || numberOfCardsToGenerate > maxNumberOfCardsToGenerate) {
+            this.logger?.log("numberOfCardsToGenerate is not a number or is out of range.", "error");
+            return null;
         }
         let prompt = "Please generate " + numberOfCardsToGenerate + " flash cards (based on the text below) with concise answers, returning the data in JSON format following the schema ";
         prompt += "{\"question\":\"the flash card question\",\"answer\":\"the flash card answer\",\"tags\":[\"tag1\",\"tag2\"],\"difficulty\":" + difficulty + ",\"collection\":\"The broad category the card belong to such as world geography\"} (difficulty is a number from 1 to " + flashCardMaxDifficulty + ").";
