@@ -1,4 +1,3 @@
-const exp = require('constants');
 const ChatGPT = require('../chatGPT');
 const Logger = require('../logger');
 const envVars = require("dotenv").config({ path: __dirname + "/../.env" });
@@ -448,7 +447,6 @@ test('ChatGPT class flashCardGenerator method returns null if the difficulty is 
     expect(streaming_cb).not.toHaveBeenCalled();
 });
 
-// TODO: number of cards too high, too low, not a number, empty string, null, undefined
 test('ChatGPT class flashCardGenerator method returns null if the number of cards is too high', async() => {
     const chatGPT = new ChatGPT(logger,envVars.parsed.OPENAI_SECRET_KEY);
     const numberOfCards = 100;
@@ -515,7 +513,7 @@ test('ChatGPT class flashCardGenerator method writes to logger if the streaming_
     const difficulty = 3;
     const streaming_cb = null;
     const response = await chatGPT.flashCardGenerator(testText, numberOfCards, difficulty, streaming_cb, false);
-    expect(response).toBeNull();
+    expect(response).not.toBeNull();
     expect(logger.logs.length).toBeGreaterThan(0);
 }, 60000);
 
@@ -525,7 +523,7 @@ test('ChatGPT class flashCardGenerator method writes to logger if the streaming_
     const difficulty = 3;
     const streaming_cb = undefined;
     const response = await chatGPT.flashCardGenerator(testText, numberOfCards, difficulty, streaming_cb, false);
-    expect(response).toBeNull();
+    expect(response).not.toBeNull();
     expect(logger.logs.length).toBeGreaterThan(0);
 }, 60000);
 
@@ -537,10 +535,289 @@ test('ChatGPT class has a wrongAnswerGenerator method', () => {
     expect(chatGPT.wrongAnswerGenerator).toBeDefined();
 });
 
-// TODO: input card not an object, null, undefined
-// TODO: input card missing properties
-// TODO: input card properties not strings, empty strings, null, undefined
-// TODO: number of wrong answers too high, too low, not a number, empty string, null, undefined
+test('ChatGPT class wrongAnswerGenerator method returns an array of strings', async () => {
+    const chatGPT = new ChatGPT(logger,envVars.parsed.OPENAI_SECRET_KEY);
+    const streaming_cb = jest.fn();
+    const result = await chatGPT.wrongAnswerGenerator(testFlashCard, 3, streaming_cb);
+    expect(result).toBeDefined();
+    expect(result).toBeInstanceOf(Array);
+    expect(result.length).toBe(3);
+    expect(streaming_cb).toHaveBeenCalled();
+    for(let i = 0; i < result.length; i++) {
+        expect(result[i]).toBeDefined();
+        expect(typeof result[i]).toBe('string');
+        expect(result[i].length).toBeGreaterThan(0);
+    }
+}, 120000);
+
+test('ChatGPT class wrongAnswerGenerator method returns an array of strings when numberOfAnswers is a number as string', async () => {
+    const chatGPT = new ChatGPT(logger,envVars.parsed.OPENAI_SECRET_KEY);
+    const streaming_cb = jest.fn();
+    const result = await chatGPT.wrongAnswerGenerator(testFlashCard, "3", streaming_cb);
+    expect(result).toBeDefined();
+    expect(result).toBeInstanceOf(Array);
+    expect(result.length).toBe(3);
+    expect(streaming_cb).toHaveBeenCalled();
+    for(let i = 0; i < result.length; i++) {
+        expect(result[i]).toBeDefined();
+        expect(typeof result[i]).toBe('string');
+        expect(result[i].length).toBeGreaterThan(0);
+    }
+}, 120000);
+
+test('ChatGPT class wrongAnswerGenerator method returns an array of strings and logs to the logger when the callback function is not a function', async () => {
+    const chatGPT = new ChatGPT(logger,envVars.parsed.OPENAI_SECRET_KEY);
+    const streaming_cb = null;
+    const result = await chatGPT.wrongAnswerGenerator(testFlashCard, 3, streaming_cb);
+    expect(result).toBeDefined();
+    expect(result).toBeInstanceOf(Array);
+    expect(result.length).toBe(3);
+    expect(logger.logs.length).toBeGreaterThan(0);
+    for(let i = 0; i < result.length; i++) {
+        expect(result[i]).toBeDefined();
+        expect(typeof result[i]).toBe('string');
+        expect(result[i].length).toBeGreaterThan(0);
+    }
+}, 120000);
+
+test('ChatGPT class wrongAnswerGenerator method throws if the input card is not a flashcard', async () => {
+    const chatGPT = new ChatGPT(logger,envVars.parsed.OPENAI_SECRET_KEY);
+    const streaming_cb = jest.fn();
+    await expect(chatGPT.wrongAnswerGenerator("test", 3, streaming_cb)).rejects.toThrow(new Error("wrongAnswerGenerator requires a well constructed FlashCard object as an argument"));
+    expect(streaming_cb).not.toHaveBeenCalled();
+});
+
+test('ChatGPT class wrongAnswerGenerator method throws if the input card is null', async () => {
+    const chatGPT = new ChatGPT(logger,envVars.parsed.OPENAI_SECRET_KEY);
+    const streaming_cb = jest.fn();
+    await expect(chatGPT.wrongAnswerGenerator(null, 3, streaming_cb)).rejects.toThrow(new Error("wrongAnswerGenerator requires a well constructed FlashCard object as an argument"));
+    expect(streaming_cb).not.toHaveBeenCalled();
+});
+
+test('ChatGPT class wrongAnswerGenerator method throws if the input card is undefined', async () => {
+    const chatGPT = new ChatGPT(logger,envVars.parsed.OPENAI_SECRET_KEY);
+    const streaming_cb = jest.fn();
+    await expect(chatGPT.wrongAnswerGenerator(undefined, 3, streaming_cb)).rejects.toThrow(new Error("wrongAnswerGenerator requires a well constructed FlashCard object as an argument"));
+    expect(streaming_cb).not.toHaveBeenCalled();
+});
+
+// input card missing properties
+test('ChatGPT class wrongAnswerGenerator method throws if the input card is missing the question property', async () => {
+    const chatGPT = new ChatGPT(logger,envVars.parsed.OPENAI_SECRET_KEY);
+    const streaming_cb = jest.fn();
+    let testCard = new FlashCard(testFlashCard);
+    delete testCard.question;
+    await expect(chatGPT.wrongAnswerGenerator(testCard, 3, streaming_cb)).rejects.toThrow(new Error("wrongAnswerGenerator requires a well constructed FlashCard object as an argument"));
+    expect(streaming_cb).not.toHaveBeenCalled();
+});
+
+test('ChatGPT class wrongAnswerGenerator method throws if the input card is missing the answer property', async () => {
+    const chatGPT = new ChatGPT(logger,envVars.parsed.OPENAI_SECRET_KEY);
+    const streaming_cb = jest.fn();
+    let testCard = new FlashCard(testFlashCard);
+    delete testCard.answer;
+    await expect(chatGPT.wrongAnswerGenerator(testCard, 3, streaming_cb)).rejects.toThrow(new Error("wrongAnswerGenerator requires a well constructed FlashCard object as an argument"));
+    expect(streaming_cb).not.toHaveBeenCalled();
+});
+
+test('ChatGPT class wrongAnswerGenerator method throws if the input card is missing the collection property', async () => {
+    const chatGPT = new ChatGPT(logger,envVars.parsed.OPENAI_SECRET_KEY);
+    const streaming_cb = jest.fn();
+    let testCard = new FlashCard(testFlashCard);
+    delete testCard.collection;
+    await expect(chatGPT.wrongAnswerGenerator(testCard, 3, streaming_cb)).rejects.toThrow(new Error("wrongAnswerGenerator requires a well constructed FlashCard object as an argument"));
+    expect(streaming_cb).not.toHaveBeenCalled();
+});
+
+test('ChatGPT class wrongAnswerGenerator method throws if the input card is missing the tags property', async () => {
+    const chatGPT = new ChatGPT(logger,envVars.parsed.OPENAI_SECRET_KEY);
+    const streaming_cb = jest.fn();
+    let testCard = new FlashCard(testFlashCard);
+    delete testCard.tags;
+    await expect(chatGPT.wrongAnswerGenerator(testCard, 3, streaming_cb)).rejects.toThrow(new Error("wrongAnswerGenerator requires a well constructed FlashCard object as an argument"));
+    expect(streaming_cb).not.toHaveBeenCalled();
+});
+
+test('ChatGPT class wrongAnswerGenerator method throws if the input card is missing the difficulty property', async () => {
+    const chatGPT = new ChatGPT(logger,envVars.parsed.OPENAI_SECRET_KEY);
+    const streaming_cb = jest.fn();
+    let testCard = new FlashCard(testFlashCard);
+    delete testCard.difficulty;
+    await expect(chatGPT.wrongAnswerGenerator(testCard, 3, streaming_cb)).rejects.toThrow(new Error("wrongAnswerGenerator requires a well constructed FlashCard object as an argument"));
+    expect(streaming_cb).not.toHaveBeenCalled();
+});
+
+// input card properties not strings, empty strings, null, undefined
+test('ChatGPT class wrongAnswerGenerator method throws if the input card question is not a string', async () => {
+    const chatGPT = new ChatGPT(logger,envVars.parsed.OPENAI_SECRET_KEY);
+    const streaming_cb = jest.fn();
+    let testCard = new FlashCard(testFlashCard);
+    testCard.question = 123;
+    await expect(chatGPT.wrongAnswerGenerator(testCard, 3, streaming_cb)).rejects.toThrow(new Error("wrongAnswerGenerator requires a well constructed FlashCard object as an argument"));
+    expect(streaming_cb).not.toHaveBeenCalled();
+});
+
+test('ChatGPT class wrongAnswerGenerator method throws if the input card question is an empty string', async () => {
+    const chatGPT = new ChatGPT(logger,envVars.parsed.OPENAI_SECRET_KEY);
+    const streaming_cb = jest.fn();
+    let testCard = new FlashCard(testFlashCard);
+    testCard.question = "";
+    await expect(chatGPT.wrongAnswerGenerator(testCard, 3, streaming_cb)).rejects.toThrow(new Error("wrongAnswerGenerator requires a well constructed FlashCard object as an argument"));
+    expect(streaming_cb).not.toHaveBeenCalled();
+});
+
+test('ChatGPT class wrongAnswerGenerator method throws if the input card answer is not a string', async () => {
+    const chatGPT = new ChatGPT(logger,envVars.parsed.OPENAI_SECRET_KEY);
+    const streaming_cb = jest.fn();
+    let testCard = new FlashCard(testFlashCard);
+    testCard.answer = 123;
+    await expect(chatGPT.wrongAnswerGenerator(testCard, 3, streaming_cb)).rejects.toThrow(new Error("wrongAnswerGenerator requires a well constructed FlashCard object as an argument"));
+    expect(streaming_cb).not.toHaveBeenCalled();
+});
+
+test('ChatGPT class wrongAnswerGenerator method throws if the input card answer is an empty string', async () => {
+    const chatGPT = new ChatGPT(logger,envVars.parsed.OPENAI_SECRET_KEY);
+    const streaming_cb = jest.fn();
+    let testCard = new FlashCard(testFlashCard);
+    testCard.answer = "";
+    await expect(chatGPT.wrongAnswerGenerator(testCard, 3, streaming_cb)).rejects.toThrow(new Error("wrongAnswerGenerator requires a well constructed FlashCard object as an argument"));
+    expect(streaming_cb).not.toHaveBeenCalled();
+});
+
+test('ChatGPT class wrongAnswerGenerator method throws if the input card collection is not a string', async () => {
+    const chatGPT = new ChatGPT(logger,envVars.parsed.OPENAI_SECRET_KEY);
+    const streaming_cb = jest.fn();
+    let testCard = new FlashCard(testFlashCard);
+    testCard.collection = 123;
+    await expect(chatGPT.wrongAnswerGenerator(testCard, 3, streaming_cb)).rejects.toThrow(new Error("wrongAnswerGenerator requires a well constructed FlashCard object as an argument"));
+    expect(streaming_cb).not.toHaveBeenCalled();
+});
+
+test('ChatGPT class wrongAnswerGenerator method throws if the input card collection is an empty string', async () => {
+    const chatGPT = new ChatGPT(logger,envVars.parsed.OPENAI_SECRET_KEY);
+    const streaming_cb = jest.fn();
+    let testCard = new FlashCard(testFlashCard);
+    testCard.collection = "";
+    await expect(chatGPT.wrongAnswerGenerator(testCard, 3, streaming_cb)).rejects.toThrow(new Error("wrongAnswerGenerator requires a well constructed FlashCard object as an argument"));
+    expect(streaming_cb).not.toHaveBeenCalled();
+});
+
+test('ChatGPT class wrongAnswerGenerator method throws if the input card tags is not an array of strings', async () => {
+    const chatGPT = new ChatGPT(logger,envVars.parsed.OPENAI_SECRET_KEY);
+    const streaming_cb = jest.fn();
+    let testCard = new FlashCard(testFlashCard);
+    testCard.tags = 123;
+    await expect(chatGPT.wrongAnswerGenerator(testCard, 3, streaming_cb)).rejects.toThrow(new Error("wrongAnswerGenerator requires a well constructed FlashCard object as an argument"));
+    expect(streaming_cb).not.toHaveBeenCalled();
+});
+
+test('ChatGPT class wrongAnswerGenerator method throws if the input card tags is an empty array of strings', async () => {
+    const chatGPT = new ChatGPT(logger,envVars.parsed.OPENAI_SECRET_KEY);
+    const streaming_cb = jest.fn();
+    let testCard = new FlashCard(testFlashCard);
+    testCard.tags = [];
+    await expect(chatGPT.wrongAnswerGenerator(testCard, 3, streaming_cb)).rejects.toThrow(new Error("wrongAnswerGenerator requires a well constructed FlashCard object as an argument"));
+    expect(streaming_cb).not.toHaveBeenCalled();
+});
+
+test('ChatGPT class wrongAnswerGenerator method throws if the input card tags is an array of non-strings and strings', async () => {
+    const chatGPT = new ChatGPT(logger,envVars.parsed.OPENAI_SECRET_KEY);
+    const streaming_cb = jest.fn();
+    let testCard = new FlashCard(testFlashCard);
+    testCard.tags = [123, "test"];
+    await expect(chatGPT.wrongAnswerGenerator(testCard, 3, streaming_cb)).rejects.toThrow(new Error("wrongAnswerGenerator requires a well constructed FlashCard object as an argument"));
+    expect(streaming_cb).not.toHaveBeenCalled();
+});
+
+test('ChatGPT class wrongAnswerGenerator method throws if the input card difficulty is not a number', async () => {
+    const chatGPT = new ChatGPT(logger,envVars.parsed.OPENAI_SECRET_KEY);
+    const streaming_cb = jest.fn();
+    let testCard = new FlashCard(testFlashCard);
+    testCard.difficulty = "test";
+    await expect(chatGPT.wrongAnswerGenerator(testCard, 3, streaming_cb)).rejects.toThrow(new Error("wrongAnswerGenerator requires a well constructed FlashCard object as an argument"));
+    expect(streaming_cb).not.toHaveBeenCalled();
+});
+
+test('ChatGPT class wrongAnswerGenerator method throws if the input card difficulty is an empty string', async () => {
+    const chatGPT = new ChatGPT(logger,envVars.parsed.OPENAI_SECRET_KEY);
+    const streaming_cb = jest.fn();
+    let testCard = new FlashCard(testFlashCard);
+    testCard.difficulty = "";
+    await expect(chatGPT.wrongAnswerGenerator(testCard, 3, streaming_cb)).rejects.toThrow(new Error("wrongAnswerGenerator requires a well constructed FlashCard object as an argument"));
+    expect(streaming_cb).not.toHaveBeenCalled();
+});
+
+test('ChatGPT class wrongAnswerGenerator method throws if the input card difficulty is null', async () => {
+    const chatGPT = new ChatGPT(logger,envVars.parsed.OPENAI_SECRET_KEY);
+    const streaming_cb = jest.fn();
+    let testCard = new FlashCard(testFlashCard);
+    testCard.difficulty = null;
+    await expect(chatGPT.wrongAnswerGenerator(testCard, 3, streaming_cb)).rejects.toThrow(new Error("wrongAnswerGenerator requires a well constructed FlashCard object as an argument"));
+    expect(streaming_cb).not.toHaveBeenCalled();
+});
+
+test('ChatGPT class wrongAnswerGenerator method throws if the input card difficulty is too high', async () => {
+    const chatGPT = new ChatGPT(logger,envVars.parsed.OPENAI_SECRET_KEY);
+    const streaming_cb = jest.fn();
+    let testCard = new FlashCard(testFlashCard);
+    testCard.difficulty = 100;
+    await expect(chatGPT.wrongAnswerGenerator(testCard, 3, streaming_cb)).rejects.toThrow(new Error("wrongAnswerGenerator requires a well constructed FlashCard object as an argument"));
+    expect(streaming_cb).not.toHaveBeenCalled();
+});
+
+test('ChatGPT class wrongAnswerGenerator method throws if the input card difficulty is too low', async () => {
+    const chatGPT = new ChatGPT(logger,envVars.parsed.OPENAI_SECRET_KEY);
+    const streaming_cb = jest.fn();
+    let testCard = new FlashCard(testFlashCard);
+    testCard.difficulty = 0;
+    await expect(chatGPT.wrongAnswerGenerator(testCard, 3, streaming_cb)).rejects.toThrow(new Error("wrongAnswerGenerator requires a well constructed FlashCard object as an argument"));
+    expect(streaming_cb).not.toHaveBeenCalled();
+});
+
+// number of wrong answers too high, too low, not a number, empty string, null, undefined
+test('ChatGPT class wrongAnswerGenerator method throws if the number of wrong answers is too high', async () => {
+    const chatGPT = new ChatGPT(logger,envVars.parsed.OPENAI_SECRET_KEY);
+    const streaming_cb = jest.fn();
+    await expect(chatGPT.wrongAnswerGenerator(testFlashCard, 100, streaming_cb)).rejects.toThrow(new Error("numberOfAnswers is not a number or is out of range."));
+    expect(streaming_cb).not.toHaveBeenCalled();
+});
+
+test('ChatGPT class wrongAnswerGenerator method throws if the number of wrong answers is too low', async () => {
+    const chatGPT = new ChatGPT(logger,envVars.parsed.OPENAI_SECRET_KEY);
+    const streaming_cb = jest.fn();
+    await expect(chatGPT.wrongAnswerGenerator(testFlashCard, 0, streaming_cb)).rejects.toThrow(new Error("numberOfAnswers is not a number or is out of range."));
+    expect(streaming_cb).not.toHaveBeenCalled();
+});
+
+test('ChatGPT class wrongAnswerGenerator method throws if the number of wrong answers is not a number', async () => {
+    const chatGPT = new ChatGPT(logger,envVars.parsed.OPENAI_SECRET_KEY);
+    const streaming_cb = jest.fn();
+    await expect(chatGPT.wrongAnswerGenerator(testFlashCard, "test", streaming_cb)).rejects.toThrow(new Error("numberOfAnswers is not a number or is out of range."));
+    expect(streaming_cb).not.toHaveBeenCalled();
+});
+
+test('ChatGPT class wrongAnswerGenerator method throws if the number of wrong answers is an empty string', async () => {
+    const chatGPT = new ChatGPT(logger,envVars.parsed.OPENAI_SECRET_KEY);
+    const streaming_cb = jest.fn();
+    await expect(chatGPT.wrongAnswerGenerator(testFlashCard, "", streaming_cb)).rejects.toThrow(new Error("numberOfAnswers is not a number or is out of range."));
+    expect(streaming_cb).not.toHaveBeenCalled();
+});
+
+test('ChatGPT class wrongAnswerGenerator method throws if the number of wrong answers is null', async () => {
+    const chatGPT = new ChatGPT(logger,envVars.parsed.OPENAI_SECRET_KEY);
+    const streaming_cb = jest.fn();
+    await expect(chatGPT.wrongAnswerGenerator(testFlashCard, null, streaming_cb)).rejects.toThrow(new Error("numberOfAnswers is not a number or is out of range."));
+    expect(streaming_cb).not.toHaveBeenCalled();
+});
+
+test('ChatGPT class wrongAnswerGenerator method throws if the number of wrong answers is undefined', async () => {
+    const chatGPT = new ChatGPT(logger,envVars.parsed.OPENAI_SECRET_KEY);
+    const streaming_cb = jest.fn();
+    await expect(chatGPT.wrongAnswerGenerator(testFlashCard, undefined, streaming_cb)).rejects.toThrow(new Error("numberOfAnswers is not a number or is out of range."));
+    expect(streaming_cb).not.toHaveBeenCalled();
+});
+
+
 
 /////////////////////////////////////////////////////////////
 // ChatGPT class interpretMathExpression method tests
@@ -550,9 +827,97 @@ test('ChatGPT class has a interpretMathExpression method', () => {
     expect(chatGPT.interpretMathExpression).toBeDefined();
 });
 
-// TODO: input expression not a string, empty string, null, undefined, array of strings, object
-// TODO: input expression not a math expression
-// TODO: result is not an array of math expressions
+test('ChatGPT class interpretMathExpression method returns an array of one math expression', async () => {
+    const chatGPT = new ChatGPT(logger,envVars.parsed.OPENAI_SECRET_KEY);
+    const result = await chatGPT.interpretMathExpression("-b+-sqrt(b^2-4ac)/2a");
+    expect(result).toBeDefined();
+    expect(result).toBeInstanceOf(Array);
+    expect(result.length).toBe(1);
+    for(let i = 0; i < result.length; i++) {
+        expect(result[i]).toBeDefined();
+        expect(typeof result[i]).toBe('string');
+        expect(result[i].length).toBeGreaterThan(0);
+        let regex = new RegExp(/\$\$.*?\$\$/);
+        let match = result[i].match(regex);
+        expect(match).not.toBeNull();
+        expect(match.length).toBe(1);
+    }
+}, 120000);
+
+test('ChatGPT class interpretMathExpression method returns an array of math expressions when the input is a string with multiple math expressions', async () => {
+    const chatGPT = new ChatGPT(logger,envVars.parsed.OPENAI_SECRET_KEY);
+    const result = await chatGPT.interpretMathExpression(["x^2 + 3x - 4 = 0", "2x^2 - 4x + 2 = 0","-b+-sqrt(b^2-4ac)/2a","integral((2pi*x^2)dx,0,1)"]);
+    expect(result).toBeDefined();
+    expect(result).toBeInstanceOf(Array);
+    expect(result.length).toBe(4);
+    for(let i = 0; i < result.length; i++) {
+        expect(result[i]).toBeDefined();
+        expect(typeof result[i]).toBe('string');
+        expect(result[i].length).toBeGreaterThan(0);
+        let regex = new RegExp(/\$\$.*?\$\$/);
+        let match = result[i].match(regex);
+        expect(match).not.toBeNull();
+        expect(match.length).toBe(1);
+    }
+}, 120000);
+
+// input expression not a string, empty string, null, undefined, object
+test('ChatGPT class interpretMathExpression method returns an empty array if the input expression is null', async () => {
+    const chatGPT = new ChatGPT(logger,envVars.parsed.OPENAI_SECRET_KEY);
+    const result = await chatGPT.interpretMathExpression(null);
+    expect(result).toBeDefined();
+    expect(result).toBeInstanceOf(Array);
+    expect(result.length).toBe(0);
+});
+
+test('ChatGPT class interpretMathExpression method returns an empty array if the input expression is undefined', async () => {
+    const chatGPT = new ChatGPT(logger,envVars.parsed.OPENAI_SECRET_KEY);
+    const result = await chatGPT.interpretMathExpression(undefined);
+    expect(result).toBeDefined();
+    expect(result).toBeInstanceOf(Array);
+    expect(result.length).toBe(0);
+});
+
+test('ChatGPT class interpretMathExpression method returns an empty array if the input expression is an empty string', async () => {
+    const chatGPT = new ChatGPT(logger,envVars.parsed.OPENAI_SECRET_KEY);
+    const result = await chatGPT.interpretMathExpression("");
+    expect(result).toBeDefined();
+    expect(result).toBeInstanceOf(Array);
+    expect(result.length).toBe(0);
+});
+
+test('ChatGPT class interpretMathExpression method returns an empty array if the input expression is not a string', async () => {
+    const chatGPT = new ChatGPT(logger,envVars.parsed.OPENAI_SECRET_KEY);
+    const result = await chatGPT.interpretMathExpression(123);
+    expect(result).toBeDefined();
+    expect(result).toBeInstanceOf(Array);
+    expect(result.length).toBe(0);
+});
+
+test('ChatGPT class interpretMathExpression method returns an empty array if the input expression is an object', async () => {
+    const chatGPT = new ChatGPT(logger,envVars.parsed.OPENAI_SECRET_KEY);
+    const result = await chatGPT.interpretMathExpression({});
+    expect(result).toBeDefined();
+    expect(result).toBeInstanceOf(Array);
+    expect(result.length).toBe(0);
+});
+
+// input expression not a math expression
+test('ChatGPT class interpretMathExpression method returns an empty array if the input expression is not a math expression', async () => {
+    const chatGPT = new ChatGPT(logger,envVars.parsed.OPENAI_SECRET_KEY);
+    const result = await chatGPT.interpretMathExpression("test");
+    expect(result).toBeDefined();
+    expect(result).toBeInstanceOf(Array);
+    expect(result.length).toBe(0);
+},120000);
+
+test('ChatGPT class interpretMathExpression method returns an empty array if the input array contains an expression that is not a math expression', async () => {
+    const chatGPT = new ChatGPT(logger,envVars.parsed.OPENAI_SECRET_KEY);
+    const result = await chatGPT.interpretMathExpression(["x^2 + 3x - 4 = 0", "2x^2 - 4x + 2 = 0","-b+-sqrt(b^2-4ac)/2a","test"]);
+    expect(result).toBeDefined();
+    expect(result).toBeInstanceOf(Array);
+    expect(result.length).toBe(0);
+},120000);
 
 /////////////////////////////////////////////////////////////
 // ChatGPT class parseGPTjsonResponse method tests

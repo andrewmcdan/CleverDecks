@@ -1,6 +1,6 @@
 {
   "name": "CleverDecks",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "Intro to SWE Group 4 Project - CleverDecks",
   "main": "index.js",
   "bin": {

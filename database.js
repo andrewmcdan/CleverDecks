@@ -38,36 +38,36 @@ class FlashCardCollection {
      * @sideEffects - logs a message to the console
      */
     constructor(name, filePath, logger, largestId = 0) {
-        if(logger === undefined || logger === null) throw new Error("Logger is required");
+        if(logger === undefined) throw new Error("Logger is required");
         this.logger = logger;
         this.name = name;
-        this.logger.log("Creating flash card collection: " + name, "debug");
-        this.logger.log("File path (268): " + filePath, "trace");
+        this.logger?.log("Creating flash card collection: " + name, "debug");
+        this.logger?.log("File path (268): " + filePath, "trace");
         this.cards = [];
         this.largestId = largestId;
         this.filePath = filePath;
-        this.logger.log("File path (272): " + this.filePath, "trace");
+        this.logger?.log("File path (272): " + this.filePath, "trace");
         // adjust the file path for the environment
         // this.filePath = adjustPathForPKG(this.filePath);
         if (!this.loadCollection()) {
-            this.logger.log("Flash card collection not found (380): " + name, "warn");
+            this.logger?.log("Flash card collection not found (380): " + name, "warn");
             // throw new Error("Flash card collection not found: " + name);
         }
     }
 
     // this method moved into the FlashCardDatabase class
     // moveCollectionLocation(newPath) {
-    //     this.logger.log("Moving flash card collection: " + this.name + " to " + newPath, "debug");
+    //     this.logger?.log("Moving flash card collection: " + this.name + " to " + newPath, "debug");
     //     if(fs.existsSync(newPath)) {
     //         try{
-    //             this.logger.log("File already exists, renaming to .bak", "debug");
+    //             this.logger?.log("File already exists, renaming to .bak", "debug");
     //             fs.renameSync(newPath, newPath + ".bak");
     //         }catch(err){
-    //             this.logger.log("Error renaming file: " + err, "error");
+    //             this.logger?.log("Error renaming file: " + err, "error");
     //         }
     //     }
     //     fs.renameSync(this.filePath, newPath);
-    //     this.logger.log("File moved", "debug");
+    //     this.logger?.log("File moved", "debug");
     // }
 
     /**
@@ -80,21 +80,21 @@ class FlashCardCollection {
      * @sideEffects - sets the largestId property to the largest id number used so far
      */
     loadCollection() {
-        this.logger.log("Loading flash card collection: " + this.name, "debug");
-        this.logger.log("File path: " + this.filePath, "trace");
+        this.logger?.log("Loading flash card collection: " + this.name, "debug");
+        this.logger?.log("File path: " + this.filePath, "trace");
         if (fs.existsSync(this.filePath)) {
             let data = fs.readFileSync(this.filePath, 'utf8');
             let backupPath = this.filePath + "-" + (new Date().toLocaleString().replace(/:/g, '-').replace(/ /g, '_').replace(/\//g, '-')) + '.bak';
             try {
                 fs.copyFileSync(this.filePath, backupPath);
-                this.logger.log("Created backup of " + this.filePath, "debug");
+                this.logger?.log("Created backup of " + this.filePath, "debug");
                 // delete old backups. We keep the 2 most recent backups
                 let metadataFolder = path.join(os.homedir(), 'CleverDecks', 'flashcards');
                 let files = fs.readdirSync(path.join(metadataFolder));
                 files = files.filter((file) => file.startsWith(this.name + '.json-'));
                 if (files.length > 2) {
                     // delete the oldest backups. We keep the 2 most recent backups
-                    this.logger.log("Deleting old backups of " + this.name + ".json", "debug");
+                    this.logger?.log("Deleting old backups of " + this.name + ".json", "debug");
                     // sort the files by creation date
                     files.sort((a, b) => {
                         let aDate = new Date(a.split('-').pop().split('.').shift().replace(/_/g, ' '));
@@ -106,28 +106,28 @@ class FlashCardCollection {
                     }
                 }
             } catch (err) {
-                this.logger.log("Error creating backup of " + this.name + ".json: " + err, "error");
+                this.logger?.log("Error creating backup of " + this.name + ".json: " + err, "error");
             }
             try {
                 let cards = JSON.parse(data);
-                this.logger.log("Loaded flash card collection: " + this.name, "debug");
+                this.logger?.log("Loaded flash card collection: " + this.name, "debug");
                 cards.forEach((card) => {
                     let newCard;
                     try {
                         newCard = new FlashCard(card);
                     } catch (err) {
-                        this.logger.log("Error loading flash card: " + card.id + " - " + err, "error");
+                        this.logger?.log("Error loading flash card: " + card.id + " - " + err, "error");
                     }
                     newCard.id = ++this.largestId;
                     this.cards.push(newCard);
                 });
                 return true;
             } catch (err) {
-                this.logger.log("Error loading flash card collection: " + this.name + " - " + err, "error");
+                this.logger?.log("Error loading flash card collection: " + this.name + " - " + err, "error");
                 return false;
             }
         } else {
-            this.logger.log("Flash card collection not found (415): " + this.name, "warn");
+            this.logger?.log("Flash card collection not found (415): " + this.name, "warn");
             return false;
         }
     }
@@ -160,11 +160,11 @@ class FlashCardCollection {
      */
     updateCard(cardData) {
         if (cardData.collection !== this.name) {
-            this.logger.log("Card does not belong to this collection: " + this.name, "error");
+            this.logger?.log("Card does not belong to this collection: " + this.name, "error");
             return false;
         }
         if (cardData.id === undefined || cardData.id === null) {
-            this.logger.log("Card id is required to update a card", "error");
+            this.logger?.log("Card id is required to update a card", "error");
             return false;
         }
         let index = this.cards.findIndex(card => card.id === cardData.id);
@@ -172,7 +172,7 @@ class FlashCardCollection {
             this.cards[index] = cardData;
             return this.saveCollection();
         } else {
-            this.logger.log("Card not found in collection: " + this.name, "error");
+            this.logger?.log("Card not found in collection: " + this.name, "error");
             return false;
         }
     }
@@ -188,11 +188,11 @@ class FlashCardCollection {
      */
     deleteCard(cardID) {
         if (cardID === undefined || cardID === null) {
-            this.logger.log("Card id is required to delete a card", "error");
+            this.logger?.log("Card id is required to delete a card", "error");
             return false;
         }
         if (cardData.collection !== this.name) {
-            this.logger.log("Card does not belong to this collection: " + this.name, "error");
+            this.logger?.log("Card does not belong to this collection: " + this.name, "error");
             return false;
         }
         let index = this.cards.findIndex(card => card.id === cardID);
@@ -200,7 +200,7 @@ class FlashCardCollection {
             this.cards.splice(index, 1);
             return this.saveCollection();
         } else {
-            this.logger.log("Card not found in collection: " + this.name, "error");
+            this.logger?.log("Card not found in collection: " + this.name, "error");
             return false;
         }
     }
@@ -214,14 +214,14 @@ class FlashCardCollection {
      * @sideEffects - logs a message to the console
      */
     saveCollection() {
-        this.logger.log("Saving flash card collection: " + this.name, "debug");
-        this.logger.log("File path: " + this.filePath, "trace");
+        this.logger?.log("Saving flash card collection: " + this.name, "debug");
+        this.logger?.log("File path: " + this.filePath, "trace");
         try {
             fs.writeFileSync(this.filePath, JSON.stringify(this.cards, null, 2), 'utf8');
-            this.logger.log("Saved flash card collection: " + this.name, "debug");
+            this.logger?.log("Saved flash card collection: " + this.name, "debug");
             return true;
         } catch (err) {
-            this.logger.log("Error saving flash card collection: " + this.name + " - " + err, "error");
+            this.logger?.log("Error saving flash card collection: " + this.name + " - " + err, "error");
             return false;
         }
     }
@@ -235,7 +235,7 @@ class FlashCardCollection {
      * @sideEffects - logs a message to the console
      */
     getCardById(id) {
-        this.logger.log("Getting card by id: " + id, "debug");
+        this.logger?.log("Getting card by id: " + id, "debug");
         return this.cards.find(card => card.id == id);
     }
 
@@ -292,7 +292,7 @@ class FlashCardDatabase {
      * @returns - a FlashCardDatabase object
      */
     constructor(logger) {
-        if(logger === undefined || logger === null) throw new Error("Logger is required");
+        if(logger === undefined) throw new Error("Logger is required");
         this.logger = logger;
         this.collections = [];
         this.largestId = 0;
@@ -321,13 +321,13 @@ class FlashCardDatabase {
             let backupPath = path.join(metadataFolder, 'metadata.json-' + (new Date().toLocaleString().replace(/:/g, '-').replace(/ /g, '_').replace(/\//g, '-') + '.bak'));
             try {
                 fs.copyFileSync(metadataPath, backupPath);
-                this.logger.log("Created backup of metadata.json", "debug");
+                this.logger?.log("Created backup of metadata.json", "debug");
                 // delete old backups. We keep the 5 most recent backups
                 let files = fs.readdirSync(path.join(metadataFolder));
                 files = files.filter((file) => file.startsWith('metadata.json-'));
                 if (files.length > 5) {
                     // delete the oldest backups
-                    this.logger.log("Deleting old backups of metadata.json", "debug");
+                    this.logger?.log("Deleting old backups of metadata.json", "debug");
                     // sort the files by creation date
                     files.sort((a, b) => {
                         let aDate = new Date(a.split('-').pop().split('.').shift().replace(/_/g, ' '));
@@ -339,11 +339,11 @@ class FlashCardDatabase {
                     }
                 }
             } catch (err) {
-                this.logger.log("Error creating backup of metadata.json: " + err, "error");
+                this.logger?.log("Error creating backup of metadata.json: " + err, "error");
             }
             try {
                 let collections = JSON.parse(data);
-                this.logger.log("Loaded flash card collections metadata.json", "debug");
+                this.logger?.log("Loaded flash card collections metadata.json", "debug");
                 collections.forEach((collection) => {
                     let newCollection = new FlashCardCollection(collection.name, collection.path, this.logger, this.largestId);
                     if (newCollection.largestId > this.largestId) this.largestId = newCollection.largestId;
@@ -354,15 +354,15 @@ class FlashCardDatabase {
                     });
                     this.collections.push(newCollection);
                 });
-                this.logger.log("Alltags: \n" + JSON.stringify(this.allTags, 2, null), "debug");
+                this.logger?.log("Alltags: \n" + JSON.stringify(this.allTags, 2, null), "debug");
                 return true;
             } catch (err) {
-                this.logger.log("Error loading flash card collections: " + err, "error");
+                this.logger?.log("Error loading flash card collections: " + err, "error");
                 return false;
             }
         } else {
-            this.logger.log("Flash card collections metadata.json not found", "warn");
-            this.logger.log("Creating new flash card collections metadata.json", "debug");
+            this.logger?.log("Flash card collections metadata.json not found", "warn");
+            this.logger?.log("Creating new flash card collections metadata.json", "debug");
             // get current directory
             if (!fs.existsSync(metadataFolder)) {
                 // recursively create the directory
@@ -440,7 +440,7 @@ class FlashCardDatabase {
      * @notes - This method gets an array of collection names from the collections in the database 
      */
     getCollectionNames() {
-        this.logger.log("Getting collection names", "debug");
+        this.logger?.log("Getting collection names", "debug");
         let names = [];
         if (this.collections === undefined || this.collections === null || this.collections.length == 0) return names;
         this.collections.forEach((collection) => {
@@ -460,12 +460,12 @@ class FlashCardDatabase {
      * @notes - This method adds a card to the database by calling the addCard method of the FlashCardCollection class.
      */
     addCard(cardData) {
-        this.logger.log("Adding card to database (711):", "debug");
-        this.logger.log(JSON.stringify(cardData, 2, null), "debug");
+        this.logger?.log("Adding card to database (711):", "debug");
+        this.logger?.log(JSON.stringify(cardData, 2, null), "debug");
         let collection = this.collections.find(collection => collection.name === cardData.collection);
         if (collection === undefined) {
             // add a new collection
-            this.logger.log("Collection not found (715): " + cardData.collection, "warn");
+            this.logger?.log("Collection not found (715): " + cardData.collection, "warn");
             let metadataFolder = path.join(os.homedir(), 'CleverDecks', 'flashcards');
             collection = new FlashCardCollection(cardData.collection, path.join(metadataFolder, cardData.collection + '.json'), this.logger);
             this.collections.push(collection);
@@ -492,7 +492,7 @@ class FlashCardDatabase {
         let collection = this.collections.find(collection => collection.name === cardData.collection);
         if (collection === undefined) {
             let newPath = path.join(__dirname, 'flashcards', cardData.collection + '.json');
-            this.logger.log("New path (655): " + path, "debug");
+            this.logger?.log("New path (655): " + path, "debug");
             // add a new collection
             collection = new FlashCardCollection(cardData.collection, newPath, this.logger);
             this.collections.push(collection);
@@ -521,7 +521,7 @@ class FlashCardDatabase {
         // TODO: if the collection is empty, delete the collection
         let collection = this.collections.find(collection => collection.name === cardData.collection);
         if (collection === undefined) {
-            this.logger.log("Collection not found (760): " + cardData.collection, "error");
+            this.logger?.log("Collection not found (760): " + cardData.collection, "error");
             return false;
         }
         this.saveCollections(true);
@@ -546,7 +546,7 @@ class FlashCardDatabase {
     getCards(params) {
         let collection = this.collections.find(collection => collection.name === params.collection);
         if (collection === undefined) {
-            this.logger.log("Collection not found (785): " + params.collection, "warn");
+            this.logger?.log("Collection not found (785): " + params.collection, "warn");
             return [];
         }
         return collection.getCards(params);
@@ -568,14 +568,14 @@ class FlashCardDatabase {
      * @notes - This method gets the number of cards that match the given parameters from the collections in the database.
      */
     getCountOfCards(params) {
-        this.logger.log("Getting count of cards", "debug");
-        this.logger.log("Params: " + JSON.stringify(params), "trace");
+        this.logger?.log("Getting count of cards", "debug");
+        this.logger?.log("Params: " + JSON.stringify(params), "trace");
         let collection = this.collections.find(collection => collection.name === params.collection);
         if (collection === undefined) {
-            this.logger.log("Collection not found (609): " + params.collection, "warn");
+            this.logger?.log("Collection not found (609): " + params.collection, "warn");
             return 0;
         }
-        this.logger.log("Collection found (612): " + collection.name, "debug");
+        this.logger?.log("Collection found (612): " + collection.name, "debug");
         return collection.getCards(params).length;
     }
 
@@ -588,7 +588,7 @@ class FlashCardDatabase {
      * @notes - This method gets the number of all the cards in the database.
      */
     getCountOfAllCards() {
-        this.logger.log("Getting count of all cards", "debug");
+        this.logger?.log("Getting count of all cards", "debug");
         let count = 0;
         this.collections.forEach((collection) => {
             count += collection.cards.length;

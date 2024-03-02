@@ -1,6 +1,8 @@
+const e = require("express");
 const ai = require("openai");
 const flashCardMaxDifficulty = 5;
 const maxNumberOfCardsToGenerate = 50;
+const maxNumberOfWrongAnswersToGenerate = 10;
 /**
  * @class ChatGPT
  * @description - a class to interface with OpenAI's GPT-4 chatbot
@@ -20,7 +22,7 @@ const maxNumberOfCardsToGenerate = 50;
 class ChatGPT {
     constructor(logger, key) {
         this.openai = null;
-        if(logger === undefined || logger === null) throw new Error("ChatGPT constructor requires a logger object as an argument");
+        if (logger === undefined) throw new Error("ChatGPT constructor requires a logger object as an argument");
         this.logger = logger;
         this.setApiKey(key);
     }
@@ -63,12 +65,12 @@ class ChatGPT {
             this.logger?.log("OpenAI API key not found", "error");
             return "";
         }
-        if(inputText === undefined || inputText === null || typeof inputText !== 'string' || inputText === "") {
+        if (inputText === undefined || inputText === null || typeof inputText !== 'string' || inputText === "") {
             this.logger?.log("generateResponse requires a string as an argument", "error");
             return "";
         }
         if (stream_enabled) {
-            if (typeof stream_cb !== 'function') stream_cb = (chunk) => this.logger?.log(chunk,"trace");
+            if (typeof stream_cb !== 'function') stream_cb = (chunk) => this.logger?.log(chunk, "trace");
             if (typeof completion_cb !== 'function') completion_cb = (response) => this.logger?.log(response, "trace");
             let response = "";
             const stream = await this.openai?.chat.completions.create({
@@ -137,11 +139,11 @@ class ChatGPT {
             this.logger?.log("streamingData_cb is not a function. Using default streaming data callback", "warn");
             streamingData_cb = null;
         }
-        if(difficulty === undefined || difficulty === null || typeof difficulty !== 'number' || difficulty < 1 || difficulty > flashCardMaxDifficulty) {
+        if (difficulty === undefined || difficulty === null || typeof difficulty !== 'number' || difficulty < 1 || difficulty > flashCardMaxDifficulty) {
             this.logger?.log("Difficulty is not a number or is out of range.", "error");
             return null;
         }
-        if(numberOfCardsToGenerate === undefined || numberOfCardsToGenerate === null || typeof numberOfCardsToGenerate !== 'number' || numberOfCardsToGenerate < 1 || numberOfCardsToGenerate > maxNumberOfCardsToGenerate) {
+        if (numberOfCardsToGenerate === undefined || numberOfCardsToGenerate === null || typeof numberOfCardsToGenerate !== 'number' || numberOfCardsToGenerate < 1 || numberOfCardsToGenerate > maxNumberOfCardsToGenerate) {
             this.logger?.log("numberOfCardsToGenerate is not a number or is out of range.", "error");
             return null;
         }
@@ -167,13 +169,36 @@ class ChatGPT {
      */
     async wrongAnswerGenerator(card, numberOfAnswers, streamingData_cb) {
         // TODO: rework this to return a promise instead of using async / await
-        if (card === undefined || card === null) {
-            this.logger?.log("wrongAnswerGenerator requires a FlashCard object as an argument", "error");
-            throw new Error("wrongAnswerGenerator requires a FlashCard object as an argument");
+        const cardValidator = (card) => {
+            if (card === undefined || card === null || typeof card !== 'object') return false;
+            if (!card.hasOwnProperty("question") || !card.hasOwnProperty("answer") || !card.hasOwnProperty("tags") || !card.hasOwnProperty("collection") || !card.hasOwnProperty("difficulty")) return false;
+            if (!Array.isArray(card.tags) || card.tags.length === 0) return false;
+            let valid = true;
+            for (let i = 0; i < card.tags.length; i++) {
+                if (typeof card.tags[i] !== 'string' || card.tags[i] === "") valid = false;
+            }
+            if (!valid) return false;
+            if (typeof card.question !== 'string' || card.question === "") return false;
+            if (typeof card.answer !== 'string' || card.answer === "") return false;
+            if (typeof card.collection !== 'string' || card.collection === "") return false;
+            if (typeof card.difficulty !== 'number' || card.difficulty < 1 || card.difficulty > flashCardMaxDifficulty) return false;
+            return true;
+        };
+
+        if (!cardValidator(card)) {
+            this.logger?.log("wrongAnswerGenerator requires a well constructed FlashCard object as an argument", "error");
+            throw new Error("wrongAnswerGenerator requires a well constructed FlashCard object as an argument");
         }
         if (typeof streamingData_cb !== 'function') {
             this.logger?.log("streamingData_cb is not a function. Using default streaming data callback", "warn");
-            streamingData_cb = (chunk) => process.stdout.write(chunk);
+            streamingData_cb = null;
+        }
+        numberOfAnswers = parseInt(numberOfAnswers);
+        if (Number.isNaN(numberOfAnswers) ||
+            numberOfAnswers < 1 ||
+            numberOfAnswers > maxNumberOfWrongAnswersToGenerate) {
+            this.logger?.log("numberOfAnswers is not a number or is out of range.", "error");
+            throw new Error("numberOfAnswers is not a number or is out of range.");
         }
         let prompt = "Please generate " + numberOfAnswers + " wrong answers for the following flash card: \n";
         prompt += "Card front: " + card.question + "\nCorrect answer: " + card.answer + "\n";
@@ -195,25 +220,75 @@ class ChatGPT {
      * @returns {Array} - an array of MathML expressions wrapped in $$...$$ delimiters
      * @throws {Error} - if the expression is not a string or an array of strings
      */
+    // TODO: add a callback for streaming data / progress as this could take a long time for a large number of expressions
     async interpretMathExpression(expression) {
-        let prompt = "Please convert the following mathematical expression(s) into LaTeX expression(s) for use in MathJax and wrap them in $$...$$ delimiters. I only need the wrapped expressions, nothing else.\n";
-        if(Array.isArray(expression)) {
-            for(let i = 0; i < expression.length; i++) {
-                prompt += expression[i] + "\n";
+        const checkIfMathExpression = async (str) => {
+            const numberOfTimesToCheck = 4; // check 4 times and take the majority vote to determine if the string is a math expression. This is to reduce the chance of false positives / negatives
+            this.logger?.log("Checking if the string is a math expression...", "debug");
+            let question = "Is \"" + str + "\" a math expression? please only respond with one word: \"yes\" or \"no\"";
+            let waiterArray = []; // This array will hold the promises that will resolve when the responses are received. This allows all the requests to run in parallel.
+            let responses = [];
+            for(let i = 0; i < numberOfTimesToCheck; i++) {
+                waiterArray.push(new Promise(async (resolve) => {
+                    await this.generateResponse(question, true, () => { }, (res) => { responses.push(res); resolve(); });
+                }));
             }
-        } else if(typeof expression === 'string') {
-            prompt += expression;
-        } else {
-            throw new Error("interpretMathExpression requires a string or an array of strings as an argument");
+            await Promise.all(waiterArray);
+            let yes = 0;
+            let no = 0;
+            for (let i = 0; i < responses.length; i++) {
+                if (responses[i].toLowerCase() === "yes") yes++;
+                if (responses[i].toLowerCase() === "no") no++;
+            }
+            let response = (yes > no) ? "yes" : "no";
+            if (response.toLowerCase() === "no") return false;
+            if (response.toLowerCase() === "yes") return true;
+        };
+        if (expression === undefined || expression === null) {
+            this.logger?.log("interpretMathExpression requires a string or an array of strings as an argument", "error");
+            return [];
         }
-        // let response = "";
-        this.logger?.log("Interpreting math expression(s)...");
-        let response = await this.generateResponse(prompt, false, () => {}, (res) => { response = res; });
+        let prompt = "Please convert the following mathematical expression(s) into LaTeX expression(s) for use in MathJax and wrap them in $$...$$ delimiters. I only need the wrapped expressions, nothing else.\n";
+        if (Array.isArray(expression)) {
+            let isEmpty = true;
+            // TODO: rework this to use promises so that checkIfMathExpression can run in parallel
+            for (let i = 0; i < expression.length; i++) {
+                if (typeof expression[i] === 'string' && expression[i].length > 0) isEmpty = false;
+                if (await checkIfMathExpression(expression[i])) prompt += expression[i] + "\n";
+                else {
+                    this.logger?.log("One or more strings is not a valid mathematical expression: " + expression[i], "error");
+                    return [];
+                }
+            }
+            if (isEmpty) {
+                this.logger?.log("interpretMathExpression requires a string or an array of strings as an argument", "error");
+                return [];
+            }
+        } else if (typeof expression === 'string') {
+            if (expression !== "") {
+                if (await checkIfMathExpression(expression)) {prompt += expression;
+                }
+                else {
+                    this.logger?.log("interpretMathExpression requires a string or an array of strings as an argument", "error");
+                    return [];
+                }
+            }
+            else {
+                this.logger?.log("interpretMathExpression requires a string or an array of strings as an argument", "error");
+                return [];
+            }
+        } else {
+            this.logger?.log("interpretMathExpression requires a string or an array of strings as an argument", "error");
+            return [];
+        }
+
+        this.logger?.log("Interpreting math expression(s)...", "debug");
+        let response = await this.generateResponse(prompt, false, () => { }, () => { });
         // read through response and find the MathML expressions
         let returnedExpressions = [];
         let start = response.indexOf("$$");
         let end = response.indexOf("$$", start + 2);
-        while(start >= 0 && end > start) {
+        while (start >= 0 && end > start) {
             returnedExpressions.push(response.substring(start, end + 2));
             start = response.indexOf("$$", end + 2);
             end = response.indexOf("$$", start + 2);

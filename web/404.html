@@ -4,6 +4,12 @@
     </head>
     <body>
         <h1>Not Found</h1>
-        <p>The requested URL was not found on this server.</p>
+        <p>The requested URL (<b id="url"></b>) was not found on this server.</p>
+        <p><a href="/web/index.html">CleverDecks Home</a></p>
     </body>
+    <script>
+        let urlArgs = new URLSearchParams(window.location.search);
+        let originalUrl = urlArgs.get('originalUrl');
+        document.getElementById('url').innerText = originalUrl;
+    </script>
 </html>
