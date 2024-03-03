@@ -822,6 +822,7 @@ test('ChatGPT class wrongAnswerGenerator method throws if the number of wrong an
 /////////////////////////////////////////////////////////////
 // ChatGPT class interpretMathExpression method tests
 /////////////////////////////////////////////////////////////
+const mathExpArr = ["x=(-b+-sqrt(b^2-4ac))/2a", "ax^2+bx+c=0", "integral of(x^2)dx", "derivative of(x^2)", "sum of(1,2,3,4,5,6,7,8,9,10)", "integral of(x^2)dx from 0 to 1", "limit of(x^2) as x approaches 0","x^2 + 3x - 4 = 0", "2x^2 - 4x + 2 = 0","-b+-sqrt(b^2-4ac)/2a","integral((2pi*x^2)dx,0,1)"];
 test('ChatGPT class has a interpretMathExpression method', () => {
     const chatGPT = new ChatGPT(logger, envVars.parsed.OPENAI_SECRET_KEY);
     expect(chatGPT.interpretMathExpression).toBeDefined();
@@ -829,7 +830,7 @@ test('ChatGPT class has a interpretMathExpression method', () => {
 
 test('ChatGPT class interpretMathExpression method returns an array of one math expression', async () => {
     const chatGPT = new ChatGPT(logger,envVars.parsed.OPENAI_SECRET_KEY);
-    const result = await chatGPT.interpretMathExpression("-b+-sqrt(b^2-4ac)/2a");
+    const result = await chatGPT.interpretMathExpression(mathExpArr[0]);
     expect(result).toBeDefined();
     expect(result).toBeInstanceOf(Array);
     expect(result.length).toBe(1);
@@ -844,12 +845,12 @@ test('ChatGPT class interpretMathExpression method returns an array of one math 
     }
 }, 120000);
 
-test('ChatGPT class interpretMathExpression method returns an array of math expressions when the input is a string with multiple math expressions', async () => {
+test('ChatGPT class interpretMathExpression method returns an array of math expressions when the input is a an array of strings with multiple math expressions', async () => {
     const chatGPT = new ChatGPT(logger,envVars.parsed.OPENAI_SECRET_KEY);
-    const result = await chatGPT.interpretMathExpression(["x^2 + 3x - 4 = 0", "2x^2 - 4x + 2 = 0","-b+-sqrt(b^2-4ac)/2a","integral((2pi*x^2)dx,0,1)"]);
+    const result = await chatGPT.interpretMathExpression(mathExpArr);
     expect(result).toBeDefined();
     expect(result).toBeInstanceOf(Array);
-    expect(result.length).toBe(4);
+    expect(result.length).toBe(mathExpArr.length);
     for(let i = 0; i < result.length; i++) {
         expect(result[i]).toBeDefined();
         expect(typeof result[i]).toBe('string');

@@ -34,8 +34,10 @@
             <div id="cardCount">
                 
             </div>
+            <div id="totalCardCount">
+
+            </div>
         </div>
-        
         <footer>
             <p>
                 <div class="footer-content">
@@ -78,13 +80,14 @@
 
         socket.on('message', (message) => {
             console.log('Received message:', message);
-            if (message.type in socketMessageHandlers) {
+            if (message?.type in socketMessageHandlers) {
                 socketMessageHandlers[message.type](message.data);
             }
         });
 
         ////////////////// TESTING //////////////////
         let cardCountDiv = document.getElementById('cardCount');
+        let totalCardCountDiv = document.getElementById('totalCardCount');
         let cardCountDivHTML = "";
         let cardCount = 0;
         fetch('../api/getCollections').then((response) => {
@@ -94,6 +97,7 @@
             let collectionCount = data.collections.length;
             cardCountDivHTML += `<p>There are ${collectionCount} collections available to study.</p>`;
             console.log({collectionCount});
+            totalCardCountDiv.innerHTML = `<p>There are ${cardCount} total cards available to study.</p>`;
             for (let i = 0; i < collectionCount; i++) {
                 fetch(`../api/getCards?collection=${data.collections[i]}&numberOfCards=20`).then((response) => {
                     return response.json();
@@ -106,13 +110,12 @@
                 }).finally(() => {
                     console.log({cardCount});
                     cardCountDiv.innerHTML = cardCountDivHTML;
-                    if(i === collectionCount - 1) {
-                        cardCountDivHTML += `<p>There are ${cardCount} cards total available to study.</p>`;
-                        cardCountDiv.innerHTML = cardCountDivHTML;
-                    }
+                    totalCardCountDiv.innerHTML = `<p>There are ${cardCount} total cards available to study.</p>`;
                 });
             }
         });
+
+        
         // TODO: delete this testText ///////////////////////////////////////////
         let testText = `
 Page 1: Introduction to Physics

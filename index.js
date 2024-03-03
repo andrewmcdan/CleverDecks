@@ -1,6 +1,3 @@
-// TODO: Move the flashcard database to database.js. This includes the FlashCardCollection and FlashCardDatabase classes. Once that is done, tests can be written for the database.
-
-
 // const os = require('node:os');
 const express = require('express');
 const http = require('http');
@@ -11,8 +8,6 @@ const server = http.createServer(app);
 const io = socketio(server);
 const port = 3000;
 const path = require('path');
-// const fs = require('fs');
-// const fuzzyMatch = require('fastest-levenshtein');
 const commonClasses = require('./web/common.js');
 const FlashCard = commonClasses.FlashCard;
 
@@ -31,27 +26,10 @@ const logger = logLevelNumber>0?new Logger(consoleLogging, logLevel):null; // cr
 ///////////////////////////////////////////////////////////////////// ChatGPT /////////////////////////////////////////////////////////////////////////////////////////
 const ChatGPT = require('./chatGPT.js');
 const chatbot = new ChatGPT(logger, process.env.OPENAI_SECRET_KEY);
-//////////////////////////// TESTING ///////////////////////////////////
-
-(async () => {
-    let mathExp = ["x=(-b+-sqrt(b^2-4ac))/2a", "ax^2+bx+c=0", "integral of(x^2)dx", "derivative of(x^2)", "sum of(1,2,3,4,5,6,7,8,9,10)", "integral of(x^2)dx from 0 to 1", "limit of(x^2) as x approaches 0"];
-    let res2 = await chatbot.interpretMathExpression(mathExp);
-    logger?.log("//////////////////////////////////////////////////////////////////////////////")
-    logger?.log(mathExp);
-    logger?.log(res2);
-    if (res2.length === mathExp.length) {
-        logger?.log("All math expressions appear to have been interpreted correctly", "debug");
-    }
-    logger?.log("//////////////////////////////////////////////////////////////////////////////")
-})();
-/////////////////// END TESTING /////////////////////////////////
-
+//////////////////////////////////////////////////////////////// FlashCardDatabase ////////////////////////////////////////////////////////////////////////////////////
 const FlashCardDatabase = require('./database.js');
 const flashcard_db = new FlashCardDatabase(logger);
-
-//////////////////////////////////////////////////////
-// Server endpoints
-//////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////// Server endpoints /////////////////////////////////////////////////////////////////////////////////////
 
 // endpoint: /api/getCards
 // Type: GET
@@ -421,8 +399,6 @@ function adjustPathForPKG(filePath) {
     return filePath;
 }
 
-
-
 /**
  * @function updateEnvFile
  * @description - updates the .env file with the given key / value pair
@@ -504,7 +480,6 @@ function updateEnvFile(key, value) {
     browseURL('http://localhost:3000/');
 })();
 
-
 // When the app is closed, finalize the logger
 const EXIT = () => {
     logger?.log("Saving FlashCards...", "info");
@@ -519,4 +494,4 @@ process.on('SIGINT', EXIT);
 process.on('SIGTERM', EXIT);
 process.on('uncaughtException', EXIT);
 process.on('SIGHUP', EXIT);
-process.on('exit', () => {}); // This is necessary to prevent the process from exiting immediately after the exit event is emitted
+process.on('exit', () => {});
