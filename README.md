@@ -38,6 +38,9 @@ npm start
 ```
 6. Point your browser at http://localhost:3000/ if it doesn't automatically open
 
+## Running Tests
+This is pretty easy, just run 'npm test' at the command prompt. All the tests defined in the tests folder will be executed.
+
 ## Run the binary
 If you just want to run it, download the precompiled binary (if it is available), run it, and point your browser to http://localhost:3000/ (if it doesn't automatically open)
 
