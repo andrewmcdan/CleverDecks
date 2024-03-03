@@ -44,7 +44,7 @@ npm start
 ## Running Tests
 This is pretty easy, just run 'npm test' at the command prompt. All the tests defined in the tests folder will be executed.
 
-To run one set of tests, like, the tests for the chatGPT class, run 'jest chatGPT' (jest is the testing framework). It searches for filenames in the tests folder that match, so chatGPT matches "tests/chatGPT.test.js".
+To run one set of tests, like, the tests for the chatGPT class, run 'npm test chatGPT'. It searches for filenames in the tests folder that match, so chatGPT matches 'tests/chatGPT.test.js'.
 
 ## Run the binary
 If you just want to run it, download the precompiled binary (if it is available), run it, and point your browser to http://localhost:3000/ (if it doesn't automatically open)
