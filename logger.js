@@ -1,3 +1,5 @@
+// TODO: Add logs destination parameter to constructor
+
 const fs = require('fs');
 const logLevels = ["off", "info", "warn", "error", "debug", "trace"];
 /**
@@ -29,6 +31,7 @@ class Logger {
         this.logs = [];
         this.consoleLogging = con;
         this.logLevel = logLevel;
+        this.writeLogInterval = null;
     }
 
     /**
@@ -49,7 +52,26 @@ class Logger {
         let newEntry = { date: new Date().toLocaleString(), message: message }; // create a new log entry
         this.logs.push(newEntry); // add the new log entry to the logs array
         if (this.consoleLogging) console.log(newEntry.date + " - " + newEntry.message); // log the message to the console
-        if(this.logs.length >= 10) this.writeOutLogs(); // write out the logs to a file if there are 10 or more entries
+        if(this.logs.length >= 10) this.writeOutLogs(); // write out the logs to a file if there are 10 or more entries in the logs buffer array
+        // if the writeLogInterval is not set, set it to write out the logs every 30 seconds if there are any logs to write out
+        if(this.writeLogInterval == null) this.writeLogInterval = setInterval(() => { 
+            if(this.logs.length > 0) this.writeOutLogs(); 
+        }, 30 * 1000);
+    }
+
+    /**
+     * @method setLogLevel
+     * @description - sets the log level
+     * @param {string|number} level - the log level, one of "off", "info", "warn", "error", "debug", "trace"
+     * @returns - true if the log level was set, false if it was not set
+     */
+    setLogLevel(level) {
+        if(typeof level === 'string') level = logLevels.indexOf(level);
+        if(typeof level !== 'number') return false;
+        if(level < 0) level = 0;
+        if(level > 5) level = 5;
+        this.logLevel = level;
+        return true;
     }
 
     /**
@@ -105,4 +127,4 @@ class Logger {
         }
     }
 }
-module.exports = Logger;
+module.exports = {Logger, logLevels};

@@ -1,15 +1,15 @@
+// const os = require('node:os');
 const express = require('express');
+const http = require('http');
+const _url = require("url");
+const socketio = require('socket.io');
 const app = express();
+const server = http.createServer(app);
+const io = socketio(server);
 const port = 3000;
 const path = require('path');
-
-const fs = require('fs');
-const fuzzyMatch = require('fastest-levenshtein');
-
 const commonClasses = require('./web/common.js');
 const FlashCard = commonClasses.FlashCard;
-
-const flashCardMaxDifficulty = 5; // Flash card difficulty is a number from 1 to 5
 
 // this loads the API key from the .env file. 
 // For development, you should create a .env file in the root directory of the project and add the following line to it:
@@ -19,639 +19,17 @@ require("dotenv").config();
 const consoleLogging = true;
 // const logFile = 'logs.txt';
 // logLevel, 0-5 or "off", "info", "warn", "error", "debug", "trace"
-const logLevel = process.env.LOG_LEVEL; // "trace"
-const Logger = require('./logger.js');
-const logger = new Logger(consoleLogging, logLevel); // create a new logger object. This must remain at/near the top of the file.
+const logLevel = process.env.LOG_LEVEL;
+const {Logger,logLevels} = require('./logger.js');
+let logLevelNumber = logLevels.indexOf(logLevel);
+const logger = logLevelNumber>0?new Logger(consoleLogging, logLevel):null; // create a new logger object. This must remain at/near the top of the file. If the logger is off, the logger object will be null and no logs will be created.
 ///////////////////////////////////////////////////////////////////// ChatGPT /////////////////////////////////////////////////////////////////////////////////////////
 const ChatGPT = require('./chatGPT.js');
-const chatbot = new ChatGPT(process.env.OPENAI_SECRET_KEY, logger);
-//////////////////////////// TESTING ///////////////////////////////////
-// FlashCard class provided by web/common.js
-let testCard = new FlashCard({
-    id: -Number.MAX_VALUE,
-    question: "What is the capital of France?",
-    answer: "Paris",
-    tags: ["geography", "Europe"],
-    difficulty: 2,
-    collection: "World Geography"
-});
-
-(async () => {
-    let testText = `
-    Page 1: Introduction to Physics
-    Physics is a captivating and fundamental science that seeks to understand the natural world. At its core, physics is the study of matter, energy, and the interactions between them. It is a discipline that strives to uncover the laws governing the universe, from the smallest particles to the vastness of the cosmos. Physics is divided into various branches, including mechanics, thermodynamics, electromagnetism, and quantum mechanics, each focusing on specific aspects of physical phenomena.
-    The Essence of Physics
-    The essence of physics lies in its quest to formulate universal principles that can explain the behavior of the natural world. It uses a combination of empirical evidence, mathematical models, and theoretical reasoning to understand the fundamental forces of nature, such as gravity, electromagnetism, and nuclear forces. Through this understanding, physics aims to uncover the underlying simplicity and symmetry in the universe.
-    The Role of Experimentation and Theory
-    Experimentation and theory are the twin pillars of physics. Experiments involve the observation of phenomena under controlled conditions, allowing physicists to test hypotheses and measure physical quantities. Theoretical physics, on the other hand, involves the development of models and frameworks to explain these observations and predict new phenomena. The interplay between theory and experiment drives the advancement of physics, with each informing and refining the other.
-    Physics and Mathematics
-    Mathematics is the language of physics. It provides the tools needed to formulate physical laws in a precise and concise manner. Equations in physics not only describe how physical quantities are related but also allow predictions about future behavior. For example, Newton's second law of motion, 
-    F=ma, succinctly encapsulates the relationship between force, mass, and acceleration, enabling the prediction of an object's motion under the influence of forces.
-    The Impact of Physics on Technology and Society
-    The discoveries of physics have profound implications beyond the scientific community. Advances in physics have led to technological innovations that shape our daily lives, from the electricity that powers our homes to the electronics at the heart of our mobile devices. Physics also plays a crucial role in addressing global challenges, such as energy sustainability and climate change, by providing the foundation for renewable energy technologies and environmental monitoring.
-    The Journey Through Physics
-    As we embark on this journey through physics, we will explore the fundamental concepts that underpin this discipline. From the mechanics of motion to the principles of energy and heat, and from the forces that hold atoms together to the gravitational pull that governs the orbits of planets, this exploration will reveal the elegance and complexity of the physical world. Physics is not just a pathway to understanding the universe; it is a way of thinking critically about the world and our place within it.
-    This introduction serves as the gateway to the fascinating world of physics, setting the stage for a deeper exploration of its principles, laws, and the myriad ways they manifest in the natural world.
-    
-    Page 2: Measurements and Units
-    The foundation of physics, and indeed all of science, rests on the accurate measurement of physical quantities. These measurements allow us to understand the universe in quantifiable terms, leading to the formulation of physical laws and principles. The system of measurements used in physics is standardized to ensure consistency and accuracy across the scientific community.
-    The International System of Units (SI)
-    The International System of Units (SI) is the standard metric system used in science and engineering. It comprises seven base units from which all other units of measurement are derived. These base units are:
-    Meter (m): The unit of length, defined by the speed of light in a vacuum.
-    Kilogram (kg): The unit of mass, defined by the Planck constant
-    Second (s): The unit of time, defined by the transition frequency of cesium-133 atoms.
-    Ampere (A): The unit of electric current, defined by the elementary charge per second.
-    Kelvin (K): The unit of temperature, defined by the Boltzmann constant.
-    Mole (mol): The unit of the amount of substance, defined by the number of atoms in 12 grams of carbon-12.
-    Candela (cd): The unit of luminous intensity, defined by the luminous efficacy of monochromatic radiation of frequency 
-    Dimensional Analysis
-    Dimensional analysis is a powerful tool in physics used to check the consistency of equations and calculations. It involves the study of the dimensions of physical quantities, which are derived from the base units. By ensuring that the dimensions match on both sides of an equation, physicists can verify that their equations are dimensionally consistent, which is a crucial step in validating physical laws and formulas.
-    The Importance of Units in Calculations
-    Units play a critical role in physics calculations. Every physical quantity is expressed with a unit, which provides a standard for comparison and ensures that calculations are meaningful. For instance, when calculating velocity, which is distance divided by time, the units of meters per second (m/s) provide a clear understanding of the speed at which an object is moving.
-    The correct use of units also facilitates the conversion between different measurement systems, such as converting temperatures from Celsius to Kelvin or distances from miles to kilometers. This is essential for communication and collaboration in the global scientific community.
-    Precision and Accuracy in Measurements
-    Precision and accuracy are key concepts in the measurement of physical quantities. Precision refers to the consistency of repeated measurements, while accuracy indicates how close a measurement is to the true value. Both are affected by the measurement tools and techniques used, highlighting the importance of choosing appropriate instruments and methods for scientific investigations.
-    Conclusion
-    Measurements and units are the fundamental building blocks of physics, providing the means to quantify and understand the physical world. The SI system offers a universal standard for these measurements, ensuring that scientific observations and calculations are precise, accurate, and globally understood. As we delve deeper into the concepts of physics, the careful measurement and analysis of physical quantities will remain a cornerstone of our exploration.
-    `;
-    let res = await chatbot.flashCardGenerator(testText, 5, ()=>{}, false);
-    // logger.log(res); // uncomment to see the generated flash cards
-})();
-/////////////////// END TESTING /////////////////////////////////
-
-/**
- * @class FlashCardCollection
- * @description - a class to handle flash card collections
- * @param {string} name - the name of the collection
- * @property {string} name - the name of the collection
- * @property {Array} cards - an array of flash cards
- * @property {number} largestId - the largest id number used so far
- * @property {string} filePath - the path to the file where the collection is stored
- * @method loadCollection - loads the flashcards from the collection into memory
- * @method addCard - adds a card to the collection
- * @method updateCard - updates a card in the collection
- * @method deleteCard - deletes a card from the collection
- * @method saveCollection - saves the collection to disk
- * @method getCardById - gets a card from the collection by id
- * @method getCards - gets an array of cards that match the given parameters
- */
-class FlashCardCollection {
-    /**
-     * @constructor
-     * @description - creates a new flash card collection
-     * @param {string} name - the name of the collection
-     * @param {string} filePath - the path to the file where the collection is stored
-     * @property {string} name - the name of the collection
-     * @property {Array} cards - an array of flash cards
-     * @property {number} largestId - the largest id number used so far
-     * @property {string} filePath - the path to the file where the collection is stored
-     * @returns - a FlashCardCollection object
-     * @throws - if the collection is not found
-     * @sideEffects - calls the loadCollection method which loads the flashcards from the collection into memory
-     * @sideEffects - logs a message to the console
-     */
-    constructor(name, filePath) {
-        this.name = name;
-        logger.log("Creating flash card collection: " + name, "debug");
-        logger.log("File path (268): " + filePath, "trace");
-        this.cards = [];
-        this.largestId = 0;
-        this.filePath = filePath;
-        logger.log("File path (272): " + this.filePath, "trace");
-        // adjust the file path for the environment
-        // this.filePath = adjustPathForPKG(this.filePath);
-        if(!this.loadCollection()) {
-            logger.log("Flash card collection not found (380): " + name, "warn");
-            // throw new Error("Flash card collection not found: " + name);
-        }
-    }
-
-    moveCollectionLocation(newPath) {
-        logger.log("Moving flash card collection: " + this.name + " to " + newPath, "debug");
-        if(fs.existsSync(newPath)) {
-            try{
-                logger.log("File already exists, renaming to .bak", "debug");
-                fs.renameSync(newPath, newPath + ".bak");
-            }catch(err){
-                logger.log("Error renaming file: " + err, "error");
-            }
-        }
-        fs.renameSync(this.filePath, newPath);
-        logger.log("File moved", "debug");
-    }
-
-    /**
-     * @method loadCollection
-     * @description - loads the flashcards from the collection into memory
-     * @returns {boolean} - true if the collection was loaded, false if it was not
-     * @throws - nothing
-     * @sideEffects - logs a message to the console
-     * @sideEffects - sets the cards property to an array of the flash cards in the collection
-     * @sideEffects - sets the largestId property to the largest id number used so far
-     */
-    loadCollection() {
-        logger.log("Loading flash card collection: " + this.name, "debug");
-        logger.log("File path: " + this.filePath, "trace");
-        if (fs.existsSync(this.filePath)) {
-            let data = fs.readFileSync(this.filePath, 'utf8');
-            try {
-                let cards = JSON.parse(data);
-                logger.log("Loaded flash card collection: " + this.name, "debug");
-                cards.forEach( (card) => {
-                    let newCard;
-                    try{
-                        newCard = new FlashCard(card);
-                    }catch(err){
-                        logger.log("Error loading flash card: " + card.id + " - " + err, "error");
-                    }
-                    if (newCard.id > this.largestId) this.largestId = newCard.id;
-                    this.cards.push(newCard);
-                });
-                return true;
-            } catch (err) {
-                logger.log("Error loading flash card collection: " + this.name + " - " + err, "error");
-                return false;
-            }
-        }else{
-            logger.log("Flash card collection not found (415): " + this.name, "warn");
-            return false;
-        }
-    }
-
-    /**
-     * @method addCard
-     * @description - adds a card to the collection
-     * @param {Object} cardData - a FlashCard object
-     * @returns {boolean} - true if the card was added, false if it was not
-     * @throws - nothing
-     * @sideEffects - adds the card to the cards array
-     * @sideEffects - calls the saveCollection method which saves the collection to disk
-     * @sideEffects - logs a message to the console
-     */
-    addCard(cardData) {
-        // TODO: do a search to see if the card or a similar one already exists
-        this.cards.push(cardData);
-        if(cardData.id > this.largestId) this.largestId = cardData.id;
-        return this.saveCollection();
-    }
-
-    /**
-     * @method updateCard
-     * @description - updates a card in the collection
-     * @param {Object} cardData - a FlashCard object
-     * @returns {boolean} - true if the card was updated, false if it was not
-     * @throws - nothing
-     * @sideEffects - updates the card in the cards array
-     * @sideEffects - calls the saveCollection method which saves the collection to disk
-     */
-    updateCard(cardData) {
-        if(cardData.collection !== this.name) {
-            logger.log("Card does not belong to this collection: " + this.name, "error");
-            return false;
-        }
-        if(cardData.id === undefined || cardData.id === null) {
-            logger.log("Card id is required to update a card", "error");
-            return false;
-        }
-        let index = this.cards.findIndex(card => card.id === cardData.id);
-        if (index !== -1) {
-            this.cards[index] = cardData;
-            return this.saveCollection();
-        }else{
-            logger.log("Card not found in collection: " + this.name, "error");
-            return false;
-        }
-    }
-
-    /**
-     * @method deleteCard
-     * @description - deletes a card from the collection
-     * @param {number} cardID - the id of the card to delete
-     * @returns {boolean} - true if the card was deleted, false if it was not
-     * @throws - nothing
-     * @sideEffects - deletes the card from the cards array
-     * @sideEffects - calls the saveCollection method which saves the collection to disk
-     */
-    deleteCard(cardID) {
-        if(cardID === undefined || cardID === null) {
-            logger.log("Card id is required to delete a card", "error");
-            return false;
-        }
-        if(cardData.collection !== this.name) {
-            logger.log("Card does not belong to this collection: " + this.name, "error");
-            return false;
-        }
-        let index = this.cards.findIndex(card => card.id === cardID);
-        if (index !== -1) {
-            this.cards.splice(index, 1);
-            return this.saveCollection();
-        }else{
-            logger.log("Card not found in collection: " + this.name, "error");
-            return false;
-        }
-    }
-
-    /**
-     * @method saveCollection
-     * @description - saves the collection to disk
-     * @returns {boolean} - true if the collection was saved, false if it was not
-     * @throws - nothing
-     * @sideEffects - writes the collection to disk
-     * @sideEffects - logs a message to the console
-     */
-    saveCollection() {
-        logger.log("Saving flash card collection: " + this.name, "debug");
-        logger.log("File path: " + this.filePath, "trace");
-        try {
-            fs.writeFileSync(this.filePath, JSON.stringify(this.cards, null, 2), 'utf8');
-            logger.log("Saved flash card collection: " + this.name, "debug");
-            return true;
-        } catch (err) {
-            logger.log("Error saving flash card collection: " + this.name + " - " + err, "error");
-            return false;
-        }
-    }
-
-    /**
-     * @method getCardById
-     * @description - gets a card from the collection by id
-     * @param {number} id - the id of the card to get
-     * @returns {Object} - a FlashCard object
-     * @throws - nothing
-     * @sideEffects - logs a message to the console
-     */
-    getCardById(id) {
-        logger.log("Getting card by id: " + id, "debug");
-        return this.cards.find(card => card.id === id);
-    }
-
-    /**
-     * @method getCards
-     * @description - gets an array of cards that match the given parameters
-     * @param {Object} params - an object with any of the following properties:
-     * - tags: an array of strings to filter by
-     * - difficulty: a number from 1 to 5 to filter by
-     * - search: a string to search for in the question or answer
-     * - dateCreatedRange: an array of two Date objects to filter by date created
-     * - dateModifiedRange: an array of two Date objects to filter by date modified
-     * @returns {Array} - an array of FlashCard objects
-     * @throws - nothing
-     * @sideEffects - logs a message to the console
-     * @notes - This method filters the cards based on the given parameters and returns an array of cards that match the parameters.
-     * @notes - If no parameters are given, this method returns all the cards in the collection.
-     * @notes - If the tags parameter is given, this method returns cards that have at least one of the given tags.
-     * @notes - If the difficulty parameter is given, this method returns cards that have the given difficulty.
-     * @notes - If the search parameter is given, this method returns cards that have the given string in the question or answer. Fuzzy matching not implemented.
-     * @notes - If the dateCreatedRange parameter is given, this method returns cards that were created between the two given dates.
-     * @notes - If the dateModifiedRange parameter is given, this method returns cards that were modified between the two given dates.
-     */
-    getCards(params) {
-        let cards = this.cards;
-        if (params.tags !== undefined && params.tags !== null) {
-            cards = cards.filter(card => card.tags.some(tag => params.tags.includes(tag)));
-        }
-        if (params.difficulty !== undefined && params.difficulty !== null) {
-            cards = cards.filter(card => card.difficulty === params.difficulty);
-        }
-        if (params.search !== undefined && params.search !== null) {
-            // TODO: use fuzzy matching
-            // fuzzyMatch.distance('string1', 'string2'); returns the number of changes needed to make string1 equal to string2
-            cards = cards.filter(card => card.question.includes(params.search) || card.answer.includes(params.search));
-        }
-        if (params.dateCreatedRange !== undefined && params.dateCreatedRange !== null) {
-            cards = cards.filter(card => card.dateCreated >= params.dateCreatedRange[0] && card.dateCreated <= params.dateCreatedRange[1]);
-        }
-        if (params.dateModifiedRange !== undefined && params.dateModifiedRange !== null) {
-            cards = cards.filter(card => card.dateModified >= params.dateModifiedRange[0] && card.dateModified <= params.dateModifiedRange[1]);
-        }
-        return cards;
-    }
-}
-
-
-class FlashCardDatabase {
-    /**
-     * @constructor
-     * @description - creates a new flash card database
-     * @property {Array} collections - an array of flash card collections
-     * @property {number} largestId - the largest id number used so far
-     * @returns - a FlashCardDatabase object
-     */
-    constructor() {
-        this.collections = [];
-        this.largestId = 0;
-        this.loadCollections();
-        this.allTags = [];
-    }
-
-    /**
-     * @method loadCollections
-     * @description - loads the flash card collections from disk
-     * @returns {boolean} - true if the collections were loaded, false if they were not
-     * @throws - nothing
-     * @sideEffects - logs a message to the console
-     * @sideEffects - sets the collections property to an array of flash card collections
-     * @sideEffects - sets the largestId property to the largest id number used so far
-     * @notes - This method loads the flash card collections from disk and sets the collections property to an array of flash card collections.
-     * @notes - If the metadata.json file is not found, this method creates a new metadata.json file.
-     */
-    loadCollections() {
-        let metadataPath = path.join(__dirname, 'flashcards', 'metadata.json');
-        metadataPath = adjustPathForPKG(metadataPath);
-        if (fs.existsSync(metadataPath)) {
-            let data = fs.readFileSync(metadataPath, 'utf8');
-            try {
-                let collections = JSON.parse(data);
-                logger.log("Loaded flash card collections metadata.json", "debug");
-                collections.forEach((collection) => {
-                    let newCollection = new FlashCardCollection(collection.name, collection.path);
-                    if (newCollection.largestId > this.largestId) this.largestId = newCollection.largestId;
-                    newCollection.cards.forEach((card) => {
-                        card.tags.forEach((tag) => {
-                            if(this.allTags !== undefined && !this.allTags.includes(tag)) this.allTags.push(tag);
-                        });
-                    });
-                    logger.log("Alltags: \n"+JSON.stringify(this.allTags,2,null), "debug");
-                    this.collections.push(newCollection);
-                });
-                return true;
-            } catch (err) {
-                logger.log("Error loading flash card collections: " + err, "error");
-                return false;
-            }
-        }else{
-            logger.log("Flash card collections metadata.json not found", "warn");
-            logger.log("Creating new flash card collections metadata.json", "debug");
-            fs.writeFileSync(metadataPath, "[]", 'utf8');
-            return true;
-        }
-    }
-
-    /**
-     * @method tagExistsExact
-     * @description - checks if a tag exists in the database
-     * @param {string} tag - the tag to check
-     * @returns {boolean} - true if the tag exists, false if it does not
-     * @throws - nothing
-     * @notes - This method checks if a tag exists in the database. It does an exact match.
-     * @notes - This method is case sensitive.
-     * @notes - This method does not use fuzzy matching.
-     */
-    tagExistsExact(tag) {
-        return this.allTags.includes(tag);
-    }
-
-    /**
-     * @method tagExistsFuzzy
-     * @description - checks if a tag exists in the database using fuzzy matching
-     * @param {string} tag - the tag to check
-     * @returns {boolean} - true if the tag exists, false if it does not
-     * @throws - nothing
-     * @notes - This method checks if a tag exists in the database using fuzzy matching.
-     * @notes - This method is case sensitive.
-     */
-    tagExistsFuzzy(tag) {
-        return this.allTags.some((t) => t.includes(fuzzyMatch.closest(tag, ...this.allTags)));
-    }
-
-    /**
-     * @method tagMatchFirstChars
-     * @description - gets an array of tags that match the given tag based on the first characters
-     * @param {string} tag - the tag to match
-     * @returns {Array} - an array of strings
-     * @throws - nothing
-     * @notes - This method gets an array of tags that match the given tag based on the first characters.
-     * @notes - This method is case sensitive.
-     * @notes - This method does not use fuzzy matching.
-     */
-    tagMatchFirstChars(tag) {
-        return this.allTags.filter((t) => t.startsWith(tag));
-    }
-
-    /**
-     * @method tagMatchFuzzy
-     * @description - gets an array of tags that match the given tag using fuzzy matching
-     * @param {string} tag - the tag to match
-     * @returns {Array} - an array of strings
-     * @throws - nothing
-     * @notes - This method gets an array of tags that match the given tag using fuzzy matching.
-     * @notes - This method is case sensitive.
-     * @notes - This method uses fuzzy matching.
-     */
-    tagMatchFuzzy(tag) {
-        return this.allTags.filter((t) => t.includes(fuzzyMatch.closest(tag, ...this.allTags)));
-    }
-
-    /**
-     * @method getCollectionNames
-     * @description - gets an array of collection names
-     * @returns {Array} - an array of strings
-     * @throws - nothing
-     * @sideEffects - logs a message to the console
-     * @notes - This method gets an array of collection names from the collections in the database 
-     */
-    getCollectionNames(){
-        logger.log("Getting collection names", "debug");
-        let names = [];
-        if(this.collections === undefined || this.collections === null || this.collections.length==0) return names;
-        this.collections.forEach((collection) => {
-            names.push(collection.name);
-        });
-        return names;
-    }
-
-    /**
-     * @method addCard
-     * @description - adds a card to the database
-     * @param {Object} cardData - a FlashCard object
-     * @returns {boolean} - true if the card was added, false if it was not
-     * @throws - nothing
-     * @sideEffects - calls the addCard method of the FlashCardCollection class
-     * @sideEffects - logs a message to the console
-     * @notes - This method adds a card to the database by calling the addCard method of the FlashCardCollection class.
-     */
-    addCard(cardData) {
-        logger.log("Adding card to database (711):", "debug");
-        logger.log(JSON.stringify(cardData,2,null), "debug");
-        let collection = this.collections.find(collection => collection.name === cardData.collection);
-        if (collection === undefined) {
-            // add a new collection
-            logger.log("Collection not found (715): " + cardData.collection, "warn");
-            collection = new FlashCardCollection(cardData.collection, path.join(__dirname, 'flashcards', cardData.collection + '.json'));
-            this.collections.push(collection);
-        }
-        cardData.id = ++this.largestId;
-        collection.addCard(cardData);
-        this.saveCollections(true);
-        // add tags
-        cardData.tags.forEach((tag) => {
-            if(!this.allTags.includes(tag)) this.allTags.push(tag);
-        });
-        return true;
-    }
-
-    /**
-     * @method updateCard
-     * @description - updates a card in the database
-     * @param {Object} cardData - a FlashCard or FlashCard-like object. must contain an id property and at least one other property to update
-     * @returns {boolean} - true if the card was updated, false if it was not
-     */
-    updateCard(cardData) {
-        // TODO: maybe rewrite this function so that it finds the card by id first, then checks if the collection exists, then updates the card
-        let collection = this.collections.find(collection => collection.name === cardData.collection);
-        if (collection === undefined) {
-            let newPath = path.join(__dirname, 'flashcards', cardData.collection + '.json');
-            logger.log("New path (655): " + path, "debug");
-            // add a new collection
-            collection = new FlashCardCollection(cardData.collection, newPath);
-            this.collections.push(collection);
-            // temporarily hold the card here
-            let tempCard = this.getCardById(cardData.id);
-            // delete the card from the old collection
-            this.deleteCard(cardData);
-            // update the collection name
-            tempCard.collection = cardData.collection;
-            // add the card to the new collection
-            this.addCard(tempCard);
-        }
-        this.saveCollections(true);
-        return collection.updateCard(cardData);
-    }
-
-    /**
-     * @method deleteCard
-     * @description - deletes a card from the database
-     * @param {Object} cardData - a FlashCard object
-     * @returns {boolean} - true if the card was deleted, false if it was not
-     * @throws - nothing
-     * @sideEffects - calls the deleteCard method of the FlashCardCollection class
-     */
-    deleteCard(cardData) {
-        // TODO: if the collection is empty, delete the collection
-        let collection = this.collections.find(collection => collection.name === cardData.collection);
-        if (collection === undefined) {
-            logger.log("Collection not found (760): " + cardData.collection, "error");
-            return false;
-        }
-        this.saveCollections(true);
-        return collection.deleteCard(cardData.id);
-    }
-
-    /**
-     * @method getCards
-     * @description - gets an array of cards that match the given parameters
-     * @param {Object} params - an object with any of the following properties:
-     * - collection: the name of the collection to get cards from
-     * - tags: an array of strings to filter by
-     * - difficulty: a number from 1 to 5 to filter by
-     * - search: a string to search for in the question or answer
-     * - dateCreatedRange: an array of two Date objects to filter by date created
-     * - dateModifiedRange: an array of two Date objects to filter by date modified
-     * @returns {Array} - an array of FlashCard objects
-     * @throws - nothing
-     * @sideEffects - logs a message to the console
-     * @notes - This method gets an array of cards that match the given parameters from the collections in the database.
-     */
-    getCards(params) {
-        let collection = this.collections.find(collection => collection.name === params.collection);
-        if (collection === undefined) {
-            logger.log("Collection not found (785): " + params.collection, "warn");
-            return [];
-        }
-        return collection.getCards(params);
-    }
-
-    /**
-     * @method getCountOfCards
-     * @description - gets the number of cards that match the given parameters
-     * @param {Object} params - an object with any of the following properties:
-     * - collection: the name of the collection to get cards from
-     * - tags: an array of strings to filter by
-     * - difficulty: a number from 1 to 5 to filter by
-     * - search: a string to search for in the question or answer
-     * - dateCreatedRange: an array of two Date objects to filter by date created
-     * - dateModifiedRange: an array of two Date objects to filter by date modified
-     * @returns {number} - the number of cards that match the given parameters
-     * @throws - nothing
-     * @sideEffects - logs a message to the console
-     * @notes - This method gets the number of cards that match the given parameters from the collections in the database.
-     */
-    getCountOfCards(params) {
-        logger.log("Getting count of cards", "debug");
-        logger.log("Params: " + JSON.stringify(params), "trace");
-        let cards = [];
-        this.collections.forEach((collection) => {
-            if (collection.name === params.collection) {
-                cards.push(collection.getCards(params));
-            }
-        });
-        return cards.length;
-    }
-
-    /**
-     * @method getCountOfAllCards
-     * @description - gets the number of all the cards in the database
-     * @returns {number} - the number of all the cards in the database
-     * @throws - nothing
-     * @sideEffects - logs a message to the console
-     * @notes - This method gets the number of all the cards in the database.
-     */
-    getCountOfAllCards() {
-        logger.log("Getting count of all cards", "debug");
-        let count = 0;
-        this.collections.forEach((collection) => {
-            count += collection.cards.length;
-        });
-        return count;
-    }
-
-    /**
-     * @method saveCollections
-     * @description - saves the collections to disk
-     * @returns - nothing
-     * @throws - nothing
-     * @sideEffects - calls the saveCollection method of each FlashCardCollection in the collections array
-     * @sideEffects - logs a message to the console
-     */
-    saveCollections(onlySaveMetadata = false) {
-        let metadataPath = path.join(__dirname, 'flashcards', 'metadata.json');
-        metadataPath = adjustPathForPKG(metadataPath);
-        let collectionNames = this.collections.map(collection => collection.name);
-        let collectionPaths = this.collections.map(collection => collection.filePath);
-        let collections = collectionNames.map((name, index) => {
-            return { name: name, path: collectionPaths[index] };
-        });
-        fs.writeFileSync(metadataPath, JSON.stringify(collections, null, 2), 'utf8');
-        if(onlySaveMetadata) return;
-        this.collections.forEach(collection => collection.saveCollection());
-    }
-
-    /**
-     * @method getCardById
-     * @description - gets a card from the database by id
-     * @param {number} id - the id of the card to get
-     * @returns {Object} - a FlashCard object
-     * @throws - nothing
-     * @sideEffects - logs a message to the console
-     * @notes - This method gets a card from the database by id.
-     * @notes - If the card is not found, this method returns null.
-     * @notes - This method searches all the collections in the database for the card.
-     */
-    getCardById(id) {
-        let card = null;
-        forEach(this.collections, (collection) => {
-            card = collection.getCardById(id);
-            if (card !== null) return;
-        });
-        return card;
-    }
-}
-
-const flashcard_db = new FlashCardDatabase();
-
-//////////////////////////////////////////////////////
-// Server endpoints
-//////////////////////////////////////////////////////
+const chatbot = new ChatGPT(logger, process.env.OPENAI_SECRET_KEY);
+//////////////////////////////////////////////////////////////// FlashCardDatabase ////////////////////////////////////////////////////////////////////////////////////
+const FlashCardDatabase = require('./database.js');
+const flashcard_db = new FlashCardDatabase(logger);
+//////////////////////////////////////////////////////////////// Server endpoints /////////////////////////////////////////////////////////////////////////////////////
 
 // endpoint: /api/getCards
 // Type: GET
@@ -666,28 +44,28 @@ const flashcard_db = new FlashCardDatabase();
 // - dateCreatedRange: a string in the format "YYYY-MM-DD,YYYY-MM-DD" to filter by date created
 // - dateModifiedRange: a string in the format "YYYY-MM-DD,YYYY-MM-DD" to filter by date modified
 app.get('/api/getCards', (req, res) => {
-    logger.log("GET /api/getCards", "debug");
+    logger?.log("GET /api/getCards", "debug");
     let requestParams = req.query;
-    if(requestParams.numberOfCards === undefined) requestParams.numberOfCards = 10;
-    if(requestParams.offset === undefined) requestParams.offset = 0;
-    if(requestParams.collection === undefined) requestParams.collection = null;
-    if(requestParams.tags === undefined) requestParams.tags = null;
-    if(requestParams.difficulty === undefined) requestParams.difficulty = null;
-    if(requestParams.search === undefined) requestParams.search = null;
-    if(requestParams.dateCreatedRange === undefined) requestParams.dateCreatedRange = null;
-    if(requestParams.dateModifiedRange === undefined) requestParams.dateModifiedRange = null;
+    if (requestParams.numberOfCards === undefined) requestParams.numberOfCards = 10;
+    if (requestParams.offset === undefined) requestParams.offset = 0;
+    if (requestParams.collection === undefined) requestParams.collection = null;
+    if (requestParams.tags === undefined) requestParams.tags = null;
+    if (requestParams.difficulty === undefined) requestParams.difficulty = null;
+    if (requestParams.search === undefined) requestParams.search = null;
+    if (requestParams.dateCreatedRange === undefined) requestParams.dateCreatedRange = null;
+    if (requestParams.dateModifiedRange === undefined) requestParams.dateModifiedRange = null;
     let cards = flashcard_db.getCards(requestParams);
     let offset = requestParams.offset;
     let numberOfCards = requestParams.numberOfCards;
     cards = cards.slice(offset, offset + numberOfCards);
-    res.send({ cards: cards , count: flashcard_db.getCountOfCards(requestParams) , total: flashcard_db.getCountOfAllCards() });
+    res.send({ cards: cards, count: flashcard_db.getCountOfCards(requestParams), total: flashcard_db.getCountOfAllCards() });
 });
 
 // endpoint: /api/getCollections
 // Type: GET
 // sends a JSON object with the names of the collections
 app.get('/api/getCollections', (req, res) => {
-    logger.log("GET /api/getCollections", "debug");
+    logger?.log("GET /api/getCollections", "debug");
     // get the collection names from the flash card database class
     let collectionNames = flashcard_db.getCollectionNames();
     res.send({ collections: collectionNames });
@@ -697,15 +75,28 @@ app.get('/api/getCollections', (req, res) => {
 // Type: POST
 // receives a JSON object with the card data and saves it to the database
 app.post('/api/saveNewCards', (req, res) => {
-    logger.log("POST /api/saveNewCards", "debug");
+    logger?.log("POST /api/saveNewCards", "debug");
     req.on('data', (data) => {
         const cardData = JSON.parse(data);
-        logger.log("Saving new flash card: \n" + JSON.stringify(cardData,2,null), "debug");
-        let card = new FlashCard(cardData[0]);
-        if(flashcard_db.addCard(card)){
+        logger?.log("Saving new flash card: \n" + JSON.stringify(cardData, 2, null), "debug");
+        if(!Array.isArray(cardData)){
+            res.send({ status: 'error', reason: 'Invalid data. Expected an array of cards.'});
+            logger?.log("Invalid card data", "error");
+            return;
+        }
+        logger?.log("Number of cards being saved: " + cardData.length, "trace");
+        let success = true;
+        for(let i = 0; i < cardData.length; i++){
+            let card = new FlashCard(cardData[i]);
+            if (!flashcard_db.addCard(card)) {
+                success = false;
+                logger?.log("Error saving card: " + JSON.stringify(cardData[i], 2, null), "error");
+            }
+        }
+        if(success){
             res.send({ status: 'ok' });
         }else{
-            res.send({ status: 'error' });
+            res.send({ status: 'error', reason: 'error saving card' });
         }
     });
 });
@@ -714,11 +105,26 @@ app.post('/api/saveNewCards', (req, res) => {
 // Type: POST
 // receives a JSON object with the card data and deletes it from the database
 app.post('/api/deleteCard', (req, res) => {
-    logger.log("POST /api/deleteCard", "debug");
+    logger?.log("POST /api/deleteCard", "debug");
     req.on('data', (data) => {
         const cardData = JSON.parse(data);
-        // TODO: implement
-        res.send({ status: 'ok' });
+        // find the card in the database and delete it
+        const id = parseInt(cardData.id);
+        logger?.log("Deleting flash card with id: " + id, "trace");
+        if(Number.isNaN(id) || id < 0){
+            logger?.log("Invalid card id", "error");
+            res.send({ status: 'error', reason: 'invalid id'});
+            return;
+        }
+        const card = flashcard_db.getCardById(cardData.id);
+        if(card === null || card === undefined){
+            res.send({ status: 'error', reason: 'card not found'});
+            logger?.log("Card not found", "error");
+            return;
+        }
+        const success = flashcard_db.deleteCard(id);
+        logger?.log("Card deleted: " + success, "debug");
+        res.send({ status: 'ok', card: card, success: success});
     });
 });
 
@@ -728,11 +134,28 @@ app.post('/api/deleteCard', (req, res) => {
 // The other properties are optional and only the ones that are given will be updated.
 // This endpoint is useful for updating the timesStudied, timesCorrect, timesIncorrect, timesSkipped, and timesFlagged properties.
 app.post('/api/updateCard', (req, res) => {
-    logger.log("POST /api/updateCard", "debug");
+    logger?.log("POST /api/updateCard", "debug");
     req.on('data', (data) => {
         const cardData = JSON.parse(data);
-        // TODO: implement
-        res.send({ status: 'ok' });
+        const id = parseInt(cardData.id);
+        logger?.log("Updating flash card with id: " + id, "trace");
+        if(Number.isNaN(id) || id < 0){
+            res.send({ status: 'error', reason: 'invalid id'});
+            logger?.log("Invalid card id", "error");
+            return;
+        }
+        const oldCard = flashcard_db.getCardById(cardData.id);
+        if(card === null || card === undefined){
+            res.send({ status: 'error', reason: 'card not found'});
+            logger?.log("Card not found", "error");
+            return;
+        }
+        const success = flashcard_db.updateCard(cardData);
+        const newCard = flashcard_db.getCardById(cardData.id);
+        logger?.log("Card updated: " + success, "debug");
+        logger?.log("Old card: " + JSON.stringify(oldCard, 2, null), "trace");
+        logger?.log("New card: " + JSON.stringify(newCard, 2, null), "trace");
+        res.send({ status: 'ok', oldCard: oldCard, newCard: newCard, success: success});
     });
 });
 
@@ -740,12 +163,20 @@ app.post('/api/updateCard', (req, res) => {
 // Type: POST
 // receives a string and generates flash cards from it
 app.post('/api/generateCards', (req, res) => {
-    logger.log("POST /api/generateCards", "debug");
-    req.on('data', (data) => {
-        const text = data.toString();
-        // TODO: implement this
-        // call the flashCardGenerator function and send the generated cards
-        res.send({ status: 'ok' }); // send the generated cards instead of 'ok'
+    logger?.log("POST /api/generateCards", "debug");
+    req.on('data', async (data) => {
+        const dataObj = JSON.parse(data);
+        if (dataObj.text === undefined) res.send({ status: 'error', reason: 'text property not found'});
+        else if (dataObj.text === '') res.send({ status: 'empty' });
+        else {
+            let text = dataObj.text;
+            let numberOfCards = dataObj.numberOfCards;
+            let difficulty = dataObj.difficulty;
+            let cards = await chatbot.flashCardGenerator(text, numberOfCards, difficulty, () => {
+                ioServer?.emit('message', {type:'cardGeneratorUpdate', data: {status: 'working'}});
+            }, true);
+            res.send({ cards: cards, status: 'ok' });
+        }
     });
 });
 
@@ -755,12 +186,25 @@ app.post('/api/generateCards', (req, res) => {
 // query parameters:
 // - cardId: the id of the card to get wrong answers for
 // - numberOfAnswers: the number of wrong answers to get
-app.get('/api/getWrongAnswers', (req, res) => {
-    logger.log("GET /api/getWrongAnswers", "debug");
+app.get('/api/getWrongAnswers', async (req, res) => {
+    logger?.log("GET /api/getWrongAnswers", "debug");
     const requestParams = req.query;
-    // TODO: implement
     // call the wrongAnswerGenerator function and send the generated wrong answers
-    res.send({ answers: [] });
+    const numberOfAnswers = requestParams.numberOfAnswers;
+    const cardId = requestParams.cardId;
+    const card = flashcard_db.getCardById(cardId);
+    if (card !== null && card !== undefined) {
+        let chatRes;
+        try {
+            chatRes = await chatbot.wrongAnswerGenerator(card, numberOfAnswers, () => { });
+        } catch (err) {
+            logger?.log("Error generating wrong answers: " + err, "error");
+            res.send({ answers: [] });
+        }
+        res.send({ answers: chatRes });
+    } else {
+        res.send({ answers: [] });
+    }
 });
 
 // endpoint: /api/getCardCount
@@ -774,15 +218,16 @@ app.get('/api/getWrongAnswers', (req, res) => {
 // - dateCreatedRange: a string in the format "YYYY-MM-DD,YYYY-MM-DD" to filter by date created
 // - dateModifiedRange: a string in the format "YYYY-MM-DD,YYYY-MM-DD" to filter by date modified
 app.get('/api/getCardCount', (req, res) => {
-    logger.log("GET /api/getCardCount", "debug");
+    logger?.log("GET /api/getCardCount", "debug");
     const requestParams = req.query;
-    if(requestParams.collection === undefined) requestParams.collection = null;
-    if(requestParams.tags === undefined) requestParams.tags = null;
-    if(requestParams.difficulty === undefined) requestParams.difficulty = null;
-    if(requestParams.search === undefined) requestParams.search = null;
-    if(requestParams.dateCreatedRange === undefined) requestParams.dateCreatedRange = null;
-    if(requestParams.dateModifiedRange === undefined) requestParams.dateModifiedRange = null;
+    if (requestParams.collection === undefined) requestParams.collection = null;
+    if (requestParams.tags === undefined) requestParams.tags = null;
+    if (requestParams.difficulty === undefined) requestParams.difficulty = null;
+    if (requestParams.search === undefined) requestParams.search = null;
+    if (requestParams.dateCreatedRange === undefined) requestParams.dateCreatedRange = null;
+    if (requestParams.dateModifiedRange === undefined) requestParams.dateModifiedRange = null;
     let count = flashcard_db.getCountOfCards(requestParams);
+    logger?.log("Returning count: " + count, "debug");
     res.send({ count: count });
 });
 
@@ -792,11 +237,11 @@ app.get('/api/getCardCount', (req, res) => {
 // query parameters:
 // - tag: the tag or partial tag to match
 app.get('/api/tagMatch', (req, res) => {
-    logger.log("GET /api/tagMatch", "debug");
-    logger.log("Query: " + JSON.stringify(req.query), "trace");
+    logger?.log("GET /api/tagMatch", "debug");
+    logger?.log("Query: " + JSON.stringify(req.query), "trace");
     const tag = req.query.tag;
-    if(typeof tag !== 'string') {
-        logger.log("Invalid tag: " + tag, "error");
+    if (typeof tag !== 'string') {
+        logger?.log("Invalid tag: " + tag, "error");
         res.send({ tags: [] });
     }
     let tagsMatchFuzzy = flashcard_db.tagMatchFuzzy(tag);
@@ -811,7 +256,7 @@ app.get('/api/tagMatch', (req, res) => {
 // Type: GET
 // sends a JSON object with the value of apiKeyFound
 app.get('/api/getGPTenabled', (req, res) => {
-    logger.log("GET /api/getGPTenabled", "debug");
+    logger?.log("GET /api/getGPTenabled", "debug");
     res.send({ enabled: chatbot.apiKeyFound });
 });
 
@@ -819,10 +264,10 @@ app.get('/api/getGPTenabled', (req, res) => {
 // Type: POST
 // receives a JSON object with the API key and sets it in ChatGPT class
 app.post('/api/setGPTapiKey', (req, res) => {
-    logger.log("POST /api/setGPTapiKey", "debug");
+    logger?.log("POST /api/setGPTapiKey", "debug");
     req.on('data', (data) => {
         const apiKey = JSON.parse(data).apiKey;
-        logger.log("Setting OpenAI API key, " + apiKey, "debug");
+        logger?.log("Setting OpenAI API key, " + apiKey, "debug");
         if (chatbot.isValidOpenAIKey(apiKey)) {
             chatbot.setApiKey(apiKey);
             updateEnvFile('OPENAI_SECRET_KEY', apiKey);
@@ -837,17 +282,50 @@ app.post('/api/setGPTapiKey', (req, res) => {
 // Type: POST
 // receives a JSON object with the log entry and adds it to the logs
 app.post('/api/addLogEntry', (req, res) => {
-    logger.log("POST /api/addLogEntry", "debug");
+    logger?.log("POST /api/addLogEntry", "debug");
     req.on('data', (data) => {
-        const logEntry = JSON.parse(data).logEntry;
-        logger.log(logEntry);
+        const logEntry = JSON.parse(data);
+        logger?.log(logEntry.message, logEntry.level);
         res.send({ status: 'ok' });
     });
 });
 
+// endpoint: /api/setLogLevel
+// Type: POST
+// receives a JSON object with the log level and sets it in the logger
+app.post('/api/setLogLevel', (req, res) => {
+    logger?.log("POST /api/setLogLevel", "debug");
+    req.on('data', (data) => {
+        let logLevel = null;
+        const dataObj = JSON.parse(data);
+        if(dataObj.hasOwnProperty('logLevel')) logLevel = dataObj.logLevel;
+        else if(dataObj.hasOwnProperty('level')) logLevel = dataObj.level;
+        if(logLevel === null){
+            res.send({ status: 'error', reason: 'log level not found' });
+            logger?.log("Log level not found in request data", "error");
+            return;
+        }
+        logger?.log("Attempting to set log level to " + logLevel, "debug");
+        let success = logger?.setLogLevel(logLevel);
+        if (success){
+            updateEnvFile('LOG_LEVEL', logLevel);
+            res.send({ status: 'ok' });
+            logger?.log("Log level set to " + logLevel, "debug");
+        }else{
+            res.send({ status: 'error', reason: 'invalid log level' });
+            logger?.log("Error setting log level to " + logLevel, "error");
+        }
+    });
+});
+
+app.get('/web/404.html', (req, res) => {
+    logger?.log("GET /web/404.html", "debug");
+    res.sendFile(__dirname + '/web/404.html');
+});
+
 // Serve static files
 app.get('/', (req, res) => {
-    logger.log("GET /", "debug");
+    logger?.log("GET /", "debug");
     // forward to /web/
     res.redirect('/web/index.html');
 });
@@ -855,10 +333,27 @@ app.use('/web', express.static(adjustPathForPKG('web')));
 
 // 404
 app.use((req, res, next) => {
-    logger.log("404 - " + req.originalUrl, "warn");
-    // Create and send a response with a cookie that contains the requested URL, the HTTP status code of 404, and the 404.html page
-    res.cookie("originUrl", req.originalUrl).status(404).sendFile(`${__dirname}/web/404.html`);
+    logger?.log("404 - " + req.originalUrl, "warn");
+    res.status(404).redirect(`/web/404.html?originalUrl=${req.originalUrl}`);
 });
+
+var ioServer = null;
+var connectedCount = 0;
+io.on('connection', (socket) => {
+    ioServer = socket;
+    connectedCount++;
+    logger?.log('A user connected', "debug");
+    socket.on('disconnect', () => {
+        connectedCount--;
+        if(connectedCount === 0) ioServer = null;
+        logger?.log('User disconnected', "debug");
+    });
+    socket.on('message', (msg) => {
+        logger?.log('Message: ' + msg, "debug");
+    });
+});
+
+
 
 // Get the local IP addresses of the computer
 let interfaces = require('os').networkInterfaces();
@@ -872,14 +367,16 @@ for (let k in interfaces) {
     }
 }
 
-app.listen(port, () => {
-    logger.log(`If you are using a web browser on the same computer as the app, you can use the following address:`)
-    logger.log(`http://localhost:${port}`)
-    logger.log(`If you are using a web browser on a different computer on the same network, you can try the following addresses:`)
+server.listen(port, () => {
+    // logger?.log(`If you are using a web browser on the same computer as the app, you can use the following address:`)
+    // logger?.log(`http://localhost:${port}`)
+    logger?.log(`If you are using a web browser on a different computer on the same network, you can try the following addresses:`)
     addresses.forEach((address) => {
-        logger.log(`http://${address}:${port}`);
+        logger?.log(`http://${address}:${port}`);
     });
 });
+
+
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 /// Support functions
@@ -902,8 +399,6 @@ function adjustPathForPKG(filePath) {
     return filePath;
 }
 
-
-
 /**
  * @function updateEnvFile
  * @description - updates the .env file with the given key / value pair
@@ -916,79 +411,87 @@ function adjustPathForPKG(filePath) {
  * @notes - if the key exists, its value is updated
  */
 function updateEnvFile(key, value) {
-    logger.log("Updating .env file", "debug");
+    logger?.log("Updating .env file", "debug");
     if (typeof key !== 'string' || typeof value !== 'string') return false;
     const fs = require('fs');
     const path = adjustPathForPKG('.env');
-    logger.log("Path: " + path, "trace");
+    logger?.log("Path: " + path, "trace");
     let fileContents = "";
     if (fs.existsSync(path)) {
         fileContents = fs.readFileSync(path, 'utf8');
-        logger.log("File read", "trace");
+        logger?.log("File read", "trace");
     }
     let lines = fileContents.split('\n');
     let found = false;
     for (let i = 0; i < lines.length; i++) {
-        logger.log("Line " + i + ": " + lines[i], "trace");
+        logger?.log("Line " + i + ": " + lines[i], "trace");
         if (lines[i].indexOf(key) === 0) {
-            logger.log("Key found", "trace");
-            lines[i] = key + (typeof value=="string"?"=\"":"=")  + value + (typeof value=="string"?"\"":"");
+            logger?.log("Key found", "trace");
+            lines[i] = key + (typeof value == "string" ? "=\"" : "=") + value + (typeof value == "string" ? "\"" : "");
             found = true;
             break;
         }
     }
     if (!found) {
-        lines.push(key + (typeof value=="string"?"=\"":"=")  + value + (typeof value=="string"?"\"":""));
+        lines.push(key + (typeof value == "string" ? "=\"" : "=") + value + (typeof value == "string" ? "\"" : ""));
     }
     fileContents = lines.join('\n');
     try {
         fs.writeFileSync(path, fileContents);
-        logger.log("File written", "trace");
+        logger?.log("File written", "trace");
         return true;
     } catch (e) {
-        logger.error(e);
+        logger?.error(e);
         return false;
     }
 }
 
+(() => {
+    // Open the default web browser to the app
+    logger?.log("Opening the default web browser to the app", "info");
+    let child_process = require("child_process");
+    function browseURL(url) {
+        logger?.log("Browsing URL: " + url, "debug");
+        var validatePath = isValidateUrl(url);
+        logger?.log("Is URL valid: " + validatePath, "debug");
+        if (!validatePath) { return null; }
+        logger?.log("Process platform: " + process.platform, "debug");
+        var start = (process.platform == "darwin" ? "open" : process.platform == "win32" ? "start" : "xdg-open");
+        logger?.log("Start command: " + start, "trace");
+        var childProcess = child_process.exec(start + " " + validatePath, function (err) {
+            if (err) { console.error("\r\n", err); }
+        });
+        return childProcess;
 
-
-// wait x seconds
-function wait(seconds) {
-    logger.log("Waiting " + seconds + " seconds", "trace");
-    return new Promise(resolve => setTimeout(resolve, seconds * 1000));
-}
-
-// Open the default web browser to the app
-const browse = require("browse-url")('http://localhost:3000/');
-
+    }
+    function isValidateUrl(url) {
+        let strPath = _url.toString(url);
+        logger?.log("URL: " + strPath, "trace");
+        try { strPath = decodeURI(strPath); } catch (err) { return false; }
+        if (strPath.indexOf('\0') !== -1) { return false; }
+        if (strPath.indexOf('..') !== -1) { return false; }
+        if (strPath.indexOf('/.') !== -1) { return false; }
+        if (strPath.indexOf('\\.') !== -1) { return false; }
+        if (strPath === '/') { return url; }
+        strPath = path.normalize(strPath);
+        if (strPath.indexOf('\\.') !== -1) { return false; }
+        return url;
+    }
+    browseURL('http://localhost:3000/');
+})();
 
 // When the app is closed, finalize the logger
-const EXIT = async() => {
-    logger.log("Saving FlashCards...", "info");
+const EXIT = () => {
+    logger?.log("Saving FlashCards...", "info");
     flashcard_db.saveCollections();
-    logger.log("Exiting...", "info");
-    logger.finalize();
-    await wait(2); // Gives the logger time to write out the logs
+    logger?.log("Exiting...", "info");
+    logger?.finalize();
+    process.exit();
 }
 
 // Catch all the ways the program can exit
-process.on('SIGINT', async() => {
-    await EXIT();
-    process.exit();
-});
-process.on('SIGTERM', async() => {
-    await EXIT();
-    process.exit();
-});
-process.on('uncaughtException', async() => {
-    await EXIT();
-    process.exit();
-});
-process.on('SIGHUP', async() => {
-    await EXIT();
-    process.exit();
-});
-process.on('exit', async() => {
-    // await EXIT();
-});
+process.on('SIGINT', EXIT);
+process.on('SIGTERM', EXIT);
+process.on('uncaughtException', EXIT);
+process.on('SIGHUP', EXIT);
+process.on('exit', () => {});

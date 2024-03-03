@@ -85,4 +85,5 @@ class FlashCard {
     }
 }
 
+// This weird mess is to make the FlashCard class available to both the browser and Node.js
 if(typeof module !== 'undefined' && module.exports) module.exports = {FlashCard};

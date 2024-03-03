@@ -1,9 +1,13 @@
+const e = require("express");
 const ai = require("openai");
 const flashCardMaxDifficulty = 5;
+const maxNumberOfCardsToGenerate = 50;
+const maxNumberOfWrongAnswersToGenerate = 10;
 /**
  * @class ChatGPT
  * @description - a class to interface with OpenAI's GPT-4 chatbot
  * @param {string} key - the OpenAI API key
+ * @param {Logger} logger - a Logger object from logger.js
  * @property {boolean} apiKeyFound - a boolean to indicate if the API key is valid
  * @property {Object} openai - an instance of the OpenAI API
  * @method setApiKey - a method to set the API key
@@ -16,8 +20,9 @@ const flashCardMaxDifficulty = 5;
  * 1. Need to add a mechanism that interrupts the streaming results.
  */
 class ChatGPT {
-    constructor(key, logger) {
+    constructor(logger, key) {
         this.openai = null;
+        if (logger === undefined) throw new Error("ChatGPT constructor requires a logger object as an argument");
         this.logger = logger;
         this.setApiKey(key);
     }
@@ -38,6 +43,7 @@ class ChatGPT {
             this.openai = new ai.OpenAI({ apiKey: key });
         } else {
             this.logger?.log("OpenAI API key not found", "warn");
+            this.openai = null;
         }
     }
 
@@ -59,9 +65,13 @@ class ChatGPT {
             this.logger?.log("OpenAI API key not found", "error");
             return "";
         }
+        if (inputText === undefined || inputText === null || typeof inputText !== 'string' || inputText === "") {
+            this.logger?.log("generateResponse requires a string as an argument", "error");
+            return "";
+        }
         if (stream_enabled) {
-            if (typeof stream_cb !== 'function') stream_cb = (chunk) => this.logger?.log(chunk);
-            if (typeof completion_cb !== 'function') completion_cb = (response) => this.logger?.log(response);
+            if (typeof stream_cb !== 'function') stream_cb = (chunk) => this.logger?.log(chunk, "trace");
+            if (typeof completion_cb !== 'function') completion_cb = (response) => this.logger?.log(response, "trace");
             let response = "";
             const stream = await this.openai?.chat.completions.create({
                 model: 'gpt-4-0125-preview',
@@ -115,13 +125,9 @@ class ChatGPT {
      * @param {boolean} enableExtrapolation - a boolean to enable the chatbot to extrapolate from the given text
      * @returns {Array} - an array of flash cards
      */
-    async flashCardGenerator(text, numberOfCardsToGenerate, streamingData_cb, enableExtrapolation = false) {
+    async flashCardGenerator(text, numberOfCardsToGenerate, difficulty, streamingData_cb, enableExtrapolation = false) {
         // TODO: rework this to return a promise instead of using async / await
-        if (text === undefined || text === null) {
-            this.logger?.log("flashCardGenerator requires a string as an argument", "error");
-            return null;
-        }
-        if (typeof text !== 'string') {
+        if (text === undefined || text === null || typeof text !== 'string' || text === "") {
             this.logger?.log("flashCardGenerator requires a string as an argument", "error");
             return null;
         }
@@ -131,13 +137,21 @@ class ChatGPT {
         }
         if (typeof streamingData_cb !== 'function') {
             this.logger?.log("streamingData_cb is not a function. Using default streaming data callback", "warn");
-            streamingData_cb = (chunk) => process.stdout.write(chunk);
+            streamingData_cb = null;
+        }
+        if (difficulty === undefined || difficulty === null || typeof difficulty !== 'number' || difficulty < 1 || difficulty > flashCardMaxDifficulty) {
+            this.logger?.log("Difficulty is not a number or is out of range.", "error");
+            return null;
+        }
+        if (numberOfCardsToGenerate === undefined || numberOfCardsToGenerate === null || typeof numberOfCardsToGenerate !== 'number' || numberOfCardsToGenerate < 1 || numberOfCardsToGenerate > maxNumberOfCardsToGenerate) {
+            this.logger?.log("numberOfCardsToGenerate is not a number or is out of range.", "error");
+            return null;
         }
         let prompt = "Please generate " + numberOfCardsToGenerate + " flash cards (based on the text below) with concise answers, returning the data in JSON format following the schema ";
-        prompt += "{\"question\":\"the flash card question\",\"answer\":\"the flash card answer\",\"tags\":[\"tag1\",\"tag2\"],\"difficulty\":N,\"collection\":\"The broad category the card belong to such as world geography\"} (difficulty is a number from 1 to " + flashCardMaxDifficulty + ").";
+        prompt += "{\"question\":\"the flash card question\",\"answer\":\"the flash card answer\",\"tags\":[\"tag1\",\"tag2\"],\"difficulty\":" + difficulty + ",\"collection\":\"The broad category the card belong to such as world geography\"} (difficulty is a number from 1 to " + flashCardMaxDifficulty + ").";
         prompt += " all based on the following text (it is important that the flash cards be based on the following text)" + (enableExtrapolation ? ", extrapolating on the given text to generate the desired number of cards" : "") + ": \n" + text;
         let response = "";;
-        this.logger?.log("Generating flash cards from text...\n");
+        this.logger?.log("Generating flash cards from text...");
         await this.generateResponse(prompt, true, streamingData_cb, (res) => { response = res; });
         return this.parseGPTjsonResponse(response);
     }
@@ -155,13 +169,36 @@ class ChatGPT {
      */
     async wrongAnswerGenerator(card, numberOfAnswers, streamingData_cb) {
         // TODO: rework this to return a promise instead of using async / await
-        if (card === undefined || card === null) {
-            this.logger?.log("wrongAnswerGenerator requires a FlashCard object as an argument", "error");
-            throw new Error("wrongAnswerGenerator requires a FlashCard object as an argument");
+        const cardValidator = (card) => {
+            if (card === undefined || card === null || typeof card !== 'object') return false;
+            if (!card.hasOwnProperty("question") || !card.hasOwnProperty("answer") || !card.hasOwnProperty("tags") || !card.hasOwnProperty("collection") || !card.hasOwnProperty("difficulty")) return false;
+            if (!Array.isArray(card.tags) || card.tags.length === 0) return false;
+            let valid = true;
+            for (let i = 0; i < card.tags.length; i++) {
+                if (typeof card.tags[i] !== 'string' || card.tags[i] === "") valid = false;
+            }
+            if (!valid) return false;
+            if (typeof card.question !== 'string' || card.question === "") return false;
+            if (typeof card.answer !== 'string' || card.answer === "") return false;
+            if (typeof card.collection !== 'string' || card.collection === "") return false;
+            if (typeof card.difficulty !== 'number' || card.difficulty < 1 || card.difficulty > flashCardMaxDifficulty) return false;
+            return true;
+        };
+
+        if (!cardValidator(card)) {
+            this.logger?.log("wrongAnswerGenerator requires a well constructed FlashCard object as an argument", "error");
+            throw new Error("wrongAnswerGenerator requires a well constructed FlashCard object as an argument");
         }
         if (typeof streamingData_cb !== 'function') {
             this.logger?.log("streamingData_cb is not a function. Using default streaming data callback", "warn");
-            streamingData_cb = (chunk) => process.stdout.write(chunk);
+            streamingData_cb = null;
+        }
+        numberOfAnswers = parseInt(numberOfAnswers);
+        if (Number.isNaN(numberOfAnswers) ||
+            numberOfAnswers < 1 ||
+            numberOfAnswers > maxNumberOfWrongAnswersToGenerate) {
+            this.logger?.log("numberOfAnswers is not a number or is out of range.", "error");
+            throw new Error("numberOfAnswers is not a number or is out of range.");
         }
         let prompt = "Please generate " + numberOfAnswers + " wrong answers for the following flash card: \n";
         prompt += "Card front: " + card.question + "\nCorrect answer: " + card.answer + "\n";
@@ -170,9 +207,93 @@ class ChatGPT {
         prompt += "Flash Card Difficulty: " + card.difficulty + " of " + flashCardMaxDifficulty + "\n";
         prompt += "Return the wrong answers as a JSON array of strings.";
         let response = "";
-        this.logger?.log("Generating wrong answers for flash card...\n");
+        this.logger?.log("Generating wrong answers for flash card...");
         await this.generateResponse(prompt, true, streamingData_cb, (res) => { response = res; });
         return this.parseGPTjsonResponse(response);
+    }
+
+    /**
+     * @function interpretMathExpression
+     * @description - interprets a mathematical expression and returns it as MathML expressions wrapped in $$...$$ delimiters which can be rendered via MathJax
+     * @async - this function is asynchronous and should be used with the "await" keyword
+     * @param {string} expression - the mathematical expression to interpret
+     * @returns {Array} - an array of MathML expressions wrapped in $$...$$ delimiters
+     * @throws {Error} - if the expression is not a string or an array of strings
+     */
+    // TODO: add a callback for streaming data / progress as this could take a long time for a large number of expressions
+    async interpretMathExpression(expression) {
+        const checkIfMathExpression = async (str) => {
+            const numberOfTimesToCheck = 4; // check 4 times and take the majority vote to determine if the string is a math expression. This is to reduce the chance of false positives / negatives
+            this.logger?.log("Checking if the string is a math expression...", "debug");
+            let question = "Is \"" + str + "\" a math expression? please only respond with one word: \"yes\" or \"no\"";
+            let waiterArray = []; // This array will hold the promises that will resolve when the responses are received. This allows all the requests to run in parallel.
+            let responses = [];
+            for(let i = 0; i < numberOfTimesToCheck; i++) {
+                waiterArray.push(new Promise(async (resolve) => {
+                    await this.generateResponse(question, true, () => { }, (res) => { responses.push(res); resolve(); });
+                }));
+            }
+            await Promise.all(waiterArray);
+            let yes = 0;
+            let no = 0;
+            for (let i = 0; i < responses.length; i++) {
+                if (responses[i].toLowerCase() === "yes") yes++;
+                if (responses[i].toLowerCase() === "no") no++;
+            }
+            let response = (yes > no) ? "yes" : "no";
+            if (response.toLowerCase() === "no") return false;
+            if (response.toLowerCase() === "yes") return true;
+        };
+        if (expression === undefined || expression === null) {
+            this.logger?.log("interpretMathExpression requires a string or an array of strings as an argument", "error");
+            return [];
+        }
+        let prompt = "Please convert the following mathematical expression(s) into LaTeX expression(s) for use in MathJax and wrap them in $$...$$ delimiters. I only need the wrapped expressions, nothing else.\n";
+        if (Array.isArray(expression)) {
+            let isEmpty = true;
+            // TODO: rework this to use promises so that checkIfMathExpression can run in parallel
+            for (let i = 0; i < expression.length; i++) {
+                if (typeof expression[i] === 'string' && expression[i].length > 0) isEmpty = false;
+                if (await checkIfMathExpression(expression[i])) prompt += expression[i] + "\n";
+                else {
+                    this.logger?.log("One or more strings is not a valid mathematical expression: " + expression[i], "error");
+                    return [];
+                }
+            }
+            if (isEmpty) {
+                this.logger?.log("interpretMathExpression requires a string or an array of strings as an argument", "error");
+                return [];
+            }
+        } else if (typeof expression === 'string') {
+            if (expression !== "") {
+                if (await checkIfMathExpression(expression)) {prompt += expression;
+                }
+                else {
+                    this.logger?.log("interpretMathExpression requires a string or an array of strings as an argument", "error");
+                    return [];
+                }
+            }
+            else {
+                this.logger?.log("interpretMathExpression requires a string or an array of strings as an argument", "error");
+                return [];
+            }
+        } else {
+            this.logger?.log("interpretMathExpression requires a string or an array of strings as an argument", "error");
+            return [];
+        }
+
+        this.logger?.log("Interpreting math expression(s)...", "debug");
+        let response = await this.generateResponse(prompt, false, () => { }, () => { });
+        // read through response and find the MathML expressions
+        let returnedExpressions = [];
+        let start = response.indexOf("$$");
+        let end = response.indexOf("$$", start + 2);
+        while (start >= 0 && end > start) {
+            returnedExpressions.push(response.substring(start, end + 2));
+            start = response.indexOf("$$", end + 2);
+            end = response.indexOf("$$", start + 2);
+        }
+        return returnedExpressions;
     }
 
     /**

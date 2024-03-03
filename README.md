@@ -1,5 +1,13 @@
+<p align="center">
+  <img src="https://github.com/andrewmcdan/CleverDecks/blob/main/web/img/favicon-180x180.png?raw=true" alt="Image CleverDecks Logo" width="180"/>
+</p>
+
+
 # CleverDecks
 A modern flash card system that allows students to create flashcards using AI assistance (ChatGPT) and use this system to study flash cards using a novel progressive delivery system that allows for incremental learning of the content. The interface is web based and allows access from any device, while the backend is a locally run application that the user runs on their computer. This allows the user to save their flashcards on their computer or anywhere else.
+
+## CleverDecks Launcher
+See [andrewmcdan/CleverDecksLauncher](https://github.com/andrewmcdan/CleverDecksLauncher) for a launcher for this little project of ours.
 
 ## TODO's (in no particular order)
 1. Complete each of the support classes in the /index.js file.
@@ -35,6 +43,8 @@ npm start
 
 ## Running Tests
 This is pretty easy, just run 'npm test' at the command prompt. All the tests defined in the tests folder will be executed.
+
+To run one set of tests, like, the tests for the chatGPT class, run 'npm test chatGPT'. It searches for filenames in the tests folder that match, so chatGPT matches 'tests/chatGPT.test.js'.
 
 ## Run the binary
 If you just want to run it, download the precompiled binary (if it is available), run it, and point your browser to http://localhost:3000/ (if it doesn't automatically open)
