@@ -4,7 +4,6 @@
 const server = 'http://localhost:3000';
 const apiBase = '/api/';
 const webBase = '/web/';
-const { type } = require('os');
 const request = require('supertest');
 
 

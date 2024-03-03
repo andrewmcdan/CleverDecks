@@ -84,7 +84,7 @@ class FlashCardCollection {
         this.logger?.log("File path: " + this.filePath, "trace");
         if (fs.existsSync(this.filePath)) {
             let data = fs.readFileSync(this.filePath, 'utf8');
-            let backupPath = this.filePath + "-" + (new Date().toLocaleString().replace(/:/g, '-').replace(/ /g, '_').replace(/\//g, '-')) + '.bak';
+            let backupPath = this.filePath + "-" + (new Date().toLocaleString().replace(/:/g, '-').replace(/ /g, '_').replace(/\//g, '-')).replace(',','') + '.bak';
             try {
                 fs.copyFileSync(this.filePath, backupPath);
                 this.logger?.log("Created backup of " + this.filePath, "debug");
@@ -103,6 +103,7 @@ class FlashCardCollection {
                     });
                     for (let i = 0; i < files.length - 2; i++) {
                         fs.unlinkSync(path.join(metadataFolder, files[i]));
+                        this.logger?.log("Deleted old backup: " + files[i], "trace");
                     }
                 }
             } catch (err) {
@@ -291,13 +292,13 @@ class FlashCardDatabase {
      * @property {number} largestId - the largest id number used so far
      * @returns - a FlashCardDatabase object
      */
-    constructor(logger) {
+    constructor(logger, overrideLock = false) {
         if(logger === undefined) throw new Error("Logger is required");
         this.logger = logger;
         this.collections = [];
         this.largestId = 0;
         this.allTags = [];
-        this.loadCollections();
+        this.loadCollections(overrideLock);
     }
 
     /**
@@ -311,14 +312,25 @@ class FlashCardDatabase {
      * @notes - This method loads the flash card collections from disk and sets the collections property to an array of flash card collections.
      * @notes - If the metadata.json file is not found, this method creates a new metadata.json file.
      */
-    loadCollections() {
+    loadCollections(overrideLock = false) {
         let metadataFolder = path.join(os.homedir(), 'CleverDecks', 'flashcards');
+        if(!fs.existsSync(metadataFolder)) fs.mkdirSync(metadataFolder, { recursive: true });
+        let lockFilePath = path.join(metadataFolder, 'metadata.lock');
+        if (fs.existsSync(lockFilePath)) {
+            this.logger?.log("metadata is locked", "error");
+            if(!overrideLock) throw new Error("metadata is locked");
+            else{
+                this.logger?.log("metadata lock overridden", "warn");
+                fs.unlinkSync(lockFilePath);
+            }
+        }
+        fs.writeFileSync(lockFilePath, 'locked');
         let metadataPath = path.join(metadataFolder, 'metadata.json');
         // metadataPath = adjustPathForPKG(metadataPath);
         if (fs.existsSync(metadataPath)) {
             let data = fs.readFileSync(metadataPath, 'utf8');
             // save a backup of the metadata file
-            let backupPath = path.join(metadataFolder, 'metadata.json-' + (new Date().toLocaleString().replace(/:/g, '-').replace(/ /g, '_').replace(/\//g, '-') + '.bak'));
+            let backupPath = path.join(metadataFolder, 'metadata.json-' + (new Date().toLocaleString().replace(/:/g, '-').replace(/ /g, '_').replace(/\//g, '-').replace(',','') + '.bak'));
             try {
                 fs.copyFileSync(metadataPath, backupPath);
                 this.logger?.log("Created backup of metadata.json", "debug");
@@ -636,6 +648,17 @@ class FlashCardDatabase {
             if (card !== null) return;
         });
         return card;
+    }
+
+    finalize() {
+        this.logger?.log("Finalizing FlashCardDatabase", "debug");
+        this.logger?.log("Saving collections", "trace");
+        this.saveCollections();
+        if(fs.existsSync(path.join(os.homedir(), 'CleverDecks', 'flashcards', 'metadata.lock'))) {
+            this.logger?.log("Removing lock file", "debug");
+            fs.unlinkSync(path.join(os.homedir(), 'CleverDecks', 'flashcards', 'metadata.lock'));
+        }
+        this.logger?.log("FlashCardDatabase finalized", "debug");
     }
 }
 

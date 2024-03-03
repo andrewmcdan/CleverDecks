@@ -10,6 +10,7 @@ const port = 3000;
 const path = require('path');
 const commonClasses = require('./web/common.js');
 const FlashCard = commonClasses.FlashCard;
+process.title = "CleverDecks";
 
 // this loads the API key from the .env file. 
 // For development, you should create a .env file in the root directory of the project and add the following line to it:
@@ -28,7 +29,14 @@ const ChatGPT = require('./chatGPT.js');
 const chatbot = new ChatGPT(logger, process.env.OPENAI_SECRET_KEY);
 //////////////////////////////////////////////////////////////// FlashCardDatabase ////////////////////////////////////////////////////////////////////////////////////
 const FlashCardDatabase = require('./database.js');
-const flashcard_db = new FlashCardDatabase(logger);
+let flashcard_db;
+try{
+    flashcard_db = new FlashCardDatabase(logger);
+}catch(err){
+    logger?.log("Error creating FlashCardDatabase: " + err, "error");
+    if(err.message === "metadata is locked") process.stdout.write("The flashcard database is locked. Please close any other instances of the app and try again.\n");
+    process.exit();
+}
 //////////////////////////////////////////////////////////////// Server endpoints /////////////////////////////////////////////////////////////////////////////////////
 
 // endpoint: /api/getCards
@@ -483,7 +491,7 @@ function updateEnvFile(key, value) {
 // When the app is closed, finalize the logger
 const EXIT = () => {
     logger?.log("Saving FlashCards...", "info");
-    flashcard_db.saveCollections();
+    flashcard_db.finalize();
     logger?.log("Exiting...", "info");
     logger?.finalize();
     process.exit();

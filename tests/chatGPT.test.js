@@ -1,5 +1,5 @@
 const ChatGPT = require('../chatGPT');
-const Logger = require('../logger');
+const {Logger} = require('../logger');
 const envVars = require("dotenv").config({ path: __dirname + "/../.env" });
 const logger = new Logger();
 const commonClasses = require('../web/common.js');
