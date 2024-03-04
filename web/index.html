@@ -80,23 +80,53 @@
     CD.getCollectionNames().then((collections) => {
         let collectionCount = collections.length;
         cardCountDivHTML += `<p>There are ${collectionCount} collections available to study.</p>`;
-        CD.getCardCount({all: true}).then((count) => {
+        CD.getCardCount({ all: true }).then((count) => {
             cardCount = count;
             totalCardCountDiv.innerHTML = `<p>There are ${cardCount} total cards available to study.</p>`;
         }).catch((error) => {
-            console.error({error});
+            console.error({ error });
         })
         for (let i = 0; i < collectionCount; i++) {
-            CD.getCardCount({collection: collections[i]}).then((count) => {
+            CD.getCardCount({ collection: collections[i] }).then((count) => {
                 cardCountDivHTML += `<p>Collection ${i + 1} (${collections[i]}) has ${count} cards.</p>`;
                 cardCountDiv.innerHTML = cardCountDivHTML;
             }).catch((error) => {
-                console.error({error});
+                console.error({ error });
+            });
+
+            const flashCardContainer = document.getElementById('flashCardContainer');
+            CD.getCards({ collection: collections[i] }).then((cards) => {
+                // filter cards that don't have a MathJax expression
+                cards = cards.filter((card) => {
+                    return card.question.includes('$$') || card.answer.includes('$$');
+                });
+                cards.forEach((card) => {
+                    // print card id
+                    let idDiv = document.createElement('div');
+                    idDiv.innerHTML = `Card ID: ${card.id}`;
+                    let questionDiv = document.createElement('div');
+                    questionDiv.innerHTML = card.question;
+                    let answerDiv = document.createElement('div');
+                    answerDiv.innerHTML = card.answer;
+                    // add card creation date
+                    let dateDiv = document.createElement('div');
+                    dateDiv.innerHTML = `Date Created: ${card.dateCreated}`;
+                    flashCardContainer.appendChild(idDiv);
+                    flashCardContainer.appendChild(questionDiv);
+                    flashCardContainer.appendChild(answerDiv);
+                    flashCardContainer.appendChild(dateDiv);
+                    // add tags
+                    let tagsDiv = document.createElement('div');
+                    tagsDiv.innerHTML = `Tags: ${card.tags.join(', ')}`;
+                    flashCardContainer.appendChild(tagsDiv);
+                });
+                MathJax.typeset();
+            }).catch((error) => {
+                console.error({ error });
             });
         }
-    })
-    .catch((error) => {
-        console.error({error});
+    }).catch((error) => {
+        console.error({ error });
     });
 
     CD.subscribeToSocketMessage(socketMessageTypes[0], (message) => {
@@ -113,7 +143,7 @@
 
 
     ////////////////// TESTING //////////////////
-    
+
     // fetch('../api/getCollections').then((response) => {
     //     return response.json();
     // }).then((data) => {
@@ -243,47 +273,48 @@ Measurements and units are the fundamental building blocks of physics, providing
             // console.log({data44444});
         });
     });
-    // fetch('../api/saveNewCards', {
-    //     method: 'POST',
-    //     headers: {
-    //         'Content-Type': 'application/json'
-    //     },
-    //     body: JSON.stringify([testFlashCard])
-    // }).then((response) => {
-    //     return response.json();
-    // }).then((data) => {
-    //     console.log(data);
-    // });
-    // // console.log(testFlashCard);
-
-    // fetch('../api/tagMatch?tag=Geog').then((response) => {
-    //     return response.json();
-    // }).then((data) => {
-    //     console.log({ data });
-    // });
-
-    fetch('../api/getWrongAnswers?cardId=1&numberOfAnswers=10').then((response) => {
+    fetch('../api/saveNewCards', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify([testFlashCard])
+    }).then((response) => {
         return response.json();
     }).then((data) => {
-        // console.log(data);
+        console.log(data);
     });
+    // console.log(testFlashCard);
 
-    fetch('../api/generateCards',
-        {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                text: testText,
-                numberOfCards: 10,
-                difficulty: 3
-            })
-        }
-    ).then((response) => {
+    fetch('../api/tagMatch?tag=Geog').then((response) => {
         return response.json();
     }).then((data) => {
-        // console.log("generated card(s):" + JSON.stringify(data, null, 2));
+        console.log({ data });
     });
+
+    // fetch('../api/getWrongAnswers?cardId=1&numberOfAnswers=10').then((response) => {
+    //     return response.json();
+    // }).then((data) => {
+    //     // console.log(data);
+    // });
+
+    // fetch('../api/generateCards',
+    //     {
+    //         method: 'POST',
+    //         headers: {
+    //             'Content-Type': 'application/json'
+    //         },
+    //         body: JSON.stringify({
+    //             text: testText,
+    //             numberOfCards: 10,
+    //             difficulty: 3
+    //         })
+    //     }
+    // ).then((response) => {
+    //     return response.json();
+    // }).then((data) => {
+    //     // console.log("generated card(s):" + JSON.stringify(data, null, 2));
+    // });
 </script>
+
 </html>

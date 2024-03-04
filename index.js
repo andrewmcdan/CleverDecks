@@ -89,7 +89,7 @@ const net = require('net');
     //////////////////////////////////////////////////////////////// Server endpoints /////////////////////////////////////////////////////////////////////////////////////
     // TODO: Add metadata location changing
     // TODO: Add port changing
-    // TODO: Add endpoint for interpreting math expressions into MAthJax compatible strings
+    // TODO: Add endpoint for interpreting math expressions into MathJax compatible strings
 
     // endpoint: /api/getCards
     // Type: GET
@@ -118,7 +118,7 @@ const net = require('net');
         let offset = requestParams.offset;
         let numberOfCards = requestParams.numberOfCards;
         cards = cards.slice(offset, offset + numberOfCards);
-        res.send({ cards: cards, count: flashcard_db.getCountOfCards(requestParams), total: flashcard_db.getCountOfAllCards() });
+        res.send({ status: 'ok', cards: cards, count: flashcard_db.getCountOfCards(requestParams), total: flashcard_db.getCountOfAllCards() });
     });
 
     // endpoint: /api/getCollections
@@ -170,7 +170,7 @@ const net = require('net');
             const cardData = JSON.parse(data);
             // find the card in the database and delete it
             const id = parseInt(cardData.id);
-            logger?.log(getLineNumber() + ".index.js	 - Deleting flash card with id: " + id, "trace");
+            logger?.log(getLineNumber() + ".index.js	 - Deleting flashcard with id: " + id, "trace");
             if (Number.isNaN(id) || id < 0) {
                 logger?.log(getLineNumber() + ".index.js	 - Invalid card id", "error");
                 res.send({ status: 'error', reason: 'invalid id' });
@@ -292,6 +292,17 @@ const net = require('net');
         if (requestParams.dateCreatedRange === undefined) requestParams.dateCreatedRange = null;
         if (requestParams.dateModifiedRange === undefined) requestParams.dateModifiedRange = null;
         if (requestParams.all === undefined) requestParams.all = false;
+        if (requestParams.hasOwnProperty('id')) {
+            if(flashcard_db.getCardById(requestParams.id) === null) {
+                logger?.log(getLineNumber() + ".index.js	 - Card not found", "warn");
+                res.send({status: 'ok', count: 0});
+                return;
+            }else{
+                logger?.log(getLineNumber() + ".index.js	 - Card " + requestParams.id + " found", "debug");
+                res.send({status: 'ok', count: 1});
+                return;
+            }
+        }
         let count = flashcard_db.getCountOfCards(requestParams);
         logger?.log(getLineNumber() + ".index.js	 - Returning count: " + count, "debug");
         res.send({status: 'ok', count: count });
@@ -438,7 +449,7 @@ const net = require('net');
         // logger?.log(`http://localhost:${port}`)
         logger?.log(getLineNumber() + ".index.js	 - If you are using a web browser on a different computer on the same network, you can try the following addresses:")
         addresses.forEach((address) => {
-            logger?.log(`${getLineNumber()}index.js - http://${address}:${port}`);
+            logger?.log(`${getLineNumber()}.index.js \t- http://${address}:${port}`);
         });
     });
 

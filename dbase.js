@@ -45,12 +45,12 @@ class FlashCardCollection {
         this.cards = [];
         this.largestId = largestId;
         this.filePath = filePath;
+        this.dataPath = path.dirname(filePath);
         this.logger?.log(getLineNumber() + ".dbase.js	 - File path: " + this.filePath, "trace");
         // adjust the file path for the environment
         // this.filePath = adjustPathForPKG(this.filePath);
         if (!this.loadCollection()) {
             this.logger?.log(getLineNumber() + ".dbase.js	 - Flash card collection not found: " + name, "warn");
-            throw new Error("Flash card collection not found: " + name);
         }
     }
 
@@ -73,7 +73,7 @@ class FlashCardCollection {
                 fs.copyFileSync(this.filePath, backupPath);
                 this.logger?.log(getLineNumber() + ".dbase.js	 - Created backup of " + this.filePath, "debug");
                 // delete old backups. We keep the 2 most recent backups
-                let metadataFolder = path.join(this.dataPath, 'flashcards');
+                let metadataFolder = this.dataPath;
                 let files = fs.readdirSync(path.join(metadataFolder));
                 files = files.filter((file) => file.startsWith(this.name + '.json-'));
                 if (files.length > 2) {
@@ -201,6 +201,20 @@ class FlashCardCollection {
     saveCollection() {
         this.logger?.log(getLineNumber() + ".dbase.js	 - Saving flash card collection: " + this.name, "debug");
         this.logger?.log(getLineNumber() + ".dbase.js	 - File path: " + this.filePath, "trace");
+        for(let i = 0; i < this.cards.length; i++){
+            let validCard = true;
+            try{
+                let tempCard = new FlashCard(this.cards[i]);
+            } catch (err) {
+                this.logger?.log(getLineNumber() + ".dbase.js	 - Invalid card: " + this.cards[i]?.id + " - " + err, "error");
+                validCard = false;
+            }
+            this.cards.slice(i, 1);
+            if(!validCard){
+                this.logger?.log(getLineNumber() + ".dbase.js	 - Removed invalid card: " + this.cards[i], "warn");
+                this.logger?.log(getLineNumber() + ".dbase.js	 - Removed from collection: " + this.name, "warn");
+            }
+        }            
         try {
             fs.writeFileSync(this.filePath, JSON.stringify(this.cards, null, 2), 'utf8');
             this.logger?.log(getLineNumber() + ".dbase.js	 - Saved flash card collection: " + this.name, "debug");
@@ -221,7 +235,19 @@ class FlashCardCollection {
      */
     getCardById(id) {
         this.logger?.log(getLineNumber() + ".dbase.js	 - Getting card by id: " + id, "debug");
-        return this.cards.find(card => card.id == id);
+        id = parseInt(id);
+        let returnCard = null;
+        this.cards.forEach((card) => {
+            if (card.id === id) {
+                returnCard = card;
+            }
+        });
+        if(returnCard === null){
+            this.logger?.log(getLineNumber() + ".dbase.js	 - Card not found: " + id, "warn");
+            return null;
+        }
+        return returnCard;
+        
     }
 
     /**
@@ -246,23 +272,26 @@ class FlashCardCollection {
      */
     getCards(params) {
         let cards = this.cards;
-        if (params.tags !== undefined && params.tags !== null) {
-            cards = cards.filter(card => card.tags.some(tag => params.tags.includes(tag)));
+        if (params.hasOwnProperty('tags') && params.tags !== undefined && params.tags !== null) {
+            cards.push(this.cards.filter(card => card.tags.some(tag => params.tags.includes(tag))));
         }
-        if (params.difficulty !== undefined && params.difficulty !== null) {
-            cards = cards.filter(card => card.difficulty === params.difficulty);
+        if (params.hasOwnProperty('difficulty') && params.difficulty !== undefined && params.difficulty !== null) {
+            cards.push(this.cards.filter(card => card.difficulty === params.difficulty));
         }
-        if (params.search !== undefined && params.search !== null) {
+        if (params.hasOwnProperty('search') && params.search !== undefined && params.search !== null) {
             // TODO: use fuzzy matching
             // TODO: regex search
             // fuzzyMatch.distance('string1', 'string2'); returns the number of changes needed to make string1 equal to string2
-            cards = cards.filter(card => card.question.includes(params.search) || card.answer.includes(params.search));
+            cards.push(this.cards.filter(card => card.question.includes(params.search) || card.answer.includes(params.search)));
         }
-        if (params.dateCreatedRange !== undefined && params.dateCreatedRange !== null) {
-            cards = cards.filter(card => card.dateCreated >= params.dateCreatedRange[0] && card.dateCreated <= params.dateCreatedRange[1]);
+        if (params.hasOwnProperty('dateCreatedRange') && params.dateCreatedRange !== undefined && params.dateCreatedRange !== null) {
+            cards.push(this.cards.filter(card => card.dateCreated >= params.dateCreatedRange[0] && card.dateCreated <= params.dateCreatedRange[1]));
         }
-        if (params.dateModifiedRange !== undefined && params.dateModifiedRange !== null) {
-            cards = cards.filter(card => card.dateModified >= params.dateModifiedRange[0] && card.dateModified <= params.dateModifiedRange[1]);
+        if (params.hasOwnProperty('dateModifiedRange') && params.dateModifiedRange !== undefined && params.dateModifiedRange !== null) {
+            cards.push(this.cards.filter(card => card.dateModified >= params.dateModifiedRange[0] && card.dateModified <= params.dateModifiedRange[1]));
+        }
+        if (params.hasOwnProperty('id') && params.id !== undefined && params.id !== null){
+            cards.push(this.cards.filter(card => card.id == params.id));
         }
         return cards;
     }
@@ -543,6 +572,26 @@ class FlashCardDatabase {
      * @notes - This method gets an array of cards that match the given parameters from the collections in the database.
      */
     getCards(params) {
+        // iterate over the collections and get the cards that match the given parameters
+        this.logger?.log(getLineNumber() + ".dbase.js	 - Getting cards", "debug");
+        this.logger?.log(getLineNumber() + ".dbase.js	 - Params: " + JSON.stringify(params), "trace");
+        if(params.hasOwnProperty('id') && params.id !== undefined && params.id !== null){
+            let card = this.getCardById(params.id);
+            if(card === undefined || card === null){
+                this.logger?.log(getLineNumber() + ".dbase.js	 - Card not found: " + params.id, "warn");
+                return [];
+            }
+            return [card];
+        }
+        if(params.hasOwnProperty('collection') == false || params.collection == undefined || params.collection == null){
+            this.logger?.log(getLineNumber() + ".dbase.js	 - Collection not specified", "warn");
+            // iterate over all the collections and get the cards that match the given parameters
+            let cards = [];
+            this.collections.forEach(collection => {
+                cards.push(collection.getCards(params));
+            });
+            return cards;
+        }
         let collection = this.collections.find(collection => collection.name === params.collection);
         if (collection === undefined) {
             this.logger?.log(getLineNumber() + ".dbase.js	 - Collection not found: " + params.collection, "warn");
@@ -631,10 +680,10 @@ class FlashCardDatabase {
      */
     getCardById(id) {
         let card = null;
-        this.collections.forEach((collection) => {
-            card = collection.getCardById(id);
-            if (card !== null) return;
-        });
+        for(let i = 0; i < this.collections.length; i++){
+            card = this.collections[i].getCardById(id);
+            if (card !== null) return card;
+        };
         return card;
     }
 

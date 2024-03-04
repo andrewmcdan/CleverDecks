@@ -59,7 +59,7 @@ class CleverDecks{
                 if(data.status == 'ok') resolve(data.collections);
                 else reject(data.reason);
             }).catch(err => {
-                reject(err);
+                reject(err + getLineNumber());
             });
         });
     }
@@ -74,6 +74,7 @@ class CleverDecks{
      *   search - a string to search the cards for
      *   dateCreatedRange: a string in the format "YYYY-MM-DD,YYYY-MM-DD" to filter by date created
      *   dateModifiedRange: a string in the format "YYYY-MM-DD,YYYY-MM-DD" to filter by date modified
+     * @returns - an array of FlashCards
      */
     getCards(params = {}){
         return new Promise((resolve, reject) => {
@@ -115,7 +116,7 @@ class CleverDecks{
                                 reject(data.reason);
                             }
                         }).catch(err => {
-                            reject(err);
+                            reject(err + getLineNumber());
                         });
                     }
                 }else{
@@ -130,11 +131,11 @@ class CleverDecks{
                         if(data.status == 'ok') resolve(data.cards);
                         else reject(data.reason);
                     }).catch(err => {
-                        reject(err);
+                        reject(err + getLineNumber());
                     });
                 }
             }).catch(err => {
-                reject(err);
+                reject(err + getLineNumber());
             });
         });
     }
@@ -167,7 +168,7 @@ class CleverDecks{
                 if(data.status == 'ok') resolve();
                 else reject(data.reason);
             }).catch(err => {
-                reject(err);
+                reject(err + getLineNumber());
             });
         });
     }
@@ -204,7 +205,7 @@ class CleverDecks{
                 if(data.status == 'ok') resolve();
                 else reject(data.reason);
             }).catch(err => {
-                reject(err);
+                reject(err + getLineNumber());
             });
         });
     }
@@ -232,7 +233,7 @@ class CleverDecks{
                 if(data.status == 'ok') resolve();
                 else reject(data.reason);
             }).catch(err => {
-                reject(err);
+                reject(err + getLineNumber());
             });
         });
     }
@@ -269,7 +270,7 @@ class CleverDecks{
                     reject(data.reason);
                 }
             }).catch(err => {
-                reject(err);
+                reject(err + getLineNumber());
             });
         });
     }
@@ -299,7 +300,7 @@ class CleverDecks{
                 if(data.status == 'ok') resolve(data.answers);
                 else reject(data.reason);
             }).catch(err => {
-                reject(err);
+                reject(err + getLineNumber());
             });
         });
     }
@@ -340,7 +341,7 @@ class CleverDecks{
                 if(data.status == 'ok') resolve(data.count);
                 else reject(data.reason);
             }).catch(err => {
-                reject(err);
+                reject(err + getLineNumber());
             });
         });
     }
@@ -368,7 +369,7 @@ class CleverDecks{
                 if(data.status == 'ok') resolve(data);
                 else reject(data.reason);
             }).catch(err => {
-                reject(err);
+                reject(err + getLineNumber());
             });
         });
     }
@@ -390,7 +391,7 @@ class CleverDecks{
                 if(data.status == 'ok') resolve(data.enabled);
                 else reject(data.reason);
             }).catch(err => {
-                reject(err);
+                reject(err + getLineNumber());
             });
         });
     }
@@ -421,7 +422,7 @@ class CleverDecks{
                 if(data.status == 'ok') resolve(true);
                 else reject(data.reason);
             }).catch(err => {
-                reject(err);
+                reject(err + getLineNumber());
             });
         });
     }
@@ -479,7 +480,7 @@ class CleverDecks{
                 if(data.status == 'ok') resolve(true);
                 else reject(data.reason);
             }).catch(err => {
-                reject(err);
+                reject(err + getLineNumber());
             });
         });
     }
