@@ -3,6 +3,8 @@ const ai = require("openai");
 const flashCardMaxDifficulty = 5;
 const maxNumberOfCardsToGenerate = 50;
 const maxNumberOfWrongAnswersToGenerate = 10;
+const {getLineNumber} = require('./web/common.js');
+
 /**
  * @class ChatGPT
  * @description - a class to interface with OpenAI's GPT-4 chatbot
@@ -39,10 +41,10 @@ class ChatGPT {
     setApiKey(key) {
         this.apiKeyFound = this.isValidOpenAIKey(key);
         if (this.apiKeyFound) {
-            this.logger?.log("OpenAI API key found", "warn");
+            this.logger?.log(getLineNumber() + ".chatGPT.js	 - OpenAI API key found", "warn");
             this.openai = new ai.OpenAI({ apiKey: key });
         } else {
-            this.logger?.log("OpenAI API key not found", "warn");
+            this.logger?.log(getLineNumber() + ".chatGPT.js	 - OpenAI API key not found", "warn");
             this.openai = null;
         }
     }
@@ -62,11 +64,11 @@ class ChatGPT {
      */
     async generateResponse(inputText, stream_enabled, stream_cb, completion_cb) {
         if (!this.apiKeyFound) {
-            this.logger?.log("OpenAI API key not found", "error");
+            this.logger?.log(getLineNumber() + ".chatGPT.js	 - OpenAI API key not found", "error");
             return "";
         }
         if (inputText === undefined || inputText === null || typeof inputText !== 'string' || inputText === "") {
-            this.logger?.log("generateResponse requires a string as an argument", "error");
+            this.logger?.log(getLineNumber() + ".chatGPT.js	 - generateResponse requires a string as an argument", "error");
             return "";
         }
         if (stream_enabled) {
@@ -104,10 +106,10 @@ class ChatGPT {
      * @notes - the key must start with "sk-" and be followed by 48 alphanumeric characters
      */
     isValidOpenAIKey(key) {
-        this.logger?.log("Checking OpenAI API key", "debug");
+        this.logger?.log(getLineNumber() + ".chatGPT.js	 - Checking OpenAI API key", "debug");
         this.logger?.log(key, "trace");
         if (typeof key !== 'string') return false;
-        this.logger?.log("Key is a string. Key length: " + key.length, "trace");
+        this.logger?.log(getLineNumber() + ".chatGPT.js	 - Key is a string. Key length: " + key.length, "trace");
         // Regex explanation:
         // sk- : Starts with "sk-"
         // [a-zA-Z0-9]{48} : Followed by 48 alphanumeric characters (total length becomes 51 characters including "sk-")
@@ -128,30 +130,30 @@ class ChatGPT {
     async flashCardGenerator(text, numberOfCardsToGenerate, difficulty, streamingData_cb, enableExtrapolation = false) {
         // TODO: rework this to return a promise instead of using async / await
         if (text === undefined || text === null || typeof text !== 'string' || text === "") {
-            this.logger?.log("flashCardGenerator requires a string as an argument", "error");
+            this.logger?.log(getLineNumber() + ".chatGPT.js	 - flashCardGenerator requires a string as an argument", "error");
             return null;
         }
         if (text.length > 16384) {
-            this.logger?.log("The text is too long. Maximum length is 16,384 characters", "error");
+            this.logger?.log(getLineNumber() + ".chatGPT.js	 - The text is too long. Maximum length is 16,384 characters", "error");
             return null;
         }
         if (typeof streamingData_cb !== 'function') {
-            this.logger?.log("streamingData_cb is not a function. Using default streaming data callback", "warn");
+            this.logger?.log(getLineNumber() + ".chatGPT.js	 - streamingData_cb is not a function. Using default streaming data callback", "warn");
             streamingData_cb = null;
         }
         if (difficulty === undefined || difficulty === null || typeof difficulty !== 'number' || difficulty < 1 || difficulty > flashCardMaxDifficulty) {
-            this.logger?.log("Difficulty is not a number or is out of range.", "error");
+            this.logger?.log(getLineNumber() + ".chatGPT.js	 - Difficulty is not a number or is out of range.", "error");
             return null;
         }
         if (numberOfCardsToGenerate === undefined || numberOfCardsToGenerate === null || typeof numberOfCardsToGenerate !== 'number' || numberOfCardsToGenerate < 1 || numberOfCardsToGenerate > maxNumberOfCardsToGenerate) {
-            this.logger?.log("numberOfCardsToGenerate is not a number or is out of range.", "error");
+            this.logger?.log(getLineNumber() + ".chatGPT.js	 - numberOfCardsToGenerate is not a number or is out of range.", "error");
             return null;
         }
         let prompt = "Please generate " + numberOfCardsToGenerate + " flash cards (based on the text below) with concise answers, returning the data in JSON format following the schema ";
         prompt += "{\"question\":\"the flash card question\",\"answer\":\"the flash card answer\",\"tags\":[\"tag1\",\"tag2\"],\"difficulty\":" + difficulty + ",\"collection\":\"The broad category the card belong to such as world geography\"} (difficulty is a number from 1 to " + flashCardMaxDifficulty + ").";
         prompt += " all based on the following text (it is important that the flash cards be based on the following text)" + (enableExtrapolation ? ", extrapolating on the given text to generate the desired number of cards" : "") + ": \n" + text;
         let response = "";;
-        this.logger?.log("Generating flash cards from text...");
+        this.logger?.log(getLineNumber() + ".chatGPT.js	 - Generating flash cards from text...");
         await this.generateResponse(prompt, true, streamingData_cb, (res) => { response = res; });
         return this.parseGPTjsonResponse(response);
     }
@@ -186,18 +188,18 @@ class ChatGPT {
         };
 
         if (!cardValidator(card)) {
-            this.logger?.log("wrongAnswerGenerator requires a well constructed FlashCard object as an argument", "error");
+            this.logger?.log(getLineNumber() + ".chatGPT.js	 - wrongAnswerGenerator requires a well constructed FlashCard object as an argument", "error");
             throw new Error("wrongAnswerGenerator requires a well constructed FlashCard object as an argument");
         }
         if (typeof streamingData_cb !== 'function') {
-            this.logger?.log("streamingData_cb is not a function. Using default streaming data callback", "warn");
+            this.logger?.log(getLineNumber() + ".chatGPT.js	 - streamingData_cb is not a function. Using default streaming data callback", "warn");
             streamingData_cb = null;
         }
         numberOfAnswers = parseInt(numberOfAnswers);
         if (Number.isNaN(numberOfAnswers) ||
             numberOfAnswers < 1 ||
             numberOfAnswers > maxNumberOfWrongAnswersToGenerate) {
-            this.logger?.log("numberOfAnswers is not a number or is out of range.", "error");
+            this.logger?.log(getLineNumber() + ".chatGPT.js	 - numberOfAnswers is not a number or is out of range.", "error");
             throw new Error("numberOfAnswers is not a number or is out of range.");
         }
         let prompt = "Please generate " + numberOfAnswers + " wrong answers for the following flash card: \n";
@@ -207,7 +209,7 @@ class ChatGPT {
         prompt += "Flash Card Difficulty: " + card.difficulty + " of " + flashCardMaxDifficulty + "\n";
         prompt += "Return the wrong answers as a JSON array of strings.";
         let response = "";
-        this.logger?.log("Generating wrong answers for flash card...");
+        this.logger?.log(getLineNumber() + ".chatGPT.js	 - Generating wrong answers for flash card...");
         await this.generateResponse(prompt, true, streamingData_cb, (res) => { response = res; });
         return this.parseGPTjsonResponse(response);
     }
@@ -224,7 +226,7 @@ class ChatGPT {
     async interpretMathExpression(expression) {
         const checkIfMathExpression = async (str) => {
             const numberOfTimesToCheck = 4; // check 4 times and take the majority vote to determine if the string is a math expression. This is to reduce the chance of false positives / negatives
-            this.logger?.log("Checking if the string is a math expression...", "debug");
+            this.logger?.log(getLineNumber() + ".chatGPT.js	 - Checking if the string is a math expression...", "debug");
             let question = "Is \"" + str + "\" a math expression? please only respond with one word: \"yes\" or \"no\"";
             let waiterArray = []; // This array will hold the promises that will resolve when the responses are received. This allows all the requests to run in parallel.
             let responses = [];
@@ -245,7 +247,7 @@ class ChatGPT {
             if (response.toLowerCase() === "yes") return true;
         };
         if (expression === undefined || expression === null) {
-            this.logger?.log("interpretMathExpression requires a string or an array of strings as an argument", "error");
+            this.logger?.log(getLineNumber() + ".chatGPT.js	 - interpretMathExpression requires a string or an array of strings as an argument", "error");
             return [];
         }
         let prompt = "Please convert the following mathematical expression(s) into LaTeX expression(s) for use in MathJax and wrap them in $$...$$ delimiters. I only need the wrapped expressions, nothing else.\n";
@@ -256,12 +258,12 @@ class ChatGPT {
                 if (typeof expression[i] === 'string' && expression[i].length > 0) isEmpty = false;
                 if (await checkIfMathExpression(expression[i])) prompt += expression[i] + "\n";
                 else {
-                    this.logger?.log("One or more strings is not a valid mathematical expression: " + expression[i], "error");
+                    this.logger?.log(getLineNumber() + ".chatGPT.js	 - One or more strings is not a valid mathematical expression: " + expression[i], "error");
                     return [];
                 }
             }
             if (isEmpty) {
-                this.logger?.log("interpretMathExpression requires a string or an array of strings as an argument", "error");
+                this.logger?.log(getLineNumber() + ".chatGPT.js	 - interpretMathExpression requires a string or an array of strings as an argument", "error");
                 return [];
             }
         } else if (typeof expression === 'string') {
@@ -269,20 +271,20 @@ class ChatGPT {
                 if (await checkIfMathExpression(expression)) {prompt += expression;
                 }
                 else {
-                    this.logger?.log("interpretMathExpression requires a string or an array of strings as an argument", "error");
+                    this.logger?.log(getLineNumber() + ".chatGPT.js	 - interpretMathExpression requires a string or an array of strings as an argument", "error");
                     return [];
                 }
             }
             else {
-                this.logger?.log("interpretMathExpression requires a string or an array of strings as an argument", "error");
+                this.logger?.log(getLineNumber() + ".chatGPT.js	 - interpretMathExpression requires a string or an array of strings as an argument", "error");
                 return [];
             }
         } else {
-            this.logger?.log("interpretMathExpression requires a string or an array of strings as an argument", "error");
+            this.logger?.log(getLineNumber() + ".chatGPT.js	 - interpretMathExpression requires a string or an array of strings as an argument", "error");
             return [];
         }
 
-        this.logger?.log("Interpreting math expression(s)...", "debug");
+        this.logger?.log(getLineNumber() + ".chatGPT.js	 - Interpreting math expression(s)...", "debug");
         let response = await this.generateResponse(prompt, false, () => { }, () => { });
         // read through response and find the MathML expressions
         let returnedExpressions = [];
@@ -308,24 +310,24 @@ class ChatGPT {
      * @notes - if the response is a string that starts with "```" and ends with "```", the response is parsed as JSON
      */
     parseGPTjsonResponse(response) {
-        this.logger?.log("Parsing GPT JSON response", "debug");
+        this.logger?.log(getLineNumber() + ".chatGPT.js	 - Parsing GPT JSON response", "debug");
         if (response === undefined || response === null) {
-            this.logger?.log("Response is undefined or null", "warn");
+            this.logger?.log(getLineNumber() + ".chatGPT.js	 - Response is undefined or null", "warn");
             return null;
         }
         if (typeof response !== 'string') {
-            this.logger?.log("Response is not a string", "warn");
+            this.logger?.log(getLineNumber() + ".chatGPT.js	 - Response is not a string", "warn");
             return response;
         }
         if (response === "") {
-            this.logger?.log("Response is an empty string", "warn");
+            this.logger?.log(getLineNumber() + ".chatGPT.js	 - Response is an empty string", "warn");
             return null;
         }
         if (response.indexOf("```") === 0) response = response.substring(response.indexOf('\n') + 1);
         if (response.indexOf("```") > 0) response = response.substring(0, response.lastIndexOf('\n'));
         try {
             let json = JSON.parse(response);
-            this.logger?.log("Response parsed", "trace");
+            this.logger?.log(getLineNumber() + ".chatGPT.js	 - Response parsed", "trace");
             return json;
         } catch (e) {
             this.logger?.error(e);

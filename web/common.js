@@ -1,3 +1,5 @@
+const socketMessageTypes = ["CardGenerationInProgress", "WrongAnswerGenerationInProgress", "stop", "UnknownMessageType"];
+
 /**
  * @class FlashCard
  * @param {Object} data - an object with the following properties:
@@ -85,5 +87,18 @@ class FlashCard {
     }
 }
 
+function getLineNumber() {
+    try {
+        throw new Error();
+    } catch (e) {
+        let stack = e.stack;
+        let stackLines = stack.split('\n');
+        let line = stackLines[2];
+        let lineParts = line.split(':');
+        let lineNumber = lineParts[lineParts.length - 2];
+        return lineNumber;
+    }
+}
+
 // This weird mess is to make the FlashCard class available to both the browser and Node.js
-if(typeof module !== 'undefined' && module.exports) module.exports = {FlashCard};
+if(typeof module !== 'undefined' && module.exports) module.exports = {FlashCard, socketMessageTypes, getLineNumber};
