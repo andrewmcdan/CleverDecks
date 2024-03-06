@@ -1,60 +1,96 @@
 <html>
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <link rel="stylesheet" href="styles.css">
-        <link rel="icon" href="img/favicon-180x180.png" type="image/png">
-        <!-- MathJax -- This library is used to render mathematical expressions. -->
-        <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-        <script src="common.js"></script>
-        <title>CleverDecks - Quiz</title>
-    </head>
-    <body>
-        <nav class="navbar">
-            <div id="logo" onclick="window.location.href = 'index.html'">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=0.4">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" href="img/favicon-180x180.png" type="image/png">
+    <!-- MathJax -- This library is used to render mathematical expressions. -->
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="common.js"></script>
+    <!-- Socket.io library -->
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="web.js"></script>
+    <title>CleverDecks - Home</title>
+</head>
+
+<body class="min-w-500px min-h-full">
+    <div class="fixed bottom-0 left-0 z-10 bg-black" id="status">
+        <div class="flex items-center justify-center bg-red-500 text-white p-0.5" id="statusMessageContainer">
+            <p class="text-center text-l font-mono m-0 p-0" id="statusMessage">Status: Connecting</p>
+        </div>
+    </div>
+    <nav class="navbar relative top-0 left-0 bg-gray-800 text-white flex">
+        <div class="items-start container px-0 py-0 flex mx-0 my-0">
+            <div id="logo" class="size-24" onclick="window.location.href = 'index.html'">
                 <img src="img/CD_logo_1024x1024.png" alt="CleverDecks">
             </div>
-            <div class="navBtn" onclick="window.location.href = 'index.html'">
-                <p>Home</p>
+            <div class="navBtn flex items-center justify-center size-24 hover:bg-white hover:text-black "
+                onclick="window.location.href = 'index.html'">
+                <p class="text-center text-2xl">Home</p>
             </div>
-            <div class="navBtn" onclick="window.location.href = 'study.html'">
-                <p>Study</p>
+            <div class="navBtn flex items-center justify-center size-24 hover:bg-white hover:text-black"
+                onclick="window.location.href = 'study.html'">
+                <p class="text-center text-2xl">Study</p>
             </div>
-            <div class="navBtn" onclick="window.location.href = 'quiz.html'">
-                <p>Quiz</p>
+            <div class="navBtn flex items-center justify-center size-24 hover:bg-white hover:text-black"
+                onclick="window.location.href = 'quiz.html'">
+                <p class="text-center text-2xl">Quiz</p>
             </div>
-            <div class="navBtn" onclick="window.location.href = 'create.html'">
-                <p>Create</p>
+            <div class="navBtn flex items-center justify-center size-24 hover:bg-white hover:text-black"
+                onclick="window.location.href = 'create.html'">
+                <p class="text-center text-2xl">Create</p>
             </div>
-        </nav>
-        <div class="content">
-            <h1>Quiz</h1>
-            <p>My first web page.</p>
         </div>
-        <footer>
-            <p>
-                <div class="footer-content">
-                    <a href="https://github.com/andrewmcdan/CleverDecks" target="_blank">GitHub</a> |
-                    <a href="https://github.com/andrewmcdan/CleverDecks?tab=AGPL-3.0-1-ov-file" target="_blank">License</a> |
-                    <a href="about-us.html" target="_blank">About Us</a> |
-                    <a href="web/flashcards.html" target="_blank">My FlashCards</a>
-                </div>
-                <div class="footer-logo">
-                    <a href="/">
-                        <img src="img/CD_logo_1024x1024.png" alt="CleverDecks Logo" style="height: 100px;"> <!-- Adjust size as needed -->
-                    </a>
-                </div>
-            </p>
-            <p>Copyright &copy; 2024 by Edwin Maldonado, Andrew McDaniel, Bryce Martin-White, Elizabeth King, and Uday Kadarla. All rights reserved.</p>
-        </footer>
-    </body>
-    <style>
-        /*
+        <div class="px-4">
+            <div id="cardSearch" class="size-1/2 flex items-center text-black">
+                <input type="text" id="search" placeholder="Search..." onkeyup="searchCards()">
+                <button class="border-2 border-white text-white" id="searchButton"
+                    onclick="searchCards()">Search</button>
+            </div>
+            <div id="cardDropDown" class="size-1/2 flex items-center text-black">
+                <select id="collectionSelect">
+                    <option>Study a Collection(Quick Load)</option>
+                </select>
+            </div>
+        </div>
+    </nav>
+    <div class="content">
+        <h1>Quiz</h1>
+        <p>My first web page.</p>
+    </div>
+    <footer class="bg-gray-800 text-white items-center justify-center w-full p-6">
+        <div class="flex items-center mb-4 justify-center">
+            <a href="https://github.com/andrewmcdan/CleverDecks" target="_blank" class="px-2 py-4">GitHub</a> |
+            <a href="https://github.com/andrewmcdan/CleverDecks?tab=AGPL-3.0-1-ov-file" target="_blank"
+                class="px-2 py-4">License</a>
+            |
+            <a href="about-us.html" target="_blank" class="px-2 py-4">About Us</a> |
+            <a href="flashcards.html" target="_blank" class="px-2 py-4">My FlashCards</a>
+        </div>
+        <div class="footer-logo flex items-center justify-center">
+            <a href="/">
+                <img src="img/CD_logo_1024x1024.png" alt="CleverDecks Logo" style="height: 100px;">
+            </a>
+        </div>
+        <div class="flex items-center mt-4 justify-around">
+            <p>Copyright &copy; 2024 by Edwin Maldonado, Andrew McDaniel, Bryce Martin-White, Elizabeth King, and
+                Uday
+                Kadarla. All rights reserved.</p>
+        </div>
+    </footer>
+</body>
+<style>
+    /*
         Styles unique to this page go here
         */
-    </style>
-    <script>
-        console.log('Hello World');
-        // TODO: Add all the Javascript here to make the page interactive
-    </script>
+</style>
+<script>
+    (async () => {
+        await CleverDecks.waitReady();
+        // JavaScript unique to this page goes here
+        // There is a global variable called CleverDecks that has methods for accessing the backend. See web.js for more information.
+    })();
+</script>
+
 </html>

@@ -2,7 +2,7 @@ const os = require('node:os');
 const fs = require('fs');
 const path = require('path');
 const fuzzyMatch = require('fastest-levenshtein');
-const {FlashCard, getLineNumber} = require('./web/common.js');
+const { FlashCard, getLineNumber } = require('./web/common.js');
 
 /**
  * @class FlashCardCollection
@@ -37,7 +37,7 @@ class FlashCardCollection {
      * @sideEffects - logs a message to the console
      */
     constructor(name, filePath, logger, largestId = 0) {
-        if(logger === undefined) throw new Error("Logger is required");
+        if (logger === undefined) throw new Error("Logger is required");
         this.logger = logger;
         this.name = name;
         this.logger?.log(getLineNumber() + ".dbase.js	 - Creating flash card collection: " + name, "debug");
@@ -68,7 +68,7 @@ class FlashCardCollection {
         this.logger?.log(getLineNumber() + ".dbase.js	 - File path: " + this.filePath, "trace");
         if (fs.existsSync(this.filePath)) {
             let data = fs.readFileSync(this.filePath, 'utf8');
-            let backupPath = this.filePath + "-" + (new Date().toLocaleString().replace(/:/g, '-').replace(/ /g, '_').replace(/\//g, '-')).replace(',','') + '.bak';
+            let backupPath = this.filePath + "-" + (new Date().toLocaleString().replace(/:/g, '-').replace(/ /g, '_').replace(/\//g, '-')).replace(',', '') + '.bak';
             try {
                 fs.copyFileSync(this.filePath, backupPath);
                 this.logger?.log(getLineNumber() + ".dbase.js	 - Created backup of " + this.filePath, "debug");
@@ -201,20 +201,20 @@ class FlashCardCollection {
     saveCollection() {
         this.logger?.log(getLineNumber() + ".dbase.js	 - Saving flash card collection: " + this.name, "debug");
         this.logger?.log(getLineNumber() + ".dbase.js	 - File path: " + this.filePath, "trace");
-        for(let i = 0; i < this.cards.length; i++){
+        for (let i = 0; i < this.cards.length; i++) {
             let validCard = true;
-            try{
+            try {
                 let tempCard = new FlashCard(this.cards[i]);
             } catch (err) {
                 this.logger?.log(getLineNumber() + ".dbase.js	 - Invalid card: " + this.cards[i]?.id + " - " + err, "error");
                 validCard = false;
             }
             this.cards.slice(i, 1);
-            if(!validCard){
+            if (!validCard) {
                 this.logger?.log(getLineNumber() + ".dbase.js	 - Removed invalid card: " + this.cards[i], "warn");
                 this.logger?.log(getLineNumber() + ".dbase.js	 - Removed from collection: " + this.name, "warn");
             }
-        }            
+        }
         try {
             fs.writeFileSync(this.filePath, JSON.stringify(this.cards, null, 2), 'utf8');
             this.logger?.log(getLineNumber() + ".dbase.js	 - Saved flash card collection: " + this.name, "debug");
@@ -242,12 +242,12 @@ class FlashCardCollection {
                 returnCard = card;
             }
         });
-        if(returnCard === null){
+        if (returnCard === null) {
             this.logger?.log(getLineNumber() + ".dbase.js	 - Card not found: " + id, "warn");
             return null;
         }
         return returnCard;
-        
+
     }
 
     /**
@@ -290,7 +290,7 @@ class FlashCardCollection {
         if (params.hasOwnProperty('dateModifiedRange') && params.dateModifiedRange !== undefined && params.dateModifiedRange !== null) {
             cards.push(this.cards.filter(card => card.dateModified >= params.dateModifiedRange[0] && card.dateModified <= params.dateModifiedRange[1]));
         }
-        if (params.hasOwnProperty('id') && params.id !== undefined && params.id !== null){
+        if (params.hasOwnProperty('id') && params.id !== undefined && params.id !== null) {
             cards.push(this.cards.filter(card => card.id == params.id));
         }
         return cards;
@@ -307,9 +307,9 @@ class FlashCardDatabase {
      * @returns - a FlashCardDatabase object
      */
     constructor(logger, dataPath, overrideLock = false) {
-        if(logger === undefined) throw new Error("Logger is required");
+        if (logger === undefined) throw new Error("Logger is required");
         this.dataPath = dataPath;
-        if(!fs.existsSync(this.dataPath)) throw new Error("Data path does not exist: " + this.dataPath);
+        if (!fs.existsSync(this.dataPath)) throw new Error("Data path does not exist: " + this.dataPath);
         this.logger = logger;
         this.collections = [];
         this.largestId = 0;
@@ -330,12 +330,12 @@ class FlashCardDatabase {
      */
     loadCollections(overrideLock = false) {
         let metadataFolder = path.join(this.dataPath, 'flashcards');
-        if(!fs.existsSync(metadataFolder)) fs.mkdirSync(metadataFolder, { recursive: true });
+        if (!fs.existsSync(metadataFolder)) fs.mkdirSync(metadataFolder, { recursive: true });
         let lockFilePath = path.join(metadataFolder, 'metadata.lock');
         if (fs.existsSync(lockFilePath)) {
             this.logger?.log(getLineNumber() + ".dbase.js	 - metadata is locked", "error");
-            if(!overrideLock) throw new Error("metadata is locked");
-            else{
+            if (!overrideLock) throw new Error("metadata is locked");
+            else {
                 this.logger?.log(getLineNumber() + ".dbase.js	 - metadata lock overridden", "warn");
                 fs.unlinkSync(lockFilePath);
             }
@@ -346,7 +346,7 @@ class FlashCardDatabase {
         if (fs.existsSync(metadataPath)) {
             let data = fs.readFileSync(metadataPath, 'utf8');
             // save a backup of the metadata file
-            let backupPath = path.join(metadataFolder, 'metadata.json-' + (new Date().toLocaleString().replace(/:/g, '-').replace(/ /g, '_').replace(/\//g, '-').replace(',','') + '.bak'));
+            let backupPath = path.join(metadataFolder, 'metadata.json-' + (new Date().toLocaleString().replace(/:/g, '-').replace(/ /g, '_').replace(/\//g, '-').replace(',', '') + '.bak'));
             try {
                 fs.copyFileSync(metadataPath, backupPath);
                 this.logger?.log(getLineNumber() + ".dbase.js	 - Created backup of metadata.json", "debug");
@@ -428,7 +428,7 @@ class FlashCardDatabase {
      * @notes - This method is case sensitive.
      */
     tagExistsFuzzy(tag) {
-        return this.allTags.some((t) => t.includes(fuzzyMatch.closest(tag, ...this.allTags)));
+        return this.allTags.some((t) => { return fuzzyMatch.distance(tag, t) <= (tag.length * 0.5); });
     }
 
     /**
@@ -455,8 +455,44 @@ class FlashCardDatabase {
      * @notes - This method is case sensitive.
      * @notes - This method uses fuzzy matching.
      */
-    tagMatchFuzzy(tag) {
-        return this.allTags.filter((t) => t.includes(fuzzyMatch.closest(tag, ...this.allTags)));
+    tagMatchFuzzy(tag,number = 5) {
+        this.logger?.log(getLineNumber() + ".dbase.js	 - Tag: " + tag, "trace");
+        let matches = [];
+        if (this.allTags.length == 0) return matches;
+        if (this.allTags.length < number) return this.allTags;
+        // get the 5 closest matches...
+        // make a temp array of this.allTags that are not in matches
+        let tempArray = this.allTags.filter((t) => !matches.includes(t));
+        // create and array of objects with the tag and the distance, but only compare to the substring of the tag that is the same length as the search tag. ex: tag = "abc", t = "abcdef" -> distance = 0
+        let distances = tempArray.map((t) => { 
+            return { 
+                tag: t, 
+                distance: fuzzyMatch.distance(tag, t.substring(0, tag.length)) 
+            }; 
+        });
+        // append to distances with the tag and the distance, but this time compare to the whole tag. ex: tag = "abc", t = "abcdef" -> distance = 3
+        distances = distances.concat(this.allTags.map((t) => { 
+            return { 
+                tag: t, 
+                distance: fuzzyMatch.distance(tag, t) 
+            }; 
+        }));
+        // append to distances with the tag and the distance, but this time compare to the substring where the tag is shifted to the end of the string. add an offset to distance that is calculated from length of tag. ex: tag = "abc", t = "defabc" -> distance = 0 + Math.floor((tag.length-1)/3) = 0 + 0 = 0
+        distances = distances.concat(this.allTags.map((t) => { 
+            return { 
+                tag: t, 
+                distance: (fuzzyMatch.distance(tag, t.substring(t.length - tag.length)) + Math.floor((tag.length-1)/3)) 
+            }; 
+        }));
+        // sort the distances array by distance
+        distances.sort((a, b) => a.distance - b.distance);
+        // get the top {number} matches
+        let temp = distances.length < number ? distances.length : number;
+        for (let i = 0; i < temp; i++) {
+            if (distances[i] !== undefined) matches.push(distances[i].tag);
+        }
+        this.logger?.log(getLineNumber() + ".dbase.js	 - Matches: " + JSON.stringify(matches, 2, null), "trace");
+        return matches;
     }
 
     /**
@@ -575,15 +611,15 @@ class FlashCardDatabase {
         // iterate over the collections and get the cards that match the given parameters
         this.logger?.log(getLineNumber() + ".dbase.js	 - Getting cards", "debug");
         this.logger?.log(getLineNumber() + ".dbase.js	 - Params: " + JSON.stringify(params), "trace");
-        if(params.hasOwnProperty('id') && params.id !== undefined && params.id !== null){
+        if (params.hasOwnProperty('id') && params.id !== undefined && params.id !== null) {
             let card = this.getCardById(params.id);
-            if(card === undefined || card === null){
+            if (card === undefined || card === null) {
                 this.logger?.log(getLineNumber() + ".dbase.js	 - Card not found: " + params.id, "warn");
                 return [];
             }
             return [card];
         }
-        if(params.hasOwnProperty('collection') == false || params.collection == undefined || params.collection == null){
+        if (params.hasOwnProperty('collection') == false || params.collection == undefined || params.collection == null) {
             this.logger?.log(getLineNumber() + ".dbase.js	 - Collection not specified", "warn");
             // iterate over all the collections and get the cards that match the given parameters
             let cards = [];
@@ -618,7 +654,7 @@ class FlashCardDatabase {
     getCountOfCards(params) {
         this.logger?.log(getLineNumber() + ".dbase.js	 - Getting count of cards", "debug");
         this.logger?.log(getLineNumber() + ".dbase.js	 - Params: " + JSON.stringify(params), "trace");
-        if(params.hasOwnProperty('all') && params.all == true || params.all == "true") return this.getCountOfAllCards();
+        if (params.hasOwnProperty('all') && params.all == true || params.all == "true") return this.getCountOfAllCards();
         let collection = this.collections.find(collection => collection.name === params.collection);
         if (collection === undefined) {
             this.logger?.log(getLineNumber() + ".dbase.js	 - Collection not found: " + params.collection, "warn");
@@ -680,7 +716,7 @@ class FlashCardDatabase {
      */
     getCardById(id) {
         let card = null;
-        for(let i = 0; i < this.collections.length; i++){
+        for (let i = 0; i < this.collections.length; i++) {
             card = this.collections[i].getCardById(id);
             if (card !== null) return card;
         };
@@ -691,7 +727,7 @@ class FlashCardDatabase {
         this.logger?.log(getLineNumber() + ".dbase.js	 - Finalizing FlashCardDatabase", "debug");
         this.logger?.log(getLineNumber() + ".dbase.js	 - Saving collections", "trace");
         this.saveCollections();
-        if(fs.existsSync(path.join(this.dataPath, 'flashcards', 'metadata.lock'))) {
+        if (fs.existsSync(path.join(this.dataPath, 'flashcards', 'metadata.lock'))) {
             this.logger?.log(getLineNumber() + ".dbase.js	 - Removing lock file", "debug");
             fs.unlinkSync(path.join(this.dataPath, 'flashcards', 'metadata.lock'));
         }

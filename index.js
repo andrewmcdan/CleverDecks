@@ -5,6 +5,8 @@ const http = require('http');
 const _url = require("url");
 const socketio = require('socket.io');
 const app = express();
+const cookieParser = require('cookie-parser');
+app.use(cookieParser());
 const server = http.createServer(app);
 const io = socketio(server);
 const net = require('net');
@@ -49,7 +51,7 @@ const net = require('net');
     }
     const port = process.env.PORT || tempPort || 5000; // set the port to the value of the PORT environment variable, or to the first available port in the range 3000-3099, or to 5000 if the environment variable is not set and no ports are available
     const path = require('path');
-    const {FlashCard, socketMessageTypes, getLineNumber} = require('./web/common.js');
+    const { FlashCard, socketMessageTypes, getLineNumber } = require('./web/common.js');
     process.title = "CleverDecks";
     ////////////////////////////////////////////////////////////////// Create data directory //////////////////////////////////////////////////////////////////////////////
     if (!fs.existsSync(path.join(os.homedir(), 'CleverDecks'))) {
@@ -226,16 +228,18 @@ const net = require('net');
         logger?.log(getLineNumber() + ".index.js	 - POST /api/generateCards", "debug");
         req.on('data', async (data) => {
             const dataObj = JSON.parse(data);
+            const socketId = req.cookies.socketId;
             if (dataObj.text === undefined) res.send({ status: 'error', reason: 'text property not found' });
             else if (dataObj.text === '') res.send({ status: 'empty' });
             else {
-                let text = dataObj.text;
-                let numberOfCards = dataObj.numberOfCards;
-                let difficulty = dataObj.difficulty;
+                const text = dataObj.text;
+                const numberOfCards = dataObj.numberOfCards;
+                const difficulty = dataObj.difficulty;
+                const server = ioServers.find((server) => server.id === socketId);
                 let cards = await chatbot.flashCardGenerator(text, numberOfCards, difficulty, (chunk) => {
-                    ioServer?.emit('message', { type: socketMessageTypes[0], data: { status: 'working', chunk: chunk } });
+                    if (server !== undefined) server.socket.emit('message', { type: socketMessageTypes[0], data: { status: 'working', chunk: chunk } });
                 }, true);
-                ioServer?.emit('message', { type: socketMessageTypes[2], data: { status: 'done' } });
+                if (server !== undefined) server.socket.emit('message', { type: socketMessageTypes[2], data: { status: 'done' } });
                 res.send({ cards: cards, status: 'ok' });
             }
         });
@@ -250,6 +254,8 @@ const net = require('net');
     app.get('/api/getWrongAnswers', async (req, res) => {
         logger?.log(getLineNumber() + ".index.js	 - GET /api/getWrongAnswers", "debug");
         const requestParams = req.query;
+        const cookies = req.cookies;
+        const socketId = cookies.socketId;
         // call the wrongAnswerGenerator function and send the generated wrong answers
         const numberOfAnswers = requestParams.numberOfAnswers;
         const cardId = requestParams.cardId;
@@ -257,10 +263,13 @@ const net = require('net');
         if (card !== null && card !== undefined) {
             let chatRes;
             try {
+                let server = ioServers.find((server) => server.id === socketId);
                 chatRes = await chatbot.wrongAnswerGenerator(card, numberOfAnswers, (chunk) => {
-                    ioServer?.emit('message', { type: socketMessageTypes[1], data: { status: 'working', chunk: chunk } });
+                    // ioServer?.emit('message', { type: socketMessageTypes[1], data: { status: 'working', chunk: chunk } });                    
+                    if (server !== undefined) server.socket.emit('message', { type: socketMessageTypes[1], data: { status: 'working', chunk: chunk } });
                 });
-                ioServer?.emit('message', { type: socketMessageTypes[2], data: { status: 'done' } });
+                // ioServer?.emit('message', { type: socketMessageTypes[2], data: { status: 'done' } });
+                if (server !== undefined) server.socket.emit('message', { type: socketMessageTypes[2], data: { status: 'done' } });
             } catch (err) {
                 logger?.log(getLineNumber() + ".index.js	 - Error generating wrong answers: " + err, "error");
                 res.send({ answers: [] });
@@ -293,19 +302,19 @@ const net = require('net');
         if (requestParams.dateModifiedRange === undefined) requestParams.dateModifiedRange = null;
         if (requestParams.all === undefined) requestParams.all = false;
         if (requestParams.hasOwnProperty('id')) {
-            if(flashcard_db.getCardById(requestParams.id) === null) {
+            if (flashcard_db.getCardById(requestParams.id) === null) {
                 logger?.log(getLineNumber() + ".index.js	 - Card not found", "warn");
-                res.send({status: 'ok', count: 0});
+                res.send({ status: 'ok', count: 0 });
                 return;
-            }else{
+            } else {
                 logger?.log(getLineNumber() + ".index.js	 - Card " + requestParams.id + " found", "debug");
-                res.send({status: 'ok', count: 1});
+                res.send({ status: 'ok', count: 1 });
                 return;
             }
         }
         let count = flashcard_db.getCountOfCards(requestParams);
         logger?.log(getLineNumber() + ".index.js	 - Returning count: " + count, "debug");
-        res.send({status: 'ok', count: count });
+        res.send({ status: 'ok', count: count });
     });
 
     // endpoint: /api/tagMatch
@@ -325,7 +334,7 @@ const net = require('net');
         let tagsMatchFirstChars = flashcard_db.tagMatchFirstChars(tag);
         let tagsExistExact = flashcard_db.tagExistsExact(tag);
         let tagsExistFuzzy = flashcard_db.tagExistsFuzzy(tag);
-        res.send({status: 'ok', tagsMatchFuzzy: tagsMatchFuzzy, tagsMatchFirstChars: tagsMatchFirstChars, tagsExistExact: tagsExistExact, tagsExistFuzzy: tagsExistFuzzy });
+        res.send({ status: 'ok', tagsMatchFuzzy: tagsMatchFuzzy, tagsMatchFirstChars: tagsMatchFirstChars, tagsExistExact: tagsExistExact, tagsExistFuzzy: tagsExistFuzzy });
     });
 
 
@@ -334,7 +343,7 @@ const net = require('net');
     // sends a JSON object with the value of apiKeyFound
     app.get('/api/getGPTenabled', (req, res) => {
         logger?.log(getLineNumber() + ".index.js	 - GET /api/getGPTenabled", "debug");
-        res.send({status: 'ok', enabled: chatbot.apiKeyFound });
+        res.send({ status: 'ok', enabled: chatbot.apiKeyFound });
     });
 
     // endpoint: /api/setGPTapiKey
@@ -350,7 +359,7 @@ const net = require('net');
                 updateEnvFile('OPENAI_SECRET_KEY', apiKey);
                 res.send({ status: 'ok' });
             } else {
-                res.send({ status: 'error', reason: 'invalid'});
+                res.send({ status: 'error', reason: 'invalid' });
             }
         });
     });
@@ -414,15 +423,16 @@ const net = require('net');
         res.status(404).redirect(`/web/404.html?originalUrl=${req.originalUrl}`);
     });
 
-    var ioServer = null;
-    var connectedCount = 0;
+    var ioServers = [];
     io.on('connection', (socket) => {
-        ioServer = socket;
-        connectedCount++;
+        // generate random id
+        let id = Math.random().toString(36).substring(7);
+        socket.emit('message', { type: 'socketId', data: id });
+        ioServers.push({ socket: socket, id: id });
+        // ioServer = socket;
         logger?.log(getLineNumber() + ".index.js	 - A user connected", "debug");
         socket.on('disconnect', () => {
-            connectedCount--;
-            if (connectedCount === 0) ioServer = null;
+            ioServers = ioServers.filter((server) => server.id !== id); // remove the disconnected server from the list
             logger?.log(getLineNumber() + ".index.js	 - User disconnected", "debug");
         });
         socket.on('message', (msg) => {

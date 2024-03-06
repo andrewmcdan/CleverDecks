@@ -2,7 +2,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=0.4">
     <link rel="stylesheet" href="styles.css">
     <link rel="icon" href="img/favicon-180x180.png" type="image/png">
     <!-- MathJax -- This library is used to render mathematical expressions. -->
@@ -14,30 +14,54 @@
     <title>CleverDecks - Home</title>
 </head>
 
-<body>
-    <nav class="navbar">
-        <div id="logo" onclick="window.location.href = 'index.html'">
-            <img src="img/CD_logo_1024x1024.png" alt="CleverDecks">
+<body class="min-w-500px min-h-full">
+    <div class="fixed bottom-0 left-0 z-10 bg-black" id="status">
+        <div class="flex items-center justify-center bg-red-500 text-white p-0.5" id="statusMessageContainer">
+            <p class="text-center text-l font-mono m-0 p-0" id="statusMessage">Status: Connecting</p>
         </div>
-        <div class="navBtn" onclick="window.location.href = 'index.html'">
-            <p>Home</p>
+    </div>
+    <nav class="navbar relative top-0 left-0 bg-gray-800 text-white flex">
+        <div class="items-start container px-0 py-0 flex mx-0 my-0">
+            <div id="logo" class="size-24" onclick="window.location.href = 'index.html'">
+                <img src="img/CD_logo_1024x1024.png" alt="CleverDecks">
+            </div>
+            <div class="navBtn flex items-center justify-center size-24 hover:bg-white hover:text-black "
+                onclick="window.location.href = 'index.html'">
+                <p class="text-center text-2xl">Home</p>
+            </div>
+            <div class="navBtn flex items-center justify-center size-24 hover:bg-white hover:text-black"
+                onclick="window.location.href = 'study.html'">
+                <p class="text-center text-2xl">Study</p>
+            </div>
+            <div class="navBtn flex items-center justify-center size-24 hover:bg-white hover:text-black"
+                onclick="window.location.href = 'quiz.html'">
+                <p class="text-center text-2xl">Quiz</p>
+            </div>
+            <div class="navBtn flex items-center justify-center size-24 hover:bg-white hover:text-black"
+                onclick="window.location.href = 'create.html'">
+                <p class="text-center text-2xl">Create</p>
+            </div>
         </div>
-        <div class="navBtn" onclick="window.location.href = 'study.html'">
-            <p>Study</p>
-        </div>
-        <div class="navBtn" onclick="window.location.href = 'quiz.html'">
-            <p>Quiz</p>
-        </div>
-        <div class="navBtn" onclick="window.location.href = 'create.html'">
-            <p>Create</p>
+        <div class="px-4 realtive">
+            <div id="searchResultsContainer"
+                class="absolute gone top-10 bg-white shadow-md rounded-sm border border-gray-200 p-4">
+                <ul id="searchResultsList" class="text-black w-full">
+                    <!-- Search results will be added here -->
+                </ul>
+            </div>
+            <div id="cardSearch" class="size-1/2 flex items-center text-black">
+                <input type="text" id="search" placeholder="Search..." onkeyup="" autocomplete="off">
+                <button class="border-2 border-white text-white" id="searchButton" onclick="">Search</button>
+
+            </div>
+            <div id="cardDropDown" class="size-1/2 flex items-center text-black">
+                <select id="collectionSelect">
+                    <option>Study a Collection(Quick Load)</option>
+                </select>
+            </div>
         </div>
     </nav>
-    <div class="content">
-        <h1>Hello World</h1>
-        <p>My first web page.</p>
-        <p id="socketMessages">
-
-        </p>
+    <div class="content min-h-full">
         <div id="cardCount">
 
         </div>
@@ -48,23 +72,25 @@
             <!-- FlashCard components will be added here -->
         </div>
     </div>
-    <footer>
-        <p>
-        <div class="footer-content">
-            <a href="https://github.com/andrewmcdan/CleverDecks" target="_blank">GitHub</a> |
-            <a href="https://github.com/andrewmcdan/CleverDecks?tab=AGPL-3.0-1-ov-file" target="_blank">License</a> |
-            <a href="about-us.html" target="_blank">About Us</a> |
-            <a href="web/flashcards.html" target="_blank">My FlashCards</a>
+    <footer class="bg-gray-800 text-white items-center justify-center w-full p-6">
+        <div class="flex items-center mb-4 justify-center">
+            <a href="https://github.com/andrewmcdan/CleverDecks" target="_blank" class="px-2 py-4">GitHub</a> |
+            <a href="https://github.com/andrewmcdan/CleverDecks?tab=AGPL-3.0-1-ov-file" target="_blank"
+                class="px-2 py-4">License</a>
+            |
+            <a href="about-us.html" target="_blank" class="px-2 py-4">About Us</a> |
+            <a href="flashcards.html" target="_blank" class="px-2 py-4">My FlashCards</a>
         </div>
-        <div class="footer-logo">
+        <div class="footer-logo flex items-center justify-center">
             <a href="/">
                 <img src="img/CD_logo_1024x1024.png" alt="CleverDecks Logo" style="height: 100px;">
-                <!-- Adjust size as needed -->
             </a>
         </div>
-        </p>
-        <p>Copyright &copy; 2024 by Edwin Maldonado, Andrew McDaniel, Bryce Martin-White, Elizabeth King, and Uday
-            Kadarla. All rights reserved.</p>
+        <div class="flex items-center mt-4 justify-around">
+            <p>Copyright &copy; 2024 by Edwin Maldonado, Andrew McDaniel, Bryce Martin-White, Elizabeth King, and
+                Uday
+                Kadarla. All rights reserved.</p>
+        </div>
     </footer>
 </body>
 <style>
@@ -73,123 +99,38 @@
         */
 </style>
 <script>
-    let cardCountDiv = document.getElementById('cardCount');
-    let totalCardCountDiv = document.getElementById('totalCardCount');
-    let cardCountDivHTML = "";
-    const CD = new CleverDecks();
-    CD.getCollectionNames().then((collections) => {
-        let collectionCount = collections.length;
+    (async () => {
+        await CleverDecks.waitReady();
+
+        // JavaScript unique to this page goes here
+        // There is a global variable called CleverDecks that has methods for accessing the backend. See web.js for more information.
+
+
+        ///////////////// Example / Testing //////////////////////
+        let cardCountDivHTML = '';
+        let cardCountDiv = document.getElementById('cardCount');
+        let totalCardCountDiv = document.getElementById('totalCardCount');
+
+        let collectionNames = await CleverDecks.getCollectionNames();
+        let collectionCount = collectionNames.length;
         cardCountDivHTML += `<p>There are ${collectionCount} collections available to study.</p>`;
-        CD.getCardCount({ all: true }).then((count) => {
+        CleverDecks.getCardCount({ all: true }).then((count) => {
             cardCount = count;
             totalCardCountDiv.innerHTML = `<p>There are ${cardCount} total cards available to study.</p>`;
         }).catch((error) => {
             console.error({ error });
         })
         for (let i = 0; i < collectionCount; i++) {
-            CD.getCardCount({ collection: collections[i] }).then((count) => {
-                cardCountDivHTML += `<p>Collection ${i + 1} (${collections[i]}) has ${count} cards.</p>`;
+            CleverDecks.getCardCount({ collection: collectionNames[i] }).then((count) => {
+                cardCountDivHTML += `<p>Collection ${i + 1} (${collectionNames[i]}) has ${count} cards.</p>`;
                 cardCountDiv.innerHTML = cardCountDivHTML;
             }).catch((error) => {
                 console.error({ error });
             });
-
-            const flashCardContainer = document.getElementById('flashCardContainer');
-            CD.getCards({ collection: collections[i] }).then((cards) => {
-                // filter cards that don't have a MathJax expression
-                cards = cards.filter((card) => {
-                    return card.question.includes('$$') || card.answer.includes('$$');
-                });
-                cards.forEach((card) => {
-                    // print card id
-                    let idDiv = document.createElement('div');
-                    idDiv.innerHTML = `Card ID: ${card.id}`;
-                    let questionDiv = document.createElement('div');
-                    questionDiv.innerHTML = card.question;
-                    let answerDiv = document.createElement('div');
-                    answerDiv.innerHTML = card.answer;
-                    // add card creation date
-                    let dateDiv = document.createElement('div');
-                    dateDiv.innerHTML = `Date Created: ${card.dateCreated}`;
-                    flashCardContainer.appendChild(idDiv);
-                    flashCardContainer.appendChild(questionDiv);
-                    flashCardContainer.appendChild(answerDiv);
-                    flashCardContainer.appendChild(dateDiv);
-                    // add tags
-                    let tagsDiv = document.createElement('div');
-                    tagsDiv.innerHTML = `Tags: ${card.tags.join(', ')}`;
-                    flashCardContainer.appendChild(tagsDiv);
-                });
-                MathJax.typeset();
-            }).catch((error) => {
-                console.error({ error });
-            });
         }
-    }).catch((error) => {
-        console.error({ error });
-    });
-
-    CD.subscribeToSocketMessage(socketMessageTypes[0], (message) => {
-        document.getElementById('socketMessages').innerHTML = `Received CardGenerationInProgress message: ${message.chunk}`;
-    });
-    CD.subscribeToSocketMessage(socketMessageTypes[1], (message) => {
-        document.getElementById('socketMessages').innerHTML = `Received CardGenerationUpdate message: ${message.chunk}`;
-    });
-    CD.subscribeToSocketMessage(socketMessageTypes[2], (message) => {
-        document.getElementById('socketMessages').innerHTML = `Generating stopped.`;
-    });
 
 
-
-
-    ////////////////// TESTING //////////////////
-
-    // fetch('../api/getCollections').then((response) => {
-    //     return response.json();
-    // }).then((data) => {
-    //     console.log("1123123123123123");
-    //     console.log(data);
-    //     let collectionCount = data.collections.length;
-    //     cardCountDivHTML += `<p>There are ${collectionCount} collections available to study.</p>`;
-    //     // console.log({collectionCount});
-    //     totalCardCountDiv.innerHTML = `<p>There are ${cardCount} total cards available to study.</p>`;
-    //     for (let i = 0; i < collectionCount; i++) {
-    //         fetch(`../api/getCards?collection=${data.collections[i]}&numberOfCards=20`).then((response) => {
-    //             return response.json();
-    //         }).then(async (data2) => {
-    //             let countRes = await fetch(`../api/getCardCount?collection=${data.collections[i]}`);
-    //             let countJson = await countRes.json();
-    //             let count = countJson.count;
-    //             cardCount += count;
-    //             cardCountDivHTML += `<p>Collection ${i + 1} (${data.collections[i]}) has ${count} cards.</p>`;
-
-    //             // find all cards with a LaTeX equation
-    //             let cardsWithEquations = data2.cards.filter((card) => {
-    //                 return card.question.includes('$$') || card.answer.includes('$$');
-    //             });
-    //             // console.log({cardsWithEquations});
-    //             cardsWithEquations.forEach((card) => {
-    //                 // console.log({card});
-    //                 let questionDiv = document.createElement('div');
-    //                 questionDiv.innerHTML = card.question;
-    //                 let answerDiv = document.createElement('div');
-    //                 answerDiv.innerHTML = card.answer;
-    //                 document.getElementById('flashCardContainer').appendChild(questionDiv);
-    //                 document.getElementById('flashCardContainer').appendChild(answerDiv);
-    //             });
-    //             MathJax.typeset();
-
-    //         }).finally(() => {
-    //             // console.log({cardCount});
-    //             cardCountDiv.innerHTML = cardCountDivHTML;
-    //             totalCardCountDiv.innerHTML = `<p>There are ${cardCount} total cards available to study.</p>`;
-    //         });
-    //     }
-    // });
-
-
-    // TODO: delete this testText ///////////////////////////////////////////
-    let testText = `
+        let testText = `
 Page 1: Introduction to Physics
 Physics is a captivating and fundamental science that seeks to understand the natural world. At its core, physics is the study of matter, energy, and the interactions between them. It is a discipline that strives to uncover the laws governing the universe, from the smallest particles to the vastness of the cosmos. Physics is divided into various branches, including mechanics, thermodynamics, electromagnetism, and quantum mechanics, each focusing on specific aspects of physical phenomena.
 The Essence of Physics
@@ -227,94 +168,77 @@ Conclusion
 Measurements and units are the fundamental building blocks of physics, providing the means to quantify and understand the physical world. The SI system offers a universal standard for these measurements, ensuring that scientific observations and calculations are precise, accurate, and globally understood. As we delve deeper into the concepts of physics, the careful measurement and analysis of physical quantities will remain a cornerstone of our exploration.
 `;
 
-    // FlashCard class provided by common.js
-    let testFlashCard = new FlashCard({
-        id: 1,
-        question: "What is the capital of France?",
-        answer: "Paris",
-        collection: "Countries",
-        tags: ["Geography", "Europe"],
-        dateCreated: "2021-09-01",
-        difficulty: 3
-    });
-    let cardIdCounter = testFlashCard.id + 1;
-    let flashCardsFromChatGPT_json = '[{"question": "What is the relationship between frequency (f) and period (T) in oscillations?","answer": "$$f = \\\\frac{1}{T}$$","tags": ["oscillations", "frequency", "period"],"difficulty": "2","collection": "Physics - Oscillations"  },  {    "question": "What is the equation for the position of an object in simple harmonic motion (SHM) as a function of time?",    "answer": "$$x(t) = A\\\\cos(\\\\omega t + \\\\phi)$$",    "tags": ["SHM", "position", "equation"],    "difficulty": "3",    "collection": "Physics - Oscillations"  },  {    "question": "How is the angular frequency (ω) of an oscillating system related to the period (T)?",    "answer": "$$\\\\omega = \\\\frac{2\\\\pi}{T}$$",    "tags": ["angular frequency", "period", "oscillations"],    "difficulty": "3",    "collection": "Physics - Oscillations"  },  {    "question": "What is the maximum velocity (vmax) in terms of amplitude (A) and angular frequency (ω) in SHM?",    "answer": "$$v_{\\\\text{max}} = A\\\\omega$$",    "tags": ["maximum velocity", "SHM", "amplitude"],    "difficulty": "3",    "collection": "Physics - Oscillations"  },  {    "question": "What is the maximum acceleration (amax) in SHM and how is it related to amplitude (A) and angular frequency (ω)?",    "answer": "$$a_{\\\\text{max}} = A\\\\omega^2$$",    "tags": ["maximum acceleration", "SHM", "amplitude"],    "difficulty": "3",    "collection": "Physics - Oscillations"  },  {    "question": "What is the period (T) of a simple pendulum?",    "answer": "$$T = 2\\\\pi\\\\sqrt{\\\\frac{L}{g}}$$",    "tags": ["simple pendulum", "period", "equation"],    "difficulty": "3",    "collection": "Physics - Oscillations"  },  {    "question": "What is the formula for the potential energy (U) stored in a spring?",    "answer": "$$U = \\\\frac{1}{2}kx^2$$",    "tags": ["potential energy", "spring", "equation"],    "difficulty": "2",    "collection": "Physics - Oscillations"  },  {    "question": "How is the total energy (ETotal) in a simple harmonic oscillator expressed?",    "answer": "$$E_{\\\\text{Total}} = \\\\frac{1}{2}kA^2$$",    "tags": ["total energy", "SHM", "equation"],    "difficulty": "4",    "collection": "Physics - Oscillations"  },  {    "question": "What does the negative sign in Hooke\'s law equation indicate?",    "answer": "The negative sign in Hooke\'s law ($$F_s = -kx$$) indicates that the force exerted by the spring is in the opposite direction of the displacement.",    "tags": ["Hooke\'s law", "negative sign", "spring force"],    "difficulty": "2",    "collection": "Physics - Oscillations"  },  {    "question": "What is the principle of superposition in the context of oscillations?",    "answer": "The principle of superposition states that when two or more waves overlap in space, the resultant wave is the sum of the individual waves.",    "tags": ["superposition", "waves", "principle"],    "difficulty": "4",    "collection": "Physics - Oscillations"  },  {    "question": "What is phase shift (ϕ) in SHM?",    "answer": "Phase shift (ϕ) in SHM is the amount by which the wave is shifted horizontally from the original position. It is used to describe the initial position of the oscillating particle.",    "tags": ["phase shift", "SHM", "definition"],    "difficulty": "3",    "collection": "Physics - Oscillations"  },  {    "question": "How is kinetic energy (K) expressed in the context of SHM?",    "answer": "$$K= 1\\\\over{2}mv^2 = 1\\\\over{2}kA^2 - 1\\\\over{2}kx^2$$, where \'m\' is the mass, \'v\' is the velocity, \'k\' is the spring constant, \'A\' is the amplitude, and \'x\' is the displacement at any point in time.",    "tags": ["kinetic energy", "SHM", "equation"],    "difficulty": "4",    "collection": "Physics - Oscillations"  },  {    "question": "What defines the amplitude (A) in SHM?",    "answer": "The amplitude (A) in SHM is the maximum displacement from the equilibrium position. It represents the farthest distance an oscillating object moves from its central, or rest, position.",    "tags": ["amplitude", "SHM", "definition"],    "difficulty": "2",    "collection": "Physics - Oscillations"  },  {    "question": "What is the equation for the frequency of a mass-spring system in SHM?",    "answer": "$$f = \\\\frac{1}{2\\\\pi}\\\\sqrt{\\\\frac{k}{m}}$$, where \'k\' is the spring constant and \'m\' is the mass of the object.",    "tags": ["frequency", "mass-spring system", "SHM"],    "difficulty": "4",    "collection": "Physics - Oscillations"  },  {    "question": "What role does damping play in an oscillating system?",    "answer": "Damping is a force that opposes the motion of the oscillating system, reducing its energy over time, leading to a decrease in amplitude and eventually bringing the system to rest.",    "tags": ["damping", "oscillating system", "energy"],    "difficulty": "3",    "collection": "Physics - Oscillations"  },  {    "question": "How is the period of oscillation in a pendulum related to its length and acceleration due to gravity?",    "answer": "The period of oscillation (T) in a pendulum is directly proportional to the square root of its length (L) and inversely proportional to the square root of the acceleration due to gravity (g), as shown in the equation $$T = 2\\\\pi\\\\sqrt{\\\\frac{L}{g}}$$.",    "tags": ["pendulum", "period of oscillation", "gravity"],    "difficulty": "3",    "collection": "Physics - Oscillations"  }]';
-    JSON.parse(flashCardsFromChatGPT_json).forEach((card) => {
-        if (!card.hasOwnProperty('tags') || !Array.isArray(card.tags) || card.tags.length === 0) {
-            card.tags = ['General'];
-        }
-        if (!card.hasOwnProperty('collection') || typeof card.collection !== 'string' || card.collection.length === 0) {
-            card.collection = 'General';
-        }
-        if (!card.hasOwnProperty('difficulty') || typeof card.difficulty !== 'number' || card.difficulty < 1 || card.difficulty > 5) {
-            card.difficulty = 3;
-        }
-        if (!card.hasOwnProperty('dateCreated') || typeof card.dateCreated !== 'string' || card.dateCreated.length === 0) {
-            card.dateCreated = new Date().toISOString();
-        }
-        if (!card.hasOwnProperty('id') || typeof card.id !== 'number' || card.id < 1) {
-            card.id = cardIdCounter++;
-        }
-        if (!card.hasOwnProperty('question') || typeof card.question !== 'string' || card.question.length === 0) {
-            card.question = 'No question provided';
-        }
-        if (!card.hasOwnProperty('answer') || typeof card.answer !== 'string' || card.answer.length === 0) {
-            card.answer = 'No answer provided';
-        }
-        fetch('../api/saveNewCards', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify([card])
-        }).then((response) => {
-            return response.json();
-        }).then((data44444) => {
-            // console.log({data44444});
+        // FlashCard class provided by common.js
+        let testFlashCard = new FlashCard({
+            id: 1,
+            question: "What is the capital of France?",
+            answer: "Paris",
+            collection: "Countries",
+            tags: ["Geography", "Europe"],
+            dateCreated: "2021-09-01",
+            difficulty: 3
         });
-    });
-    fetch('../api/saveNewCards', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify([testFlashCard])
-    }).then((response) => {
-        return response.json();
-    }).then((data) => {
-        console.log(data);
-    });
-    // console.log(testFlashCard);
+        let cardIdCounter = testFlashCard.id + 1;
+        let flashCardsFromChatGPT_json = '[{"question": "What is the relationship between frequency (f) and period (T) in oscillations?","answer": "$$f = \\\\frac{1}{T}$$","tags": ["oscillations", "frequency", "period"],"difficulty": "2","collection": "Physics - Oscillations"  },  {    "question": "What is the equation for the position of an object in simple harmonic motion (SHM) as a function of time?",    "answer": "$$x(t) = A\\\\cos(\\\\omega t + \\\\phi)$$",    "tags": ["SHM", "position", "equation"],    "difficulty": "3",    "collection": "Physics - Oscillations"  },  {    "question": "How is the angular frequency (ω) of an oscillating system related to the period (T)?",    "answer": "$$\\\\omega = \\\\frac{2\\\\pi}{T}$$",    "tags": ["angular frequency", "period", "oscillations"],    "difficulty": "3",    "collection": "Physics - Oscillations"  },  {    "question": "What is the maximum velocity (vmax) in terms of amplitude (A) and angular frequency (ω) in SHM?",    "answer": "$$v_{\\\\text{max}} = A\\\\omega$$",    "tags": ["maximum velocity", "SHM", "amplitude"],    "difficulty": "3",    "collection": "Physics - Oscillations"  },  {    "question": "What is the maximum acceleration (amax) in SHM and how is it related to amplitude (A) and angular frequency (ω)?",    "answer": "$$a_{\\\\text{max}} = A\\\\omega^2$$",    "tags": ["maximum acceleration", "SHM", "amplitude"],    "difficulty": "3",    "collection": "Physics - Oscillations"  },  {    "question": "What is the period (T) of a simple pendulum?",    "answer": "$$T = 2\\\\pi\\\\sqrt{\\\\frac{L}{g}}$$",    "tags": ["simple pendulum", "period", "equation"],    "difficulty": "3",    "collection": "Physics - Oscillations"  },  {    "question": "What is the formula for the potential energy (U) stored in a spring?",    "answer": "$$U = \\\\frac{1}{2}kx^2$$",    "tags": ["potential energy", "spring", "equation"],    "difficulty": "2",    "collection": "Physics - Oscillations"  },  {    "question": "How is the total energy (ETotal) in a simple harmonic oscillator expressed?",    "answer": "$$E_{\\\\text{Total}} = \\\\frac{1}{2}kA^2$$",    "tags": ["total energy", "SHM", "equation"],    "difficulty": "4",    "collection": "Physics - Oscillations"  },  {    "question": "What does the negative sign in Hooke\'s law equation indicate?",    "answer": "The negative sign in Hooke\'s law ($$F_s = -kx$$) indicates that the force exerted by the spring is in the opposite direction of the displacement.",    "tags": ["Hooke\'s law", "negative sign", "spring force"],    "difficulty": "2",    "collection": "Physics - Oscillations"  },  {    "question": "What is the principle of superposition in the context of oscillations?",    "answer": "The principle of superposition states that when two or more waves overlap in space, the resultant wave is the sum of the individual waves.",    "tags": ["superposition", "waves", "principle"],    "difficulty": "4",    "collection": "Physics - Oscillations"  },  {    "question": "What is phase shift (ϕ) in SHM?",    "answer": "Phase shift (ϕ) in SHM is the amount by which the wave is shifted horizontally from the original position. It is used to describe the initial position of the oscillating particle.",    "tags": ["phase shift", "SHM", "definition"],    "difficulty": "3",    "collection": "Physics - Oscillations"  },  {    "question": "How is kinetic energy (K) expressed in the context of SHM?",    "answer": "$$K= 1\\\\over{2}mv^2 = 1\\\\over{2}kA^2 - 1\\\\over{2}kx^2$$, where \'m\' is the mass, \'v\' is the velocity, \'k\' is the spring constant, \'A\' is the amplitude, and \'x\' is the displacement at any point in time.",    "tags": ["kinetic energy", "SHM", "equation"],    "difficulty": "4",    "collection": "Physics - Oscillations"  },  {    "question": "What defines the amplitude (A) in SHM?",    "answer": "The amplitude (A) in SHM is the maximum displacement from the equilibrium position. It represents the farthest distance an oscillating object moves from its central, or rest, position.",    "tags": ["amplitude", "SHM", "definition"],    "difficulty": "2",    "collection": "Physics - Oscillations"  },  {    "question": "What is the equation for the frequency of a mass-spring system in SHM?",    "answer": "$$f = \\\\frac{1}{2\\\\pi}\\\\sqrt{\\\\frac{k}{m}}$$, where \'k\' is the spring constant and \'m\' is the mass of the object.",    "tags": ["frequency", "mass-spring system", "SHM"],    "difficulty": "4",    "collection": "Physics - Oscillations"  },  {    "question": "What role does damping play in an oscillating system?",    "answer": "Damping is a force that opposes the motion of the oscillating system, reducing its energy over time, leading to a decrease in amplitude and eventually bringing the system to rest.",    "tags": ["damping", "oscillating system", "energy"],    "difficulty": "3",    "collection": "Physics - Oscillations"  },  {    "question": "How is the period of oscillation in a pendulum related to its length and acceleration due to gravity?",    "answer": "The period of oscillation (T) in a pendulum is directly proportional to the square root of its length (L) and inversely proportional to the square root of the acceleration due to gravity (g), as shown in the equation $$T = 2\\\\pi\\\\sqrt{\\\\frac{L}{g}}$$.",    "tags": ["pendulum", "period of oscillation", "gravity"],    "difficulty": "3",    "collection": "Physics - Oscillations"  }]';
+        JSON.parse(flashCardsFromChatGPT_json).forEach((card) => {
+            if (!card.hasOwnProperty('tags') || !Array.isArray(card.tags) || card.tags.length === 0) {
+                card.tags = ['General'];
+            }
+            if (!card.hasOwnProperty('collection') || typeof card.collection !== 'string' || card.collection.length === 0) {
+                card.collection = 'General';
+            }
+            if (!card.hasOwnProperty('difficulty') || typeof card.difficulty !== 'number' || card.difficulty < 1 || card.difficulty > 5) {
+                card.difficulty = 3;
+            }
+            if (!card.hasOwnProperty('dateCreated') || typeof card.dateCreated !== 'string' || card.dateCreated.length === 0) {
+                card.dateCreated = new Date().toISOString();
+            }
+            if (!card.hasOwnProperty('id') || typeof card.id !== 'number' || card.id < 1) {
+                card.id = cardIdCounter++;
+            }
+            if (!card.hasOwnProperty('question') || typeof card.question !== 'string' || card.question.length === 0) {
+                card.question = 'No question provided';
+            }
+            if (!card.hasOwnProperty('answer') || typeof card.answer !== 'string' || card.answer.length === 0) {
+                card.answer = 'No answer provided';
+            }
+            // fetch('../api/saveNewCards', {
+            //     method: 'POST',
+            //     headers: {
+            //         'Content-Type': 'application/json'
+            //     },
+            //     body: JSON.stringify([card])
+            // }).then((response) => {
+            //     return response.json();
+            // }).then((data44444) => {
+            //     // console.log({data44444});
+            // });
+        });
+        // fetch('../api/saveNewCards', {
+        //     method: 'POST',
+        //     headers: {
+        //         'Content-Type': 'application/json'
+        //     },
+        //     body: JSON.stringify([testFlashCard])
+        // }).then((response) => {
+        //     return response.json();
+        // }).then((data) => {
+        //     console.log(data);
+        // });
+        // console.log(testFlashCard);
 
-    fetch('../api/tagMatch?tag=Geog').then((response) => {
-        return response.json();
-    }).then((data) => {
-        console.log({ data });
-    });
+        fetch('../api/getWrongAnswers?cardId=1&numberOfAnswers=10').then((response) => {
+            return response.json();
+        }).then((data) => {
+            // console.log(data);
+        });
 
-    // fetch('../api/getWrongAnswers?cardId=1&numberOfAnswers=10').then((response) => {
-    //     return response.json();
-    // }).then((data) => {
-    //     // console.log(data);
-    // });
-
-    // fetch('../api/generateCards',
-    //     {
-    //         method: 'POST',
-    //         headers: {
-    //             'Content-Type': 'application/json'
-    //         },
-    //         body: JSON.stringify({
-    //             text: testText,
-    //             numberOfCards: 10,
-    //             difficulty: 3
-    //         })
-    //     }
-    // ).then((response) => {
-    //     return response.json();
-    // }).then((data) => {
-    //     // console.log("generated card(s):" + JSON.stringify(data, null, 2));
-    // });
+        CleverDecks.generateCardsFromText(testText, 10, 3).then((data) => {
+            console.log("generated card(s):" + JSON.stringify(data, null, 2));
+        }).catch((error) => {
+            console.error({ error });
+        });
+    })();
 </script>
 
 </html>

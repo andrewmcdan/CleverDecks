@@ -1,13 +1,23 @@
 const _apiBase = '../api/';
 
-class CleverDecks{
-    constructor(){
+class CleverDecks_class {
+    constructor() {
         this.socket = null;
         if (typeof io === 'function') {
             this.setSocket(io());
-        }else{
+        } else {
             console.log("io() is not available");
         }
+        this.socketId = null;
+    }
+
+    async waitReady() {
+        return new Promise(async (resolve) => {
+            while (this.socketId === null) {
+                await new Promise(r => setTimeout(r, 100));
+            }
+            resolve();
+        });
     }
 
     /**
@@ -16,24 +26,30 @@ class CleverDecks{
      * @param {object} socket - a socket.io socket
      * @returns - nothing
      */
-    setSocket(socket){
+    setSocket(socket) {
         this.socket = socket;
         this.socketIoConnected = false;
         this.socketMessageHandlers = [];
         this.socket?.on('connect', () => {
             console.log('Connected to socket.io server');
-            this.socketIoConnected = true;
         });
-    
+
         this.socket?.on('disconnect', () => {
             console.log('Disconnected from socket.io server');
             this.socketIoConnected = false;
         });
-    
+
         this.socket?.on('message', (message) => {
             // console.log('Received message:', message);
             if (message?.type in this.socketMessageHandlers) {
                 this.socketMessageHandlers[message.type](message.data);
+            }
+            if (message?.type === 'socketId') {
+                this.socketId = message.data;
+                // set cookie for socketId
+                this.socketIoConnected = true;
+                document.cookie = "socketId=" + this.socketId + "; path=/" + "; max-age=" + 60 * 60 * 24 * 365;
+                console.log(this.socketId);
             }
         });
     }
@@ -47,16 +63,16 @@ class CleverDecks{
      * @description - gets the names of all available collections
      * @returns - an array of strings, each string is the name of a collection
      */
-    getCollectionNames(){
+    getCollectionNames() {
         return new Promise((resolve, reject) => {
             fetch(_apiBase + 'getCollections').then(response => {
-                if(response.ok){
+                if (response.ok) {
                     return response.json();
-                }else{
+                } else {
                     reject("Error fetching collections");
                 }
             }).then(data => {
-                if(data.status == 'ok') resolve(data.collections);
+                if (data.status == 'ok') resolve(data.collections);
                 else reject(data.reason);
             }).catch(err => {
                 reject(err + getLineNumber());
@@ -76,15 +92,15 @@ class CleverDecks{
      *   dateModifiedRange: a string in the format "YYYY-MM-DD,YYYY-MM-DD" to filter by date modified
      * @returns - an array of FlashCards
      */
-    getCards(params = {}){
+    getCards(params = {}) {
         return new Promise((resolve, reject) => {
             // if the params object is empty, reject the promise
-            if(Object.keys(params).length === 0){
+            if (Object.keys(params).length === 0) {
                 reject("Provided object must have at least one key-value pair.");
             }
             // parse params object into a query string
             let queryString = '';
-            for(let key in params){
+            for (let key in params) {
                 queryString += key + '=' + params[key] + '&';
             }
             // remove the trailing ampersand
@@ -92,43 +108,43 @@ class CleverDecks{
             // get card count
             this.getCardCount(params).then(count => {
                 // if the count is 0, resolve with an empty array
-                if(count === 0){
+                if (count === 0) {
                     resolve([]);
                 }
                 // if the count is greater than 100, loop through the cards in groups of 100, adding numberOfCards to end of query string
-                if(count > 100){
+                if (count > 100) {
                     let cards = [];
                     let numberOfCards = 100;
-                    for(let i = 0; i < count; i += 100){
+                    for (let i = 0; i < count; i += 100) {
                         fetch(_apiBase + 'getCards?' + queryString + '&numberOfCards=' + numberOfCards + '&offset=' + i).then(response => {
-                            if(response.ok){
+                            if (response.ok) {
                                 return response.json();
-                            }else{
+                            } else {
                                 reject("Error fetching cards");
                             }
                         }).then(data => {
-                            if(data.status == 'ok'){
+                            if (data.status == 'ok') {
                                 cards = cards.concat(data.cards);
-                                if(cards.length === count){
+                                if (cards.length === count) {
                                     resolve(cards);
                                 }
-                            }else{
+                            } else {
                                 reject(data.reason);
                             }
                         }).catch(err => {
                             reject(err + getLineNumber());
                         });
                     }
-                }else{
+                } else {
                     // if the count is less than 100, fetch the cards adding numberOfCards to end of query string
                     fetch(_apiBase + 'getCards?' + queryString + '&numberOfCards=' + count).then(response => {
-                        if(response.ok){
+                        if (response.ok) {
                             return response.json();
-                        }else{
+                        } else {
                             reject("Error fetching cards");
                         }
                     }).then(data => {
-                        if(data.status == 'ok') resolve(data.cards);
+                        if (data.status == 'ok') resolve(data.cards);
                         else reject(data.reason);
                     }).catch(err => {
                         reject(err + getLineNumber());
@@ -149,9 +165,9 @@ class CleverDecks{
      *  reason - a string with the reason for the status if the status is "error"
      * 
      */
-    saveNewCards(cards){
+    saveNewCards(cards) {
         return new Promise((resolve, reject) => {
-            if(Array.isArray(cards) === false) cards = [cards];
+            if (Array.isArray(cards) === false) cards = [cards];
             fetch(_apiBase + 'saveNewCards', {
                 method: 'POST',
                 headers: {
@@ -159,13 +175,13 @@ class CleverDecks{
                 },
                 body: JSON.stringify(cards)
             }).then(response => {
-                if(response.ok){
+                if (response.ok) {
                     return response.json();
-                }else{
+                } else {
                     reject("Error saving cards");
                 }
             }).then(data => {
-                if(data.status == 'ok') resolve();
+                if (data.status == 'ok') resolve();
                 else reject(data.reason);
             }).catch(err => {
                 reject(err + getLineNumber());
@@ -184,9 +200,9 @@ class CleverDecks{
      * question - (optional) the question of the card
      * answer - (optional) the answer of the card
      */
-    updateCard(params){
+    updateCard(params) {
         return new Promise((resolve, reject) => {
-            if(typeof params.id === 'undefined'){
+            if (typeof params.id === 'undefined') {
                 reject("id is required");
             }
             fetch(_apiBase + 'updateCard', {
@@ -196,13 +212,13 @@ class CleverDecks{
                 },
                 body: JSON.stringify(params)
             }).then(response => {
-                if(response.ok){
+                if (response.ok) {
                     return response.json();
-                }else{
+                } else {
                     reject("Error updating card");
                 }
             }).then(data => {
-                if(data.status == 'ok') resolve();
+                if (data.status == 'ok') resolve();
                 else reject(data.reason);
             }).catch(err => {
                 reject(err + getLineNumber());
@@ -215,7 +231,7 @@ class CleverDecks{
      * @description - deletes a card from a collection
      * @param {number} id - the id of the card to delete
      */
-    deleteCard(id){
+    deleteCard(id) {
         return new Promise((resolve, reject) => {
             fetch(_apiBase + 'deleteCard', {
                 method: 'POST',
@@ -224,13 +240,13 @@ class CleverDecks{
                 },
                 body: JSON.stringify({ id: id })
             }).then(response => {
-                if(response.ok){
+                if (response.ok) {
                     return response.json();
-                }else{
+                } else {
                     reject("Error deleting card");
                 }
             }).then(data => {
-                if(data.status == 'ok') resolve();
+                if (data.status == 'ok') resolve();
                 else reject(data.reason);
             }).catch(err => {
                 reject(err + getLineNumber());
@@ -243,30 +259,38 @@ class CleverDecks{
      * @description - generates cards from a text
      * @param {string} text - the text to generate cards from
      * @param {number} numberOfCards - the number of cards to generate
+     * @param {number} difficulty - the difficulty level of the cards to generate
      * @returns - an array of FlashCards
      */
-    generateCardsFromText(text){
+    generateCardsFromText(text, numberOfCards, difficulty = 3) {
         return new Promise((resolve, reject) => {
+            if (!this.socketIoConnected) {
+                reject("Socket.io is not connected");
+            }
             fetch(_apiBase + 'generateCards', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    credentials: 'include'
                 },
-                body: JSON.stringify({ text: text })
+
+                body: JSON.stringify({ text: text, numberOfCards: numberOfCards, difficulty: difficulty })
             }).then(response => {
-                if(response.ok){
+                if (response.ok) {
                     return response.json();
-                }else{
+                } else {
                     reject("Error generating cards");
                 }
             }).then(data => {
-                if(data.status == 'ok'){
+                if (data.status == 'ok') {
                     let cards = [];
+                    let id = 1;
                     data.cards.forEach(card => {
+                        card.id = id++;
                         cards.push(new FlashCard(card));
                     });
                     resolve(cards);
-                }else{
+                } else {
                     reject(data.reason);
                 }
             }).catch(err => {
@@ -282,29 +306,38 @@ class CleverDecks{
      * @param {number} numberOfAnswers - the number of wrong answers to generate
      * @returns - an array of strings, each string is a wrong answer
      */
-    generateWrongAnswersFromCard(id, numberOfAnswers){
+    generateWrongAnswersFromCard(id, numberOfAnswers) {
         return new Promise((resolve, reject) => {
+            if (!this.socketIoConnected) {
+                reject("Socket.io is not connected");
+            }
             // if the id is not a number, reject the promise
-            if(typeof id !== 'number'){
+            if (typeof id !== 'number') {
                 reject("id must be a number");
             }
             let queryString = 'id=' + id;
             queryString += '&numberOfAnswers=' + numberOfAnswers;
-            fetch(_apiBase + 'getWrongAnswers?' + queryString).then(response => {
-                if(response.ok){
+            fetch(_apiBase + 'getWrongAnswers?' + queryString,
+                {
+                    headers: {
+                        credentials: 'include'
+                    }
+                }
+            ).then(response => {
+                if (response.ok) {
                     return response.json();
-                }else{
+                } else {
                     reject("Error generating wrong answers");
                 }
             }).then(data => {
-                if(data.status == 'ok') resolve(data.answers);
+                if (data.status == 'ok') resolve(data.answers);
                 else reject(data.reason);
             }).catch(err => {
                 reject(err + getLineNumber());
             });
         });
     }
-    
+
     /**
      * @method getCardCount
      * @description - gets the count of cards from a collection
@@ -317,28 +350,28 @@ class CleverDecks{
      *  dateCreatedRange: a string in the format "YYYY-MM-DD,YYYY-MM-DD" to filter by date created
      *  dateModifiedRange: a string in the format "YYYY-MM-DD,YYYY-MM-DD" to filter by date modified
      */
-    getCardCount(params = {}){
+    getCardCount(params = {}) {
         return new Promise((resolve, reject) => {
             // if the params object is empty, reject the promise
-            if(Object.keys(params).length === 0){
+            if (Object.keys(params).length === 0) {
                 reject("Provided object must have at least one key-value pair.");
             }
             // parse params object into a query string
             let queryString = '';
-            for(let key in params){
+            for (let key in params) {
                 queryString += key + '=' + params[key] + '&';
             }
             // remove the trailing ampersand
             queryString = queryString.slice(0, -1);
             // get card count
             fetch(_apiBase + 'getCardCount?' + queryString).then(response => {
-                if(response.ok){
+                if (response.ok) {
                     return response.json();
-                }else{
+                } else {
                     reject("Error fetching card count");
                 }
             }).then(data => {
-                if(data.status == 'ok') resolve(data.count);
+                if (data.status == 'ok') resolve(data.count);
                 else reject(data.reason);
             }).catch(err => {
                 reject(err + getLineNumber());
@@ -357,16 +390,25 @@ class CleverDecks{
      * tagsExistFuzzy - boolean, true if the provided tag matches fuzzily a tag in a collection, false if it does not
      * @rejects - a string with the reason for the rejection
      */
-    tagMatch(tag){
+    tagMatch(tag) {
         return new Promise((resolve, reject) => {
             fetch(_apiBase + 'tagMatch?tag=' + tag).then(response => {
-                if(response.ok){
+                if (response.ok) {
                     return response.json();
-                }else{
+                } else {
                     reject("Error fetching tag match");
                 }
             }).then(data => {
-                if(data.status == 'ok') resolve(data);
+                if (data.status == 'ok') {
+                    let tagsMatchFuzzy = data.tagsMatchFuzzy;
+                    let tagsMatchFirstChars = data.tagsMatchFirstChars;
+                    // concatenate the two arrays and remove duplicates
+                    let tagsMatch = tagsMatchFuzzy.concat(tagsMatchFirstChars.filter(tag => tagsMatchFuzzy.indexOf(tag) === -1));
+                    // order the array starting with the one most like the provided tag
+                    tagsMatch.sort((a, b) => levenshteinDistance(tag, a.substring(0, tag.length)) - levenshteinDistance(tag, b.substring(0, tag.length)));
+                    data.tagsMatch = tagsMatch;
+                    resolve(data);
+                }
                 else reject(data.reason);
             }).catch(err => {
                 reject(err + getLineNumber());
@@ -379,16 +421,16 @@ class CleverDecks{
      * @description - gets whether or not the OpenAI API is enabled
      * @returns - a promise that resolves with a boolean, true if the OpenAI API is enabled, false if it is not
      */
-    getGPTenabled(){
+    getGPTenabled() {
         return new Promise((resolve, reject) => {
             fetch(_apiBase + 'getGPTenabled').then(response => {
-                if(response.ok){
+                if (response.ok) {
                     return response.json();
-                }else{
+                } else {
                     reject("Error fetching GPT enabled");
                 }
             }).then(data => {
-                if(data.status == 'ok') resolve(data.enabled);
+                if (data.status == 'ok') resolve(data.enabled);
                 else reject(data.reason);
             }).catch(err => {
                 reject(err + getLineNumber());
@@ -403,7 +445,7 @@ class CleverDecks{
      * @returns - a promise that resolves with a boolean, true if the key was set, false if it was not set
      * @rejects - a string with the reason for the rejection
      */
-    setGPTapiKey(key){
+    setGPTapiKey(key) {
         return new Promise((resolve, reject) => {
             // fetch post
             fetch(_apiBase + 'setGPTapiKey', {
@@ -413,13 +455,13 @@ class CleverDecks{
                 },
                 body: JSON.stringify({ apiKey: key })
             }).then(response => {
-                if(response.ok){
+                if (response.ok) {
                     return response.json();
-                }else{
+                } else {
                     reject("Error setting GPT key");
                 }
             }).then(data => {
-                if(data.status == 'ok') resolve(true);
+                if (data.status == 'ok') resolve(true);
                 else reject(data.reason);
             }).catch(err => {
                 reject(err + getLineNumber());
@@ -433,9 +475,9 @@ class CleverDecks{
      * @param {string} message - the message to log
      * @param {string} level - the log level, one of "info", "warn", "error", "debug", "trace" 
      */
-    logEntry(message, level){
-        if(typeof level === 'undefined') level = "info";
-        if(level !== "info" && level !== "warn" && level !== "error" && level !== "debug" && level !== "trace"){
+    logEntry(message, level) {
+        if (typeof level === 'undefined') level = "info";
+        if (level !== "info" && level !== "warn" && level !== "error" && level !== "debug" && level !== "trace") {
             level = "info";
         }
         fetch(_apiBase + 'addLogEntry', {
@@ -445,13 +487,13 @@ class CleverDecks{
             },
             body: JSON.stringify({ message: message, level: level })
         }).then(response => {
-            if(response.ok){
+            if (response.ok) {
                 return response.json();
-            }else{
+            } else {
                 console.log("Error logging entry");
             }
         }).then(data => {
-            if(data.status !== 'ok'){
+            if (data.status !== 'ok') {
                 console.log(data.reason);
             }
         }).catch(err => {
@@ -465,23 +507,254 @@ class CleverDecks{
      * @param {string} level - the log level, one of "off", "info", "warn", "error", "debug", "trace"
      * @returns - a promise that resolves with a boolean, true if the log level was set, false if it was not set
      */
-    setLogLevel(level){
+    setLogLevel(level) {
         return new Promise((resolve, reject) => {
-            if(level !== "off" && level !== "info" && level !== "warn" && level !== "error" && level !== "debug" && level !== "trace"){
+            if (level !== "off" && level !== "info" && level !== "warn" && level !== "error" && level !== "debug" && level !== "trace") {
                 reject("Invalid log level");
             }
             fetch(_apiBase + 'setLogLevel?level=' + level).then(response => {
-                if(response.ok){
+                if (response.ok) {
                     return response.json();
-                }else{
+                } else {
                     reject("Error setting log level");
                 }
             }).then(data => {
-                if(data.status == 'ok') resolve(true);
+                if (data.status == 'ok') resolve(true);
                 else reject(data.reason);
             }).catch(err => {
                 reject(err + getLineNumber());
             });
         });
     }
+}
+
+class TextStreamer {
+    constructor(max) {
+        this.maxSize = max;
+        this.text = '';
+    }
+
+    setTExt(text) {
+        this.text = text;
+    }
+
+    addText(text) {
+        this.text += text;
+    }
+
+    getText() {
+        if (this.text.length > this.maxSize) {
+            this.text = this.text.slice(this.text.length - this.maxSize);
+        }
+        return this.text;
+    }
+}
+
+
+// create a CleverDecks object
+const CleverDecks = new CleverDecks_class();
+
+/**
+ * @function setStatusMessage
+ * @description - sets the status message that appears at the bottom of the page
+ * @param {string} message - the message to set
+ * @param {string} bgcolor - the background color of the status message
+ * @returns - nothing
+ * @notes - this function is set to an empty function and is later set to a function that sets the status message
+ */
+let setStatusMessage = () => { };
+
+// This next line creates a closure around this part of the file so that the variables and functions are not in the global scope
+(async () => {
+    // wait for page to finish loading
+    let pageCompletedLoading = false;
+    document.addEventListener('DOMContentLoaded', () => {
+        pageCompletedLoading = true;
+    });
+    while (pageCompletedLoading === false) {
+        await new Promise(r => setTimeout(r, 100));
+    }
+    // set up the "Study a Collection(Quick Load)" drop down menu
+    const collectionSelect = document.getElementById('collectionSelect');
+    collectionSelect.addEventListener('change', (event) => {
+        let collection = event.target.value;
+        if (collection === "Select a Collection") {
+            return;
+        }
+        window.location.href = `study.html?collection=${collection}`;
+    });
+
+    // load the collection names into the collection select
+    let collectionNames = [];
+    CleverDecks.getCollectionNames().then((collections) => {
+        let collectionCount = collections.length;
+        for (let i = 0; i < collectionCount; i++) {
+            let option = document.createElement('option');
+            option.value = collections[i];
+            option.text = collections[i];
+            collectionNames.push(collections[i]);
+            collectionSelect.appendChild(option);
+        }
+    }).catch((error) => {
+        console.error({ error });
+    });
+
+    // create a textStreamer for the status messages that come from the backend
+    const statusMessageStreamer = new TextStreamer(100);
+    let statusMessageTimeout = null;
+    let connectedMessageInterval = setInterval(() => {
+        const statusMessageGreenAndGone = () => {
+            document.getElementById('status').classList.add('gone');
+            document.getElementById('statusMessageContainer').classList.remove('bg-green-500');
+        };
+        const statusMessageFadeout = () => {
+            document.getElementById('status').classList.add('fade-out');
+            setTimeout(statusMessageGreenAndGone, 1000);
+        };
+        if (CleverDecks.socketIoConnected === true) {
+            clearInterval(connectedMessageInterval);
+            setTimeout(statusMessageFadeout, 500);
+            document.getElementById('statusMessageContainer').classList.remove('bg-red-500');
+            document.getElementById('statusMessageContainer').classList.add('bg-green-500');
+            document.getElementById('statusMessage').innerHTML = `Status: Connected`;
+        }
+    }, 250);
+
+    setStatusMessage = (message, bgcolor = "black") => {
+        let statusMessageContainer = document.getElementById('statusMessageContainer');
+        // remove all the bg classes
+        let classes = statusMessageContainer.classList;
+        for (let i = classes.length - 1; i >= 0; i--) {
+            if (classes[i].startsWith('bg-') && classes[i].endsWith('-500')) {
+                statusMessageContainer.classList.remove(classes[i]);
+            }
+        }
+        // add the new class
+        let newBgClass = `bg-${bgcolor}-500`;
+        statusMessageContainer.classList.add(newBgClass);
+        // set the new message
+        document.getElementById('statusMessage').innerHTML = `Status: ${message}`;
+        // fade in the status div
+        if (document.getElementById('status').classList.contains('gone')) {
+            document.getElementById('status').classList.remove('gone');
+        }
+        if (document.getElementById('status').classList.contains('fade-out')) {
+            document.getElementById('status').classList.remove('fade-out');
+        }
+        // set a timeout to fade out the status div
+        if (statusMessageTimeout !== null) {
+            clearTimeout(statusMessageTimeout);
+        }
+        statusMessageTimeout = setTimeout(() => {
+            document.getElementById('status').classList.add('fade-out');
+            setTimeout(() => {
+                document.getElementById('status').classList.add('gone');
+                statusMessageContainer.classList.remove(newBgClass);
+            }, 1000);
+        }, 1000);
+    }
+
+    CleverDecks.subscribeToSocketMessage(socketMessageTypes[0], (message) => {
+        statusMessageStreamer.addText(message.chunk);
+        setStatusMessage("Generating - " + statusMessageStreamer.getText(), 'blue');
+    });
+    CleverDecks.subscribeToSocketMessage(socketMessageTypes[1], (message) => {
+        statusMessageStreamer.addText(message.chunk);
+        setStatusMessage("Generating - " + statusMessageStreamer.getText(), 'blue');
+    });
+    CleverDecks.subscribeToSocketMessage(socketMessageTypes[2], (message) => {
+        statusMessageStreamer.setText("");
+        setStatusMessage("Generating complete.", 'green');
+    });
+
+    let searchIndex = 0;
+    const searchBox = document.getElementById('search');
+    document.addEventListener('click', (event) => {
+        if (event.target.id === 'searchResultsList') return;
+        if (event.target.id === 'searchResultsContainer') return;
+        if (event.target.classList.contains('searchResult')) return;
+        if (event.target === searchBox) return;
+        document.getElementById('searchResultsContainer').classList.add('gone');
+    });
+    searchBox.addEventListener('focus', (event) => {
+        document.getElementById('searchResultsContainer').classList.remove('gone');
+    });
+    searchBox.addEventListener('input', (event) => {
+        const thisSearchIndex = searchIndex++;
+        // create a drop down area that shows suggested tags and collections
+        let search = event.target.value;
+        if (search.length === 0) {
+            return;
+        }
+        // use levenshtein distance to find the closest match to the search string from collection array
+        let closestMatch = collectionNames.reduce((acc, curr) => {
+            let distance = levenshteinDistance(search, curr);
+            if (distance < acc.distance) {
+                acc.distance = distance;
+                acc.match = curr;
+            }
+            return acc;
+        }, { distance: 100, match: "" });
+
+        CleverDecks.tagMatch(search).then(data => {
+            const searchResultsContainer = document.getElementById('searchResultsContainer');
+            const searchResultsList = document.getElementById('searchResultsList');
+            [...searchResultsList.childNodes].forEach((child) => {
+                if (child.nodeType === Node.ELEMENT_NODE && child.getAttribute("searchIndex") !== thisSearchIndex.toString()) {
+                    searchResultsList.removeChild(child);
+                }
+            });
+            searchResultsList.innerHTML = '';
+            data.tagsMatch.forEach(tag => {
+                let li = document.createElement('li');
+                li.setAttribute("searchIndex", thisSearchIndex.toString());
+                li.classList.add('searchResult');
+                li.innerHTML = tag;
+                li.addEventListener('click', (event) => {
+                    searchBox.value = event.target.innerHTML;
+                    searchBox.dispatchEvent(new Event('input'));
+                });
+                searchResultsList.appendChild(li);
+            });
+
+            let li = document.createElement('li');
+            li.setAttribute("searchIndex", thisSearchIndex.toString());
+            li.classList.add('searchResult');
+            li.innerHTML = "Collection: " + closestMatch.match;
+            li.addEventListener('click', (event) => {
+                searchBox.value = event.target.innerHTML;
+                searchBox.dispatchEvent(new Event('input'));
+            });
+            searchResultsList.appendChild(li);
+            searchResultsContainer.classList.remove('gone');
+        }).catch(err => {
+            console.log(err);
+        });
+    });
+})();
+
+// This was a suggestion by ChatGPT
+function levenshteinDistance(a, b, lower = true) {
+    if(lower === true){
+        a = a.toLowerCase();
+        b = b.toLowerCase();
+    }
+    const initialWeight = 3; // Weight for the initial characters
+    const initialCharacters = a.length / 3; // Number of initial characters considered more important
+    let weightFactor = 1;
+    const matrix = [];
+    for (let i = 0; i <= b.length; i++)matrix[i] = [i];
+    for (let j = 0; j <= a.length; j++)matrix[0][j] = j;
+    for (let i = 1; i <= b.length; i++) for (let j = 1; j <= a.length; j++) {
+        weightFactor = (j <= initialCharacters || i <= initialCharacters) ? initialWeight : 1;
+        if (b[i - 1] === a[j - 1]) matrix[i][j] = matrix[i - 1][j - 1];
+        else {
+            matrix[i][j] = Math.min(
+                matrix[i - 1][j - 1] + weightFactor, // substitution
+                matrix[i][j - 1] + weightFactor, // insertion
+                matrix[i - 1][j] + weightFactor // deletion
+            );
+        }
+    }
+    return matrix[b.length][a.length];
 }
