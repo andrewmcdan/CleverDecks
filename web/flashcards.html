@@ -3,182 +3,126 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=0.4">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
     <link rel="stylesheet" href="styles.css">
     <link rel="icon" href="img/favicon-180x180.png" type="image/png">
     <!-- MathJax -- This library is used to render mathematical expressions. -->
-    <script>
-        MathJax = {
-            chtml: {
-                scale: 1.5
-            },
-            tex: {
-                formatError: (jax, error) => {
-                    jax.formatError(error);
-                    // console.log("MathJax Error: ", error);
-                    // console.log("MathJax Jax: ", jax);
-                }
-            }
-        };
-    </script>
-    <script id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>MathJax = { chtml: { scale: 1.5 }, tex: { formatError: (jax, error) => { jax.formatError(error); } } };</script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script src="common.js"></script>
     <!-- Socket.io library -->
     <script src="/socket.io/socket.io.js"></script>
     <script src="web.js"></script>
-    <title>CleverDecks - Home</title>
+    <title>CleverDecks - My FlashCards</title>
 </head>
 
-<body class="min-w-500px min-h-full">
-    <div class="fixed bottom-0 left-0 z-10 bg-black" id="status">
-        <div class="flex items-center justify-center bg-red-500 text-white p-0.5" id="statusMessageContainer">
-            <p class="text-center text-l font-mono m-0 p-0" id="statusMessage">Status: Connecting</p>
+<body class="min-w-500px flex bg-gray-600 h-auto justify-evenly">
+    <div class=" bg-transparent">
+        <!-- Left spacer -->
+    </div>
+    <div class="">
+        <div class="container w-[1600px] shadow-xl bg-white shadow-black">
+            <nav class="navbar bg-gray-800 text-white flex">
+                <div class="items-start container px-0 py-0 flex mx-0 my-0">
+                    <div id="logo" class="size-24 border-4 border-black" onclick="window.location.href = 'index.html'">
+                        <img src="img/CD_logo_1024x1024.png" alt="CleverDecks">
+                    </div>
+                    <div class="navBtn flex items-center justify-center size-24 hover:bg-white hover:text-black "
+                        onclick="window.location.href = 'index.html'">
+                        <p class="text-center text-2xl">Home</p>
+                    </div>
+                    <div class="navBtn flex items-center justify-center size-24 hover:bg-white hover:text-black"
+                        onclick="window.location.href = 'study.html'">
+                        <p class="text-center text-2xl">Study</p>
+                    </div>
+                    <div class="navBtn flex items-center justify-center size-24 hover:bg-white hover:text-black"
+                        onclick="window.location.href = 'quiz.html'">
+                        <p class="text-center text-2xl">Quiz</p>
+                    </div>
+                    <div class="navBtn flex items-center justify-center size-24 hover:bg-white hover:text-black"
+                        onclick="window.location.href = 'create.html'">
+                        <p class="text-center text-2xl">Create</p>
+                    </div>
+                </div>
+                <div class="px-4 realtive">
+                    <div id="searchResultsContainer"
+                        class="absolute gone top-10 bg-white shadow-md shadow-white rounded-sm border border-gray-200 p-4">
+                        <ul id="searchResultsList" class="text-black w-full">
+                            <!-- Search results will be added here -->
+                        </ul>
+                    </div>
+                    <div id="cardSearch" class="size-1/2 flex items-center text-black">
+                        <input type="text" id="search" placeholder="Search..." onkeyup="" autocomplete="off">
+                        <button class="border-2 border-white text-white" id="searchButton" onclick="">Search</button>
+
+                    </div>
+                    <div id="cardDropDown" class="size-1/2  text-black">
+                        <select id="collectionSelect">
+                            <option>Study a Collection(Quick Load)</option>
+                        </select>
+                    </div>
+                </div>
+            </nav>
+            <div class="content">
+                <div id="totalCardCount" class="border-2 border-black">
+                    Total Cards: <span id="cardCount">0</span>
+                </div>
+                <div id="flashCardContainer">
+                    <!-- FlashCard components will be added here -->
+                </div>
+            </div>
+            <footer class="bg-gray-800 text-white items-center justify-center w-full p-6">
+                <div class="flex items-center mb-4 justify-center">
+                    <a href="https://github.com/andrewmcdan/CleverDecks" target="_blank" class="px-2 py-4">GitHub</a> |
+                    <a href="https://github.com/andrewmcdan/CleverDecks?tab=AGPL-3.0-1-ov-file" target="_blank"
+                        class="px-2 py-4">License</a>
+                    |
+                    <a href="about-us.html" target="_blank" class="px-2 py-4">About Us</a> |
+                    <a href="flashcards.html" target="_blank" class="px-2 py-4">My FlashCards</a>
+                </div>
+                <div class="footer-logo flex items-center justify-center">
+                    <a href="/">
+                        <img src="img/CD_logo_1024x1024.png" alt="CleverDecks Logo" style="height: 100px;">
+                    </a>
+                </div>
+                <div class="flex items-center mt-4 justify-around">
+                    <p>Copyright &copy; 2024 by Edwin Maldonado, Andrew McDaniel, Bryce Martin-White, Elizabeth King,
+                        and
+                        Uday
+                        Kadarla. All rights reserved.</p>
+                </div>
+            </footer>
+            <div class="fixed bottom-0 left-0 z-10 bg-black" id="status">
+                <div class="flex items-center justify-center bg-red-500 text-white p-0.5" id="statusMessageContainer">
+                    <p class="text-center text-l font-mono m-0 p-0" id="statusMessage">Status: Connecting</p>
+                </div>
+            </div>
         </div>
     </div>
-    <nav class="navbar relative top-0 left-0 bg-gray-800 text-white flex">
-        <div class="items-start container px-0 py-0 flex mx-0 my-0">
-            <div id="logo" class="size-24" onclick="window.location.href = 'index.html'">
-                <img src="img/CD_logo_1024x1024.png" alt="CleverDecks">
-            </div>
-            <div class="navBtn flex items-center justify-center size-24 hover:bg-white hover:text-black "
-                onclick="window.location.href = 'index.html'">
-                <p class="text-center text-2xl">Home</p>
-            </div>
-            <div class="navBtn flex items-center justify-center size-24 hover:bg-white hover:text-black"
-                onclick="window.location.href = 'study.html'">
-                <p class="text-center text-2xl">Study</p>
-            </div>
-            <div class="navBtn flex items-center justify-center size-24 hover:bg-white hover:text-black"
-                onclick="window.location.href = 'quiz.html'">
-                <p class="text-center text-2xl">Quiz</p>
-            </div>
-            <div class="navBtn flex items-center justify-center size-24 hover:bg-white hover:text-black"
-                onclick="window.location.href = 'create.html'">
-                <p class="text-center text-2xl">Create</p>
-            </div>
-        </div>
-        <div class="px-4">
-            <div id="cardSearch" class="size-1/2 flex items-center text-black">
-                <input type="text" id="search" placeholder="Search..." onkeyup="searchCards()">
-                <button class="border-2 border-white text-white" id="searchButton"
-                    onclick="searchCards()">Search</button>
-            </div>
-            <div id="cardDropDown" class="size-1/2 flex items-center text-black">
-                <select id="collectionSelect">
-                    <option>Study a Collection(Quick Load)</option>
-                </select>
-            </div>
-        </div>
-    </nav>
-    <div id="totalCardCount" class="flex items-center justify-center text-3xl">
-        <p>Total Cards: <span id="cardCount">0</span></p>
+    <div class=" bg-transparent">
+        <!-- Left spacer -->
     </div>
-    <div class="content min-h-full w-1/3">
-        <div id="flashCardContainer" class="w-1/3">
-            <!-- FlashCard components will be added here -->
-        </div>
-    </div>
-    <footer class="bg-gray-800 text-white items-center justify-center w-full p-6">
-        <div class="flex items-center mb-4 justify-center">
-            <a href="https://github.com/andrewmcdan/CleverDecks" target="_blank" class="px-2 py-4">GitHub</a> |
-            <a href="https://github.com/andrewmcdan/CleverDecks?tab=AGPL-3.0-1-ov-file" target="_blank"
-                class="px-2 py-4">License</a>
-            |
-            <a href="about-us.html" target="_blank" class="px-2 py-4">About Us</a> |
-            <a href="flashcards.html" target="_blank" class="px-2 py-4">My FlashCards</a>
-        </div>
-        <div class="footer-logo flex items-center justify-center">
-            <a href="/">
-                <img src="img/CD_logo_1024x1024.png" alt="CleverDecks Logo" style="height: 100px;">
-            </a>
-        </div>
-        <div class="flex items-center mt-4 justify-around">
-            <p>Copyright &copy; 2024 by Edwin Maldonado, Andrew McDaniel, Bryce Martin-White, Elizabeth King, and
-                Uday
-                Kadarla. All rights reserved.</p>
-        </div>
-    </footer>
 </body>
 <style>
-
+    /*
+        Styles unique to this page go here
+        */
 </style>
 <script>
-    const collectionSelect = document.getElementById('collectionSelect');
-    collectionSelect.addEventListener('change', (event) => {
-        let collection = event.target.value;
-        if (collection === "Select a Collection") {
-            return;
-        }
-        window.location.href = `study.html?collection=${collection}`;
-    });
+    (async () => {
+        await CleverDecks.waitReady();
 
-    let cardCountDivHTML = "";
-    const CD = new CleverDecks();
-    const statusMessageStreamer = new TextStreamer(100);
+        // JavaScript unique to this page goes here
+        // There is a global variable called CleverDecks that has methods for accessing the backend. See web.js for more information.
 
-    let statusMessageTimeout = null;
 
-    let connectedMessageInterval = setInterval(() => {
-        const statusMessageGreenAndGone = () => {
-            document.getElementById('status').classList.add('gone');
-            document.getElementById('statusMessageContainer').classList.remove('bg-green-500');
-        };
-        const statusMessageFadeout = () => {
-            document.getElementById('status').classList.add('fade-out');
-            setTimeout(statusMessageGreenAndGone, 1000);
-        };
-        if (CD.socketIoConnected === true) {
-            clearInterval(connectedMessageInterval);
-            setTimeout(statusMessageGreenAndFadeout, 500);
-            document.getElementById('statusMessageContainer').classList.remove('bg-red-500');
-            document.getElementById('statusMessageContainer').classList.add('bg-green-500');
-            document.getElementById('statusMessage').innerHTML = `Status: Connected`;
-        }
-    }, 250);
 
-    function setStatusMessage(message, bgcolor = "black") {
-        let statusMessageContainer = document.getElementById('statusMessageContainer');
-        // add the new class
-        let newBgClass = `bg-${bgcolor}-500`;
-        statusMessageContainer.classList.add(newBgClass);
-        // set the new message
-        document.getElementById('statusMessage').innerHTML = `Status: ${message}`;
-        // fade in the status div
-        if (document.getElementById('status').classList.contains('gone')) {
-            document.getElementById('status').classList.remove('gone');
-        }
-        if (document.getElementById('status').classList.contains('fade-out')) {
-            document.getElementById('status').classList.remove('fade-out');
-        }
-        // set a timeout to fade out the status div
-        if (statusMessageTimeout !== null) {
-            clearTimeout(statusMessageTimeout);
-        }
-        statusMessageTimeout = setTimeout(() => {
-            document.getElementById('status').classList.add('fade-out');
-            setTimeout(() => {
-                document.getElementById('status').classList.add('gone');
-                statusMessageContainer.classList.remove(newBgClass);
-            }, 1000);
-        }, 1000);
-    }
 
-    CD.subscribeToSocketMessage(socketMessageTypes[0], (message) => {
-        statusMessageStreamer.addText(message.chunk);
-        setStatusMessage("Generating - " + statusMessageStreamer.getText(), 'blue');
-    });
-    CD.subscribeToSocketMessage(socketMessageTypes[1], (message) => {
-        statusMessageStreamer.addText(message.chunk);
-        setStatusMessage("Generating - " + statusMessageStreamer.getText(), 'blue');
-    });
-    CD.subscribeToSocketMessage(socketMessageTypes[2], (message) => {
-        statusMessageStreamer.setText("");
-        setStatusMessage("Generating complete.", 'green');
-    });
-
-    (() => {
-        CD.getCollectionNames().then(async (collections) => {
+        CleverDecks.getCollectionNames().then(async (collections) => {
             let collectionCount = collections.length;
-            let count = await CD.getCardCount({ all: true });
+            let count = await CleverDecks.getCardCount({ all: true });
             document.getElementById('cardCount').innerHTML = count;
 
             for (let i = 0; i < collectionCount; i++) {
@@ -189,7 +133,7 @@
 
 
 
-                let cards = await CD.getCards({ collection: collections[i] });
+                let cards = await CleverDecks.getCards({ collection: collections[i] });
                 for (let p = 0; p < cards.length; p++) {
                     let newCardContainer = document.createElement('div');
                     newCardContainer.classList.add('border-2', 'border-black');
@@ -218,14 +162,15 @@
         }).catch((error) => {
             console.error({ error });
         });
+
+        async function waitSeconds(seconds) {
+            return new Promise((resolve, reject) => {
+                setTimeout(() => {
+                    resolve();
+                }, seconds * 1000);
+            });
+        }
     })();
-    async function waitSeconds(seconds) {
-        return new Promise((resolve, reject) => {
-            setTimeout(() => {
-                resolve();
-            }, seconds * 1000);
-        });
-    }
 </script>
 
 </html>

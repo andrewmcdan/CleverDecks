@@ -70,8 +70,9 @@ const net = require('net');
     const logPath = path.join(os.homedir(), 'CleverDecks', 'logs.txt');
     const logger = logLevelNumber > 0 ? new Logger(consoleLogging, logLevel, logPath) : null; // create a new logger object. This must remain at/near the top of the file. If the logger is off, the logger object will be null and no logs will be created.
     ///////////////////////////////////////////////////////////////////// ChatGPT /////////////////////////////////////////////////////////////////////////////////////////
+    const fakeGPT = process.env.CHATGPT_DEV_MODE = true || process.env.CHATGPT_DEV_MODE === "true";
     const ChatGPT = require('./chatGPT.js');
-    const chatbot = new ChatGPT(logger, process.env.OPENAI_SECRET_KEY);
+    const chatbot = new ChatGPT(logger, process.env.OPENAI_SECRET_KEY, fakeGPT);
     //////////////////////////////////////////////////////////////// FlashCardDatabase ////////////////////////////////////////////////////////////////////////////////////
     const FlashCardDatabase = require('./dbase.js'); // import the FlashCardDatabase class
     const defaultDataPath = path.join(os.homedir(), 'CleverDecks'); // set the default data path to the user's home directory
@@ -272,11 +273,11 @@ const net = require('net');
                 if (server !== undefined) server.socket.emit('message', { type: socketMessageTypes[2], data: { status: 'done' } });
             } catch (err) {
                 logger?.log(getLineNumber() + ".index.js	 - Error generating wrong answers: " + err, "error");
-                res.send({ answers: [] });
+                res.send({ status:'error', reason: err, answers: [] });
             }
-            res.send({ answers: chatRes });
+            res.send({ answers: chatRes, status: 'ok'});
         } else {
-            res.send({ answers: [] });
+            res.send({ answers: [], status: 'error', reason: 'card not found' });
         }
     });
 

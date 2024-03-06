@@ -22,7 +22,8 @@ const {getLineNumber} = require('./web/common.js');
  * 1. Need to add a mechanism that interrupts the streaming results.
  */
 class ChatGPT {
-    constructor(logger, key) {
+    constructor(logger, key, fake = false) {
+        this.fake = fake;
         this.openai = null;
         if (logger === undefined) throw new Error("ChatGPT constructor requires a logger object as an argument");
         this.logger = logger;
@@ -39,10 +40,10 @@ class ChatGPT {
      * @sideEffects - sets the openai property to an instance of the OpenAI API if the key is valid
      */
     setApiKey(key) {
-        this.apiKeyFound = this.isValidOpenAIKey(key);
+        this.apiKeyFound = this.isValidOpenAIKey(key) || this.fake;
         if (this.apiKeyFound) {
-            this.logger?.log(getLineNumber() + ".chatGPT.js	 - OpenAI API key found", "warn");
-            this.openai = new ai.OpenAI({ apiKey: key });
+            this.logger?.log(getLineNumber() + ".chatGPT.js	 - OpenAI API key found" + (this.fake?" (fake)":""), "warn");
+            if(!this.fake) this.openai = new ai.OpenAI({ apiKey: key });
         } else {
             this.logger?.log(getLineNumber() + ".chatGPT.js	 - OpenAI API key not found", "warn");
             this.openai = null;
@@ -70,6 +71,31 @@ class ChatGPT {
         if (inputText === undefined || inputText === null || typeof inputText !== 'string' || inputText === "") {
             this.logger?.log(getLineNumber() + ".chatGPT.js	 - generateResponse requires a string as an argument", "error");
             return "";
+        }
+        if(this.fake) {
+            this.logger?.log(getLineNumber() + ".chatGPT.js	 - Fake mode enabled. Returning fake response.", "warn");
+            if(stream_enabled) {
+                let returnString = "This is a fake response from the chatbot. The chatbot is in fake mode. This is a fake response from the chatbot. The chatbot is in fake mode. This is a fake response from the chatbot. The chatbot is in fake mode.";
+                if(inputText.includes("flash cards (based ")) returnString = "{\"question\":\"What is the capital of France?\",\"answer\":\"Paris\",\"tags\":[\"geography\",\"world\",\"Europe\"],\"difficulty\":3,\"collection\":\"World Geography\"}";
+                if(inputText.includes("wrong answers for the following flash card:")) returnString = "[\"London\",\"Berlin\",\"Madrid\",\"Rome\",\"Lisbon\",\"Athens\",\"Amsterdam\",\"Brussels\",\"Vienna\",\"Stockholm\"]";
+                let returnString2 = returnString;
+                let complete = false;
+                let returnInterval = setInterval(() => {
+                    let tempString = returnString.substring(0, 5);
+                    returnString = returnString.substring(5);
+                    stream_cb(tempString);
+                    if(returnString === "") {
+                        completion_cb(returnString2);
+                        complete = true;
+                        clearInterval(returnInterval);
+                    }
+                }, 100);
+                while(!complete) {
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                }
+            } else {
+                return "This is a fake response from the chatbot. The chatbot is in fake mode.";
+            }
         }
         if (stream_enabled) {
             if (typeof stream_cb !== 'function') stream_cb = (chunk) => this.logger?.log(chunk, "trace");
@@ -154,8 +180,18 @@ class ChatGPT {
         prompt += " all based on the following text (it is important that the flash cards be based on the following text)" + (enableExtrapolation ? ", extrapolating on the given text to generate the desired number of cards" : "") + ": \n" + text;
         let response = "";;
         this.logger?.log(getLineNumber() + ".chatGPT.js	 - Generating flash cards from text...");
-        await this.generateResponse(prompt, true, streamingData_cb, (res) => { response = res; });
-        return this.parseGPTjsonResponse(response);
+        try{
+            await this.generateResponse(prompt, true, streamingData_cb, (res) => { response = res; });
+        }catch(e){
+            this.logger?.log(getLineNumber() + ".chatGPT.js	 - Error generating flash cards from text: " + e, "error");
+        }
+        let returnVal = null;
+        try{
+            returnVal = this.parseGPTjsonResponse(response);
+        }catch(e){
+            this.logger?.log(getLineNumber() + ".chatGPT.js	 - Error generating flash cards from text: " + e, "error");
+        }
+        return returnVal;
     }
 
 
@@ -210,8 +246,18 @@ class ChatGPT {
         prompt += "Return the wrong answers as a JSON array of strings.";
         let response = "";
         this.logger?.log(getLineNumber() + ".chatGPT.js	 - Generating wrong answers for flash card...");
-        await this.generateResponse(prompt, true, streamingData_cb, (res) => { response = res; });
-        return this.parseGPTjsonResponse(response);
+        let returnVal = null;
+        try{
+            await this.generateResponse(prompt, true, streamingData_cb, (res) => { response = res; });
+        }catch(e){
+            this.logger?.log(getLineNumber() + ".chatGPT.js	 - Error generating wrong answers for flash card: " + e, "error");
+        }
+        try{
+            returnVal = this.parseGPTjsonResponse(response);
+        }catch(e){
+            this.logger?.log(getLineNumber() + ".chatGPT.js	 - Error generating wrong answers for flash card: " + e, "error");
+        }
+        return returnVal;
     }
 
     /**
@@ -330,10 +376,11 @@ class ChatGPT {
             this.logger?.log(getLineNumber() + ".chatGPT.js	 - Response parsed", "trace");
             return json;
         } catch (e) {
-            this.logger?.error(e);
+            this.logger?.log(getLineNumber() + ".chatGPT.js	 - Error parsing response JSON: " + e, "error");
             return response;
         }
     }
 }
+
 
 module.exports = ChatGPT;

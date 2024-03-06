@@ -534,7 +534,7 @@ class TextStreamer {
         this.text = '';
     }
 
-    setTExt(text) {
+    setText(text) {
         this.text = text;
     }
 
@@ -549,7 +549,6 @@ class TextStreamer {
         return this.text;
     }
 }
-
 
 // create a CleverDecks object
 const CleverDecks = new CleverDecks_class();
@@ -625,7 +624,7 @@ let setStatusMessage = () => { };
         // remove all the bg classes
         let classes = statusMessageContainer.classList;
         for (let i = classes.length - 1; i >= 0; i--) {
-            if (classes[i].startsWith('bg-') && classes[i].endsWith('-500')) {
+            if ((classes[i].startsWith('bg-') && classes[i].endsWith('-500')) || classes[i] === 'bg-black') {
                 statusMessageContainer.classList.remove(classes[i]);
             }
         }
