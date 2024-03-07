@@ -103,7 +103,8 @@ class FlashCardCollection {
                     } catch (err) {
                         this.logger?.log(getLineNumber() + ".dbase.js	 - Error loading flash card: " + card.id + " - " + err, "error");
                     }
-                    newCard.id = ++this.largestId;
+                    // newCard.id = ++this.largestId;
+                    if(newCard.id > this.largestId) this.largestId = newCard.id;
                     this.cards.push(newCard);
                 });
                 return true;
@@ -315,6 +316,20 @@ class FlashCardDatabase {
         this.largestId = 0;
         this.allTags = [];
         this.loadCollections(overrideLock);
+        this.findDuplicateIds();
+    }
+
+    findDuplicateIds(){
+        let ids = [];
+        this.collections.forEach(collection => {
+            collection.cards.forEach(card => {
+                if(ids.includes(card.id)){
+                    this.logger?.log(getLineNumber() + ".dbase.js	 - Duplicate id found: " + card.id, "warn");
+                } else {
+                    ids.push(card.id);
+                }
+            });
+        });
     }
 
     /**
@@ -524,8 +539,8 @@ class FlashCardDatabase {
      * @notes - This method adds a card to the database by calling the addCard method of the FlashCardCollection class.
      */
     addCard(cardData) {
-        this.logger?.log(getLineNumber() + ".dbase.js	 - Adding card to database:", "debug");
-        this.logger?.log(JSON.stringify(cardData, 2, null), "debug");
+        this.logger?.log(getLineNumber() + ".dbase.js	 - Adding card to database:" + JSON.stringify(cardData, 2, null).substring(0,50) + "...", "debug");
+        // this.logger?.log(, "debug");
         let collection = this.collections.find(collection => collection.name === cardData.collection);
         if (collection === undefined) {
             // add a new collection
@@ -541,6 +556,7 @@ class FlashCardDatabase {
         cardData.tags.forEach((tag) => {
             if (!this.allTags.includes(tag)) this.allTags.push(tag);
         });
+        this.findDuplicateIds();
         return true;
     }
 
@@ -732,6 +748,7 @@ class FlashCardDatabase {
             fs.unlinkSync(path.join(this.dataPath, 'flashcards', 'metadata.lock'));
         }
         this.logger?.log(getLineNumber() + ".dbase.js	 - FlashCardDatabase finalized", "debug");
+        this.findDuplicateIds();
     }
 }
 

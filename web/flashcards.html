@@ -118,28 +118,18 @@
         // There is a global variable called CleverDecks that has methods for accessing the backend. See web.js for more information.
 
 
-
-
         CleverDecks.getCollectionNames().then(async (collections) => {
             let collectionCount = collections.length;
             let count = await CleverDecks.getCardCount({ all: true });
             document.getElementById('cardCount').innerHTML = count;
-
             for (let i = 0; i < collectionCount; i++) {
-                let option = document.createElement('option');
-                option.value = collections[i];
-                option.text = collections[i];
-                collectionSelect.appendChild(option);
-
-
-
                 let cards = await CleverDecks.getCards({ collection: collections[i] });
                 for (let p = 0; p < cards.length; p++) {
                     let newCardContainer = document.createElement('div');
                     newCardContainer.classList.add('border-2', 'border-black');
                     // print card id
                     let idDiv = document.createElement('div');
-                    idDiv.innerHTML = `Card ID: ${cards[p].id}`;
+                    idDiv.innerHTML = `Card ID: ${cards[p].id} Collection: ${collections[i]}`;
                     let questionDiv = document.createElement('div');
                     questionDiv.innerHTML = cards[p].question;
                     let answerDiv = document.createElement('div');
@@ -162,14 +152,6 @@
         }).catch((error) => {
             console.error({ error });
         });
-
-        async function waitSeconds(seconds) {
-            return new Promise((resolve, reject) => {
-                setTimeout(() => {
-                    resolve();
-                }, seconds * 1000);
-            });
-        }
     })();
 </script>
 

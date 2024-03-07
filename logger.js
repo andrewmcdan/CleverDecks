@@ -2,6 +2,7 @@
 
 const fs = require('fs');
 const logLevels = ["off", "info", "warn", "error", "debug", "trace"];
+const longestLogLevelsLength = logLevels.reduce((max, str) => Math.max(max, str.length), 0);
 /**
  * "off" - no logging
  * "info" - logs info messages that should be shown all the time
@@ -36,6 +37,7 @@ class Logger {
         if(logsDestination === null) this.noLogFile = true;
         if(typeof logsDestination !== 'string') logsDestination = 'logs.txt';
         this.logsDestination = logsDestination;
+        this.prefixLength = 0;
     }
 
     /**
@@ -53,9 +55,15 @@ class Logger {
         if(typeof level === 'string') level = logLevels.indexOf(level); // convert level to a number
         if(level > this.logLevel) return; // if the level is higher than the log level, don't log the message
         if(this.logLevel === 0) return; // if the log level is 0, don't log the message (this is the "off" level)
-        let newEntry = { date: new Date().toLocaleString(), message: message }; // create a new log entry
+        let prefix = message.substring(0, message.indexOf('-')); // get the prefix of the message
+        if(prefix.length > this.prefixLength) this.prefixLength = prefix.length; // get the new longest prefix length
+        let newPrefix = prefix.replace(/[\s\t]/g, ''); // remove spaces from the prefix
+        message = message.replace(prefix, newPrefix); // replace the prefix with the new prefix
+        // insert padding between prefix and message with a colon
+        message = message.replace("-", ':'.padEnd(this.prefixLength - newPrefix.length + 1, ' '), 1);
+        let newEntry = { date: new Date().toLocaleString(), message: message, level: logLevels[level] }; // create a new log entry
         this.logs.push(newEntry); // add the new log entry to the logs array
-        if (this.consoleLogging) console.log(newEntry.date + " - " + newEntry.message); // log the message to the console
+        if (this.consoleLogging) console.log(newEntry.date + " - " + newEntry.level.padEnd(longestLogLevelsLength,' ') + " - " + newEntry.message); // log the message to the console
         if(this.logs.length >= 10) this.writeOutLogs(); // write out the logs to a file if there are 10 or more entries in the logs buffer array
         // if the writeLogInterval is not set, set it to write out the logs every 30 seconds if there are any logs to write out
         if(this.writeLogInterval == null) this.writeLogInterval = setInterval(() => { 
@@ -94,7 +102,7 @@ class Logger {
         this.logs = [];
         let logString = "";
         localLogs.forEach((entry) => {
-            logString += entry.date + " - " + entry.message + "\n";
+            logString += entry.date + " - " + entry.level.padEnd(longestLogLevelsLength,' ') + " - " + entry.message + "\n";
         });
         fs.appendFile(this.logsDestination, logString, (err) => {
             if (err) {

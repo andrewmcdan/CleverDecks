@@ -70,7 +70,7 @@ const net = require('net');
     const logPath = path.join(os.homedir(), 'CleverDecks', 'logs.txt');
     const logger = logLevelNumber > 0 ? new Logger(consoleLogging, logLevel, logPath) : null; // create a new logger object. This must remain at/near the top of the file. If the logger is off, the logger object will be null and no logs will be created.
     ///////////////////////////////////////////////////////////////////// ChatGPT /////////////////////////////////////////////////////////////////////////////////////////
-    const fakeGPT = process.env.CHATGPT_DEV_MODE = true || process.env.CHATGPT_DEV_MODE === "true";
+    const fakeGPT = process.env.CHATGPT_DEV_MODE === true || process.env.CHATGPT_DEV_MODE === "true";
     const ChatGPT = require('./chatGPT.js');
     const chatbot = new ChatGPT(logger, process.env.OPENAI_SECRET_KEY, fakeGPT);
     //////////////////////////////////////////////////////////////// FlashCardDatabase ////////////////////////////////////////////////////////////////////////////////////
@@ -141,7 +141,7 @@ const net = require('net');
         logger?.log(getLineNumber() + ".index.js	 - POST /api/saveNewCards", "debug");
         req.on('data', (data) => {
             const cardData = JSON.parse(data);
-            logger?.log(getLineNumber() + ".index.js	 - Saving new flash card: \n" + JSON.stringify(cardData, 2, null), "debug");
+            logger?.log(getLineNumber() + ".index.js	 - Saving new flash card: " + JSON.stringify(cardData, 2, null).substring(0,100) + "...", "debug");
             if (!Array.isArray(cardData)) {
                 res.send({ status: 'error', reason: 'Invalid data. Expected an array of cards.' });
                 logger?.log(getLineNumber() + ".index.js	 - Invalid card data", "error");
@@ -369,7 +369,7 @@ const net = require('net');
     // Type: POST
     // receives a JSON object with the log entry and adds it to the logs
     app.post('/api/addLogEntry', (req, res) => {
-        logger?.log(getLineNumber() + ".index.js	 - POST /api/addLogEntry", "debug");
+        logger?.log(getLineNumber() + ".index.js	 - POST /api/addLogEntry", "trace");
         req.on('data', (data) => {
             const logEntry = JSON.parse(data);
             logger?.log(logEntry.message, logEntry.level);

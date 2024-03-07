@@ -69,12 +69,14 @@ class CleverDecks_class {
                 if (response.ok) {
                     return response.json();
                 } else {
+                    this.logEntry(getLineNumber() + ".web.js - Error fetching collections: " + "Error fetching collections", "error");
                     reject("Error fetching collections");
                 }
             }).then(data => {
                 if (data.status == 'ok') resolve(data.collections);
                 else reject(data.reason);
             }).catch(err => {
+                this.logEntry(getLineNumber() + ".web.js - Error fetching collections: " + err, "error");
                 reject(err + getLineNumber());
             });
         });
@@ -120,6 +122,7 @@ class CleverDecks_class {
                             if (response.ok) {
                                 return response.json();
                             } else {
+                                this.logEntry(getLineNumber() + ".web.js - Error fetching cards: " + "Error fetching cards", "error");
                                 reject("Error fetching cards");
                             }
                         }).then(data => {
@@ -129,9 +132,11 @@ class CleverDecks_class {
                                     resolve(cards);
                                 }
                             } else {
+                                this.logEntry(getLineNumber() + ".web.js - Error fetching cards: " + data.reason, "error");
                                 reject(data.reason);
                             }
                         }).catch(err => {
+                            this.logEntry(getLineNumber() + ".web.js - Error fetching cards: " + err, "error");
                             reject(err + getLineNumber());
                         });
                     }
@@ -141,16 +146,22 @@ class CleverDecks_class {
                         if (response.ok) {
                             return response.json();
                         } else {
+                            this.logEntry(getLineNumber() + ".web.js - Error fetching cards: " + "Error fetching cards", "error");
                             reject("Error fetching cards");
                         }
                     }).then(data => {
                         if (data.status == 'ok') resolve(data.cards);
-                        else reject(data.reason);
+                        else {
+                            this.logEntry(getLineNumber() + ".web.js - Error fetching cards: " + data.reason, "error");
+                            reject(data.reason);
+                        }
                     }).catch(err => {
+                        this.logEntry(getLineNumber() + ".web.js - Error fetching cards: " + err, "error");
                         reject(err + getLineNumber());
                     });
                 }
             }).catch(err => {
+                this.logEntry(getLineNumber() + ".web.js - Error fetching cards: " + err, "error");
                 reject(err + getLineNumber());
             });
         });
@@ -178,12 +189,17 @@ class CleverDecks_class {
                 if (response.ok) {
                     return response.json();
                 } else {
+                    this.logEntry(getLineNumber() + ".web.js - Error saving new cards: " + "Error saving new cards", "error");
                     reject("Error saving cards");
                 }
             }).then(data => {
-                if (data.status == 'ok') resolve();
-                else reject(data.reason);
+                if (data.status == 'ok') resolve('ok');
+                else {
+                    this.logEntry(getLineNumber() + ".web.js - Error saving cards: " + data.reason, "error");
+                    reject(data.reason);
+                }
             }).catch(err => {
+                this.logEntry(getLineNumber() + ".web.js - Error saving cards: " + err, "error");
                 reject(err + getLineNumber());
             });
         });
@@ -203,6 +219,7 @@ class CleverDecks_class {
     updateCard(params) {
         return new Promise((resolve, reject) => {
             if (typeof params.id === 'undefined') {
+                this.logEntry(getLineNumber() + ".web.js - Error updating card: " + "id is required", "error");
                 reject("id is required");
             }
             fetch(_apiBase + 'updateCard', {
@@ -215,12 +232,17 @@ class CleverDecks_class {
                 if (response.ok) {
                     return response.json();
                 } else {
+                    this.logEntry(getLineNumber() + ".web.js - Error updating card: " + "Error updating card", "error");
                     reject("Error updating card");
                 }
             }).then(data => {
-                if (data.status == 'ok') resolve();
-                else reject(data.reason);
+                if (data.status == 'ok') resolve('ok');
+                else {
+                    this.logEntry(getLineNumber() + ".web.js - Error updating card: " + data.reason, "error");
+                    reject(data.reason);
+                }
             }).catch(err => {
+                this.logEntry(getLineNumber() + ".web.js - Error updating card: " + err, "error");
                 reject(err + getLineNumber());
             });
         });
@@ -243,12 +265,17 @@ class CleverDecks_class {
                 if (response.ok) {
                     return response.json();
                 } else {
+                    this.logEntry(getLineNumber() + ".web.js - Error deleting card: " + "Error deleting card", "error");
                     reject("Error deleting card");
                 }
             }).then(data => {
-                if (data.status == 'ok') resolve();
-                else reject(data.reason);
+                if (data.status == 'ok') resolve('ok');
+                else {
+                    this.logEntry(getLineNumber() + ".web.js - Error deleting card: " + data.reason, "error");
+                    reject(data.reason);
+                }
             }).catch(err => {
+                this.logEntry(getLineNumber() + ".web.js - Error deleting card: " + err, "error");
                 reject(err + getLineNumber());
             });
         });
@@ -273,12 +300,12 @@ class CleverDecks_class {
                     'Content-Type': 'application/json',
                     credentials: 'include'
                 },
-
                 body: JSON.stringify({ text: text, numberOfCards: numberOfCards, difficulty: difficulty })
             }).then(response => {
                 if (response.ok) {
                     return response.json();
                 } else {
+                    this.logEntry(getLineNumber() + ".web.js - Error generating cards: " + "Error generating cards", "error");
                     reject("Error generating cards");
                 }
             }).then(data => {
@@ -291,9 +318,11 @@ class CleverDecks_class {
                     });
                     resolve(cards);
                 } else {
+                    this.logEntry(getLineNumber() + ".web.js - Error generating cards: " + data.reason, "error");
                     reject(data.reason);
                 }
             }).catch(err => {
+                this.logEntry(getLineNumber() + ".web.js - Error generating cards: " + err, "error");
                 reject(err + getLineNumber());
             });
         });
@@ -313,6 +342,7 @@ class CleverDecks_class {
             }
             // if the id is not a number, reject the promise
             if (typeof id !== 'number') {
+                this.logEntry(getLineNumber() + ".web.js - Error generating wrong answers: " + "id must be a number", "error");
                 reject("id must be a number");
             }
             let queryString = 'id=' + id;
@@ -327,12 +357,17 @@ class CleverDecks_class {
                 if (response.ok) {
                     return response.json();
                 } else {
+                    this.logEntry(getLineNumber() + ".web.js - Error generating wrong answers: " + "Error generating wrong answers", "error");
                     reject("Error generating wrong answers");
                 }
             }).then(data => {
                 if (data.status == 'ok') resolve(data.answers);
-                else reject(data.reason);
+                else {
+                    this.logEntry(getLineNumber() + ".web.js - Error generating wrong answers: " + data.reason, "error");
+                    reject(data.reason);
+                }
             }).catch(err => {
+                this.logEntry(getLineNumber() + ".web.js - Error generating wrong answers: " + err, "error");
                 reject(err + getLineNumber());
             });
         });
@@ -354,6 +389,9 @@ class CleverDecks_class {
         return new Promise((resolve, reject) => {
             // if the params object is empty, reject the promise
             if (Object.keys(params).length === 0) {
+                if(this.socketIoConnected === true) {
+                    this.logEntry(getLineNumber() + ".web.js - Error fetching card count: " + "Provided object must have at least one key-value pair.", "error");
+                }
                 reject("Provided object must have at least one key-value pair.");
             }
             // parse params object into a query string
@@ -368,12 +406,17 @@ class CleverDecks_class {
                 if (response.ok) {
                     return response.json();
                 } else {
+                    this.logEntry(getLineNumber() + ".web.js - Error fetching card count: " + "Error fetching card count", "error");
                     reject("Error fetching card count");
                 }
             }).then(data => {
                 if (data.status == 'ok') resolve(data.count);
-                else reject(data.reason);
+                else {
+                    this.logEntry(getLineNumber() + ".web.js - Error fetching card count: " + data.reason, "error");
+                    reject(data.reason);
+                }
             }).catch(err => {
+                this.logEntry(getLineNumber() + ".web.js - Error fetching card count: " + err, "error");
                 reject(err + getLineNumber());
             });
         });
@@ -396,6 +439,7 @@ class CleverDecks_class {
                 if (response.ok) {
                     return response.json();
                 } else {
+                    this.logEntry(getLineNumber() + ".web.js - Error fetching tag match: " + "Error fetching tag match", "error");
                     reject("Error fetching tag match");
                 }
             }).then(data => {
@@ -409,8 +453,12 @@ class CleverDecks_class {
                     data.tagsMatch = tagsMatch;
                     resolve(data);
                 }
-                else reject(data.reason);
+                else {
+                    this.logEntry(getLineNumber() + ".web.js - Error fetching tag match: " + data.reason, "error");
+                    reject(data.reason);
+                }
             }).catch(err => {
+                this.logEntry(getLineNumber() + ".web.js - Error fetching tag match: " + err, "error");
                 reject(err + getLineNumber());
             });
         });
@@ -427,12 +475,17 @@ class CleverDecks_class {
                 if (response.ok) {
                     return response.json();
                 } else {
+                    this.logEntry(getLineNumber() + ".web.js - Error fetching GPT enabled: " + "Error fetching GPT enabled", "error");
                     reject("Error fetching GPT enabled");
                 }
             }).then(data => {
                 if (data.status == 'ok') resolve(data.enabled);
-                else reject(data.reason);
+                else {
+                    this.logEntry(getLineNumber() + ".web.js - Error fetching GPT enabled: " + data.reason, "error");
+                    reject(data.reason);
+                }
             }).catch(err => {
+                this.logEntry(getLineNumber() + ".web.js - Error fetching GPT enabled: " + err, "error");
                 reject(err + getLineNumber());
             });
         });
@@ -458,12 +511,17 @@ class CleverDecks_class {
                 if (response.ok) {
                     return response.json();
                 } else {
+                    this.logEntry(getLineNumber() + ".web.js - Error setting GPT key: " + "Error setting GPT key", "error");
                     reject("Error setting GPT key");
                 }
             }).then(data => {
                 if (data.status == 'ok') resolve(true);
-                else reject(data.reason);
+                else {
+                    this.logEntry(getLineNumber() + ".web.js - Error setting GPT key: " + data.reason, "error");
+                    reject(data.reason);
+                }
             }).catch(err => {
+                this.logEntry(getLineNumber() + ".web.js - Error setting GPT key: " + err, "error");
                 reject(err + getLineNumber());
             });
         });
@@ -479,6 +537,10 @@ class CleverDecks_class {
         if (typeof level === 'undefined') level = "info";
         if (level !== "info" && level !== "warn" && level !== "error" && level !== "debug" && level !== "trace") {
             level = "info";
+        }
+        if(this.socketIoConnected !== true) {
+            console.log(message);
+            return;
         }
         fetch(_apiBase + 'addLogEntry', {
             method: 'POST',
@@ -516,12 +578,17 @@ class CleverDecks_class {
                 if (response.ok) {
                     return response.json();
                 } else {
+                    this.logEntry(getLineNumber() + ".web.js - Error setting log level: " + "Error setting log level", "error");
                     reject("Error setting log level");
                 }
             }).then(data => {
                 if (data.status == 'ok') resolve(true);
-                else reject(data.reason);
+                else {
+                    this.logEntry(getLineNumber() + ".web.js - Error setting log level: " + data.reason, "error");
+                    reject(data.reason);
+                }
             }).catch(err => {
+                this.logEntry(getLineNumber() + ".web.js - Error setting log level: " + err, "error");
                 reject(err + getLineNumber());
             });
         });
@@ -573,6 +640,7 @@ let setStatusMessage = () => { };
     while (pageCompletedLoading === false) {
         await new Promise(r => setTimeout(r, 100));
     }
+    CleverDecks.logEntry(getLineNumber() + ".web.js - Page completed loading", "debug");
     // set up the "Study a Collection(Quick Load)" drop down menu
     const collectionSelect = document.getElementById('collectionSelect');
     collectionSelect.addEventListener('change', (event) => {
@@ -585,7 +653,10 @@ let setStatusMessage = () => { };
 
     // load the collection names into the collection select
     let collectionNames = [];
+    CleverDecks.logEntry(getLineNumber() + ".web.js - Fetching collection names", "debug");
     CleverDecks.getCollectionNames().then((collections) => {
+        CleverDecks.logEntry(getLineNumber() + ".web.js - Collection names fetched", "trace");
+        CleverDecks.logEntry(getLineNumber() + ".web.js - Collection names: " + collections, "trace");
         let collectionCount = collections.length;
         for (let i = 0; i < collectionCount; i++) {
             let option = document.createElement('option');
@@ -595,10 +666,11 @@ let setStatusMessage = () => { };
             collectionSelect.appendChild(option);
         }
     }).catch((error) => {
-        console.error({ error });
+        CleverDecks.logEntry(getLineNumber() + ".web.js - Error fetching collection names: " + error, "error");
     });
 
     // create a textStreamer for the status messages that come from the backend
+    CleverDecks.logEntry(getLineNumber() + ".web.js - Creating status message streamer", "debug");
     const statusMessageStreamer = new TextStreamer(100);
     let statusMessageTimeout = null;
     let connectedMessageInterval = setInterval(() => {
@@ -619,6 +691,8 @@ let setStatusMessage = () => { };
         }
     }, 250);
 
+    // set the status message function
+    CleverDecks.logEntry(getLineNumber() + ".web.js - Setting status message function", "debug");
     setStatusMessage = (message, bgcolor = "black") => {
         let statusMessageContainer = document.getElementById('statusMessageContainer');
         // remove all the bg classes
@@ -653,6 +727,8 @@ let setStatusMessage = () => { };
         }, 1000);
     }
 
+    // set up the socket message handlers
+    CleverDecks.logEntry(getLineNumber() + ".web.js - Setting up socket message handlers", "debug");
     CleverDecks.subscribeToSocketMessage(socketMessageTypes[0], (message) => {
         statusMessageStreamer.addText(message.chunk);
         setStatusMessage("Generating - " + statusMessageStreamer.getText(), 'blue');
@@ -666,6 +742,8 @@ let setStatusMessage = () => { };
         setStatusMessage("Generating complete.", 'green');
     });
 
+    // set up the search box
+    CleverDecks.logEntry(getLineNumber() + ".web.js - Setting up search box", "debug");
     let searchIndex = 0;
     const searchBox = document.getElementById('search');
     document.addEventListener('click', (event) => {
@@ -727,9 +805,14 @@ let setStatusMessage = () => { };
             searchResultsList.appendChild(li);
             searchResultsContainer.classList.remove('gone');
         }).catch(err => {
-            console.log(err);
+            if(CleverDecks.socketIoConnected === true) {
+                CleverDecks.logEntry(getLineNumber() + ".web.js - Error fetching tag match: " + err, "error");
+            }else{
+                console.error(getLineNumber() + ".web.js - Error fetching tag match: " + err);
+            }
         });
     });
+    CleverDecks.logEntry(getLineNumber() + ".web.js - Page setup complete", "debug");
 })();
 
 // This was a suggestion by ChatGPT
