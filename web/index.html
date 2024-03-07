@@ -183,39 +183,39 @@ Measurements and units are the fundamental building blocks of physics, providing
 `;
 
         // FlashCard class provided by common.js
-        let testFlashCard = new FlashCard({
-            id: 1,
-            question: "What is the capital of France?",
-            answer: "Paris",
-            collection: "Countries",
-            tags: ["Geography", "Europe"],
-            dateCreated: "2021-09-01",
-            difficulty: 3
-        });
-        let cardIdCounter = testFlashCard.id + 1;
-        let flashCardsFromChatGPT_json = '[{"question": "What is the relationship between frequency (f) and period (T) in oscillations?","answer": "$$f = \\\\frac{1}{T}$$","tags": ["oscillations", "frequency", "period"],"difficulty": "2","collection": "Physics - Oscillations"  },  {    "question": "What is the equation for the position of an object in simple harmonic motion (SHM) as a function of time?",    "answer": "$$x(t) = A\\\\cos(\\\\omega t + \\\\phi)$$",    "tags": ["SHM", "position", "equation"],    "difficulty": "3",    "collection": "Physics - Oscillations"  },  {    "question": "How is the angular frequency (ω) of an oscillating system related to the period (T)?",    "answer": "$$\\\\omega = \\\\frac{2\\\\pi}{T}$$",    "tags": ["angular frequency", "period", "oscillations"],    "difficulty": "3",    "collection": "Physics - Oscillations"  },  {    "question": "What is the maximum velocity (vmax) in terms of amplitude (A) and angular frequency (ω) in SHM?",    "answer": "$$v_{\\\\text{max}} = A\\\\omega$$",    "tags": ["maximum velocity", "SHM", "amplitude"],    "difficulty": "3",    "collection": "Physics - Oscillations"  },  {    "question": "What is the maximum acceleration (amax) in SHM and how is it related to amplitude (A) and angular frequency (ω)?",    "answer": "$$a_{\\\\text{max}} = A\\\\omega^2$$",    "tags": ["maximum acceleration", "SHM", "amplitude"],    "difficulty": "3",    "collection": "Physics - Oscillations"  },  {    "question": "What is the period (T) of a simple pendulum?",    "answer": "$$T = 2\\\\pi\\\\sqrt{\\\\frac{L}{g}}$$",    "tags": ["simple pendulum", "period", "equation"],    "difficulty": "3",    "collection": "Physics - Oscillations"  },  {    "question": "What is the formula for the potential energy (U) stored in a spring?",    "answer": "$$U = \\\\frac{1}{2}kx^2$$",    "tags": ["potential energy", "spring", "equation"],    "difficulty": "2",    "collection": "Physics - Oscillations"  },  {    "question": "How is the total energy (ETotal) in a simple harmonic oscillator expressed?",    "answer": "$$E_{\\\\text{Total}} = \\\\frac{1}{2}kA^2$$",    "tags": ["total energy", "SHM", "equation"],    "difficulty": "4",    "collection": "Physics - Oscillations"  },  {    "question": "What does the negative sign in Hooke\'s law equation indicate?",    "answer": "The negative sign in Hooke\'s law ($$F_s = -kx$$) indicates that the force exerted by the spring is in the opposite direction of the displacement.",    "tags": ["Hooke\'s law", "negative sign", "spring force"],    "difficulty": "2",    "collection": "Physics - Oscillations"  },  {    "question": "What is the principle of superposition in the context of oscillations?",    "answer": "The principle of superposition states that when two or more waves overlap in space, the resultant wave is the sum of the individual waves.",    "tags": ["superposition", "waves", "principle"],    "difficulty": "4",    "collection": "Physics - Oscillations"  },  {    "question": "What is phase shift (ϕ) in SHM?",    "answer": "Phase shift (ϕ) in SHM is the amount by which the wave is shifted horizontally from the original position. It is used to describe the initial position of the oscillating particle.",    "tags": ["phase shift", "SHM", "definition"],    "difficulty": "3",    "collection": "Physics - Oscillations"  },  {    "question": "How is kinetic energy (K) expressed in the context of SHM?",    "answer": "$$K= 1\\\\over{2}mv^2 = 1\\\\over{2}kA^2 - 1\\\\over{2}kx^2$$, where \'m\' is the mass, \'v\' is the velocity, \'k\' is the spring constant, \'A\' is the amplitude, and \'x\' is the displacement at any point in time.",    "tags": ["kinetic energy", "SHM", "equation"],    "difficulty": "4",    "collection": "Physics - Oscillations"  },  {    "question": "What defines the amplitude (A) in SHM?",    "answer": "The amplitude (A) in SHM is the maximum displacement from the equilibrium position. It represents the farthest distance an oscillating object moves from its central, or rest, position.",    "tags": ["amplitude", "SHM", "definition"],    "difficulty": "2",    "collection": "Physics - Oscillations"  },  {    "question": "What is the equation for the frequency of a mass-spring system in SHM?",    "answer": "$$f = \\\\frac{1}{2\\\\pi}\\\\sqrt{\\\\frac{k}{m}}$$, where \'k\' is the spring constant and \'m\' is the mass of the object.",    "tags": ["frequency", "mass-spring system", "SHM"],    "difficulty": "4",    "collection": "Physics - Oscillations"  },  {    "question": "What role does damping play in an oscillating system?",    "answer": "Damping is a force that opposes the motion of the oscillating system, reducing its energy over time, leading to a decrease in amplitude and eventually bringing the system to rest.",    "tags": ["damping", "oscillating system", "energy"],    "difficulty": "3",    "collection": "Physics - Oscillations"  },  {    "question": "How is the period of oscillation in a pendulum related to its length and acceleration due to gravity?",    "answer": "The period of oscillation (T) in a pendulum is directly proportional to the square root of its length (L) and inversely proportional to the square root of the acceleration due to gravity (g), as shown in the equation $$T = 2\\\\pi\\\\sqrt{\\\\frac{L}{g}}$$.",    "tags": ["pendulum", "period of oscillation", "gravity"],    "difficulty": "3",    "collection": "Physics - Oscillations"  }]';
-        JSON.parse(flashCardsFromChatGPT_json).forEach((card) => {
-            if (!card.hasOwnProperty('tags') || !Array.isArray(card.tags) || card.tags.length === 0) {
-                card.tags = ['General'];
-            }
-            if (!card.hasOwnProperty('collection') || typeof card.collection !== 'string' || card.collection.length === 0) {
-                card.collection = 'General';
-            }
-            if (!card.hasOwnProperty('difficulty') || typeof card.difficulty !== 'number' || card.difficulty < 1 || card.difficulty > 5) {
-                card.difficulty = 3;
-            }
-            if (!card.hasOwnProperty('dateCreated') || typeof card.dateCreated !== 'string' || card.dateCreated.length === 0) {
-                card.dateCreated = new Date().toISOString();
-            }
-            if (!card.hasOwnProperty('id') || typeof card.id !== 'number' || card.id < 1) {
-                card.id = cardIdCounter++;
-            }
-            if (!card.hasOwnProperty('question') || typeof card.question !== 'string' || card.question.length === 0) {
-                card.question = 'No question provided';
-            }
-            if (!card.hasOwnProperty('answer') || typeof card.answer !== 'string' || card.answer.length === 0) {
-                card.answer = 'No answer provided';
-            }
+        // let testFlashCard = new FlashCard({
+        //     id: 1,
+        //     question: "What is the capital of France?",
+        //     answer: "Paris",
+        //     collection: "Countries",
+        //     tags: ["Geography", "Europe"],
+        //     dateCreated: "2021-09-01",
+        //     difficulty: 3
+        // });
+        // let cardIdCounter = testFlashCard.id + 1;
+        // let flashCardsFromChatGPT_json = '[{"question": "What is the relationship between frequency (f) and period (T) in oscillations?","answer": "$$f = \\\\frac{1}{T}$$","tags": ["oscillations", "frequency", "period"],"difficulty": "2","collection": "Physics - Oscillations"  },  {    "question": "What is the equation for the position of an object in simple harmonic motion (SHM) as a function of time?",    "answer": "$$x(t) = A\\\\cos(\\\\omega t + \\\\phi)$$",    "tags": ["SHM", "position", "equation"],    "difficulty": "3",    "collection": "Physics - Oscillations"  },  {    "question": "How is the angular frequency (ω) of an oscillating system related to the period (T)?",    "answer": "$$\\\\omega = \\\\frac{2\\\\pi}{T}$$",    "tags": ["angular frequency", "period", "oscillations"],    "difficulty": "3",    "collection": "Physics - Oscillations"  },  {    "question": "What is the maximum velocity (vmax) in terms of amplitude (A) and angular frequency (ω) in SHM?",    "answer": "$$v_{\\\\text{max}} = A\\\\omega$$",    "tags": ["maximum velocity", "SHM", "amplitude"],    "difficulty": "3",    "collection": "Physics - Oscillations"  },  {    "question": "What is the maximum acceleration (amax) in SHM and how is it related to amplitude (A) and angular frequency (ω)?",    "answer": "$$a_{\\\\text{max}} = A\\\\omega^2$$",    "tags": ["maximum acceleration", "SHM", "amplitude"],    "difficulty": "3",    "collection": "Physics - Oscillations"  },  {    "question": "What is the period (T) of a simple pendulum?",    "answer": "$$T = 2\\\\pi\\\\sqrt{\\\\frac{L}{g}}$$",    "tags": ["simple pendulum", "period", "equation"],    "difficulty": "3",    "collection": "Physics - Oscillations"  },  {    "question": "What is the formula for the potential energy (U) stored in a spring?",    "answer": "$$U = \\\\frac{1}{2}kx^2$$",    "tags": ["potential energy", "spring", "equation"],    "difficulty": "2",    "collection": "Physics - Oscillations"  },  {    "question": "How is the total energy (ETotal) in a simple harmonic oscillator expressed?",    "answer": "$$E_{\\\\text{Total}} = \\\\frac{1}{2}kA^2$$",    "tags": ["total energy", "SHM", "equation"],    "difficulty": "4",    "collection": "Physics - Oscillations"  },  {    "question": "What does the negative sign in Hooke\'s law equation indicate?",    "answer": "The negative sign in Hooke\'s law ($$F_s = -kx$$) indicates that the force exerted by the spring is in the opposite direction of the displacement.",    "tags": ["Hooke\'s law", "negative sign", "spring force"],    "difficulty": "2",    "collection": "Physics - Oscillations"  },  {    "question": "What is the principle of superposition in the context of oscillations?",    "answer": "The principle of superposition states that when two or more waves overlap in space, the resultant wave is the sum of the individual waves.",    "tags": ["superposition", "waves", "principle"],    "difficulty": "4",    "collection": "Physics - Oscillations"  },  {    "question": "What is phase shift (ϕ) in SHM?",    "answer": "Phase shift (ϕ) in SHM is the amount by which the wave is shifted horizontally from the original position. It is used to describe the initial position of the oscillating particle.",    "tags": ["phase shift", "SHM", "definition"],    "difficulty": "3",    "collection": "Physics - Oscillations"  },  {    "question": "How is kinetic energy (K) expressed in the context of SHM?",    "answer": "$$K= 1\\\\over{2}mv^2 = 1\\\\over{2}kA^2 - 1\\\\over{2}kx^2$$, where \'m\' is the mass, \'v\' is the velocity, \'k\' is the spring constant, \'A\' is the amplitude, and \'x\' is the displacement at any point in time.",    "tags": ["kinetic energy", "SHM", "equation"],    "difficulty": "4",    "collection": "Physics - Oscillations"  },  {    "question": "What defines the amplitude (A) in SHM?",    "answer": "The amplitude (A) in SHM is the maximum displacement from the equilibrium position. It represents the farthest distance an oscillating object moves from its central, or rest, position.",    "tags": ["amplitude", "SHM", "definition"],    "difficulty": "2",    "collection": "Physics - Oscillations"  },  {    "question": "What is the equation for the frequency of a mass-spring system in SHM?",    "answer": "$$f = \\\\frac{1}{2\\\\pi}\\\\sqrt{\\\\frac{k}{m}}$$, where \'k\' is the spring constant and \'m\' is the mass of the object.",    "tags": ["frequency", "mass-spring system", "SHM"],    "difficulty": "4",    "collection": "Physics - Oscillations"  },  {    "question": "What role does damping play in an oscillating system?",    "answer": "Damping is a force that opposes the motion of the oscillating system, reducing its energy over time, leading to a decrease in amplitude and eventually bringing the system to rest.",    "tags": ["damping", "oscillating system", "energy"],    "difficulty": "3",    "collection": "Physics - Oscillations"  },  {    "question": "How is the period of oscillation in a pendulum related to its length and acceleration due to gravity?",    "answer": "The period of oscillation (T) in a pendulum is directly proportional to the square root of its length (L) and inversely proportional to the square root of the acceleration due to gravity (g), as shown in the equation $$T = 2\\\\pi\\\\sqrt{\\\\frac{L}{g}}$$.",    "tags": ["pendulum", "period of oscillation", "gravity"],    "difficulty": "3",    "collection": "Physics - Oscillations"  }]';
+        // JSON.parse(flashCardsFromChatGPT_json).forEach((card) => {
+        //     if (!card.hasOwnProperty('tags') || !Array.isArray(card.tags) || card.tags.length === 0) {
+        //         card.tags = ['General'];
+        //     }
+        //     if (!card.hasOwnProperty('collection') || typeof card.collection !== 'string' || card.collection.length === 0) {
+        //         card.collection = 'General';
+        //     }
+        //     if (!card.hasOwnProperty('difficulty') || typeof card.difficulty !== 'number' || card.difficulty < 1 || card.difficulty > 5) {
+        //         card.difficulty = 3;
+        //     }
+        //     if (!card.hasOwnProperty('dateCreated') || typeof card.dateCreated !== 'string' || card.dateCreated.length === 0) {
+        //         card.dateCreated = new Date().toISOString();
+        //     }
+        //     if (!card.hasOwnProperty('id') || typeof card.id !== 'number' || card.id < 1) {
+        //         card.id = cardIdCounter++;
+        //     }
+        //     if (!card.hasOwnProperty('question') || typeof card.question !== 'string' || card.question.length === 0) {
+        //         card.question = 'No question provided';
+        //     }
+        //     if (!card.hasOwnProperty('answer') || typeof card.answer !== 'string' || card.answer.length === 0) {
+        //         card.answer = 'No answer provided';
+        //     }
             // fetch('../api/saveNewCards', {
             //     method: 'POST',
             //     headers: {
@@ -227,7 +227,7 @@ Measurements and units are the fundamental building blocks of physics, providing
             // }).then((data44444) => {
             //     // console.log({data44444});
             // });
-        });
+        // });
         // fetch('../api/saveNewCards', {
         //     method: 'POST',
         //     headers: {
@@ -240,23 +240,30 @@ Measurements and units are the fundamental building blocks of physics, providing
         //     console.log(data);
         // });
         // console.log(testFlashCard);
+        
+        let wrongAnswers = [];
+        for(let i = 1800; i <= 1850; i++){
+            CleverDecks.generateWrongAnswersFromCard(i,5).then((data) => {
+                wrongAnswers.push({cardId: i, data: data});
+            }).catch((error) => {
+                console.error({ error });
+            });
+        }
+        while(wrongAnswers.length < 51){
+            await new Promise((resolve) => setTimeout(resolve, 1000));
+        }
+        console.log({wrongAnswers});
 
-        fetch('../api/getWrongAnswers?cardId=1&numberOfAnswers=10').then((response) => {
-            return response.json();
-        }).then((data) => {
-            // console.log(data);
-        });
-
-        CleverDecks.generateCardsFromText(testText, 10, 3).then((data) => {
-            console.log("generated card(s):" + JSON.stringify(data, null, 2));
+        // CleverDecks.generateCardsFromText(testText, 10, 3).then((data) => {
+        //     console.log("generated card(s):" + JSON.stringify(data, null, 2));
             // CleverDecks.saveNewCards(data).then((response) => {
             //     console.log({ response });
             // }).catch((error) => {
             //     console.error({ error });
             // });
-        }).catch((error) => {
-            console.error({ error });
-        });
+        // }).catch((error) => {
+        //     console.error({ error });
+        // });
     })();
 </script>
 
