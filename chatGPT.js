@@ -1,3 +1,4 @@
+/* eslint-disable no-prototype-builtins */
 const ai = require("openai");
 const flashCardMaxDifficulty = 5;
 const maxNumberOfCardsToGenerate = 50;
@@ -16,10 +17,6 @@ const {getLineNumber} = require("./web/common.js");
  * @method isValidOpenAIKey - a method to check if the given key is a valid OpenAI API key
  * @method flashCardGenerator - a method to generate flash cards from text
  * @method wrongAnswerGenerator - a method to create wrong answers for cards for use in multiple choice questions
- * 
- * TODO: 
- * 1. Need to add a mechanism that interrupts the streaming results.
- * 2. Need to add a method for rephrasing correct answers so that they don't appear verbatim in the quiz. Maybe just make a general rephrasing method that can be used for any text.
  */
 class ChatGPT {
     constructor(logger, key, fake = false) {
@@ -107,10 +104,11 @@ class ChatGPT {
                 stream: true,
             });
             for await (const chunk of stream) {
-                stream_cb(chunk.choices[0]?.delta?.content || "");
+                if(stream_cb !== null) stream_cb(chunk.choices[0]?.delta?.content || "");
                 response += chunk.choices[0]?.delta?.content || "";
             }
-            completion_cb(response);
+            if(completion_cb !== null) completion_cb(response);
+            return response;
         } else {
             const chatCompletion = await this.openai?.chat.completions.create({
                 messages: [{ role: "assistant", content: inputText }],
@@ -209,7 +207,7 @@ class ChatGPT {
         // TODO: rework this to return a promise instead of using async / await
         const cardValidator = (card) => {
             if (card === undefined || card === null || typeof card !== "object") return false;
-            if (!Object.prototype.hasOwnProperty.call(card, "question") || !Object.prototype.hasOwnProperty.call(card ,"answer") || !Object.prototype.hasOwnProperty.call(card ,"tags") || !Object.prototype.hasOwnProperty.call(card, "collection") || !Object.prototype.hasOwnProperty.call(card, "difficulty")) return false;
+            if (!card.hasOwnProperty("question") || !card.hasOwnProperty("answer") || !card.hasOwnProperty("tags") || !card.hasOwnProperty("collection") || !card.hasOwnProperty("difficulty")) return false;
             if (!Array.isArray(card.tags) || card.tags.length === 0) return false;
             let valid = true;
             for (let i = 0; i < card.tags.length; i++) {
@@ -345,6 +343,31 @@ class ChatGPT {
         }
         return returnedExpressions;
     }
+
+    /**
+     * @function rephraseText
+     * @description - rephrases a given text
+     * @async - this function is asynchronous and should be used with the "await" keyword
+     * @param {string} text - the text to rephrase
+     * @param {Function} stream_cb - a callback function to receive streaming data from the chatbot. If not given, it will default to a function that logs the data to the console. Useful for showing progress to the user.
+     * @returns {string} - the rephrased text
+     */
+    async rephraseText(text, stream_cb) {
+        if(text === undefined || text === null || typeof text !== "string" || text === "") {
+            this.logger?.log(getLineNumber() + ".chatGPT.js	 - rephraseText requires a string as an argument", "error");
+            return "";
+        }
+        let prompt = "Please rephrase the following text returning only the rephrased version: \n" + text;
+        let response = "";
+        this.logger?.log(getLineNumber() + ".chatGPT.js	 - Rephrasing text...");
+        try{
+            await this.generateResponse(prompt, true, stream_cb, (res) => { response = res; });
+        }catch(e){
+            this.logger?.log(getLineNumber() + ".chatGPT.js	 - Error rephrasing text: " + e, "error");
+        }
+        return response;
+    }
+        
 
     /**
      * @function parseGPTjsonResponse

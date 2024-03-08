@@ -100,5 +100,32 @@ function getLineNumber() {
     }
 }
 
+// This was a suggestion by ChatGPT
+function levenshteinDistance(a, b, toLower = true, weighted = true) {
+    if (toLower === true) {
+        a = a.toLowerCase();
+        b = b.toLowerCase();
+    }
+    const initialWeight = weighted ? 3 : 1; // Weight for the initial characters
+    const initialCharacters = a.length / 3; // Number of initial characters considered more important
+    let weightFactor = 1;
+    const matrix = [];
+    for (let i = 0; i <= b.length; i++)matrix[i] = [i];
+    for (let j = 0; j <= a.length; j++)matrix[0][j] = j;
+    for (let i = 1; i <= b.length; i++) for (let j = 1; j <= a.length; j++) {
+        weightFactor = (j <= initialCharacters || i <= initialCharacters) ? initialWeight : 1;
+        if (b[i - 1] === a[j - 1]) matrix[i][j] = matrix[i - 1][j - 1];
+        else {
+            matrix[i][j] = Math.min(
+                matrix[i - 1][j - 1] + weightFactor, // substitution
+                matrix[i][j - 1] + weightFactor, // insertion
+                matrix[i - 1][j] + weightFactor // deletion
+            );
+        }
+    }
+    return matrix[b.length][a.length];
+}
+
+
 // This weird mess is to make the FlashCard class available to both the browser and Node.js
-if(typeof module !== "undefined" && module.exports) module.exports = {FlashCard, socketMessageTypes, getLineNumber};
+if (typeof module !== "undefined" && module.exports) module.exports = { FlashCard, socketMessageTypes, getLineNumber, levenshteinDistance};

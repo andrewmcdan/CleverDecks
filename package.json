@@ -26,6 +26,7 @@
     "dotenv": "^16.4.2",
     "express": "^4.18.2",
     "fastest-levenshtein": "^1.0.16",
+    "lodash": "^4.17.21",
     "openai": "^4.27.0",
     "socket.io": "^4.7.4"
   },

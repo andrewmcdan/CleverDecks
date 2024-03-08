@@ -121,6 +121,17 @@
 
 
         ///////////////// Example / Testing //////////////////////
+
+        CleverDecks.getCards({ search: "Paris", method: "AND", collection: "Countries" }).then((cards) => {
+            
+                console.log({cards});
+            
+        }).catch((error) => {
+            console.error({ error });
+        });
+
+
+
         let cardCountDivHTML = '';
         let cardCountDiv = document.getElementById('cardCount');
         let totalCardCountDiv = document.getElementById('totalCardCount');
@@ -241,6 +252,7 @@ Measurements and units are the fundamental building blocks of physics, providing
         // });
         // console.log(testFlashCard);
         
+        /*
         let wrongAnswers = [];
         for(let i = 1800; i <= 1850; i++){
             CleverDecks.generateWrongAnswersFromCard(i,5).then((data) => {
@@ -253,6 +265,9 @@ Measurements and units are the fundamental building blocks of physics, providing
             await new Promise((resolve) => setTimeout(resolve, 1000));
         }
         console.log({wrongAnswers});
+        */
+
+
 
         // CleverDecks.generateCardsFromText(testText, 10, 3).then((data) => {
         //     console.log("generated card(s):" + JSON.stringify(data, null, 2));

@@ -116,11 +116,11 @@ class CleverDecks_class {
                 if (count === 0) {
                     resolve([]);
                 }
-                // if the count is greater than 100, loop through the cards in groups of 100, adding numberOfCards to end of query string
-                if (count > 100) {
+                // if the count is greater than 1000, loop through the cards in groups of 1000, adding numberOfCards to end of query string
+                if (count > 1000) {
                     let cards = [];
-                    let numberOfCards = 100;
-                    for (let i = 0; i < count; i += 100) {
+                    let numberOfCards = 1000;
+                    for (let i = 0; i < count; i += 1000) {
                         fetch(_apiBase + "getCards?" + queryString + "&numberOfCards=" + numberOfCards + "&offset=" + i).then(response => {
                             if (response.ok) {
                                 return response.json();
@@ -144,7 +144,7 @@ class CleverDecks_class {
                         });
                     }
                 } else {
-                    // if the count is less than 100, fetch the cards adding numberOfCards to end of query string
+                    // if the count is less than 1000, fetch the cards adding numberOfCards to end of query string
                     fetch(_apiBase + "getCards?" + queryString + "&numberOfCards=" + count).then(response => {
                         if (response.ok) {
                             return response.json();
@@ -817,29 +817,3 @@ let setStatusMessage = () => { };
     });
     CleverDecks.logEntry(getLineNumber() + ".web.js - Page setup complete", "debug");
 })();
-
-// This was a suggestion by ChatGPT
-function levenshteinDistance(a, b, lower = true) {
-    if (lower === true) {
-        a = a.toLowerCase();
-        b = b.toLowerCase();
-    }
-    const initialWeight = 3; // Weight for the initial characters
-    const initialCharacters = a.length / 3; // Number of initial characters considered more important
-    let weightFactor = 1;
-    const matrix = [];
-    for (let i = 0; i <= b.length; i++)matrix[i] = [i];
-    for (let j = 0; j <= a.length; j++)matrix[0][j] = j;
-    for (let i = 1; i <= b.length; i++) for (let j = 1; j <= a.length; j++) {
-        weightFactor = (j <= initialCharacters || i <= initialCharacters) ? initialWeight : 1;
-        if (b[i - 1] === a[j - 1]) matrix[i][j] = matrix[i - 1][j - 1];
-        else {
-            matrix[i][j] = Math.min(
-                matrix[i - 1][j - 1] + weightFactor, // substitution
-                matrix[i][j - 1] + weightFactor, // insertion
-                matrix[i - 1][j] + weightFactor // deletion
-            );
-        }
-    }
-    return matrix[b.length][a.length];
-}

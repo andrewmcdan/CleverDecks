@@ -1,3 +1,4 @@
+/* eslint-disable no-prototype-builtins */
 const fs = require("fs");
 const os = require("node:os");
 const express = require("express");
@@ -19,6 +20,7 @@ const path = require("path");
     // determine what ports are available
     let tempPort = 0;
     let portRange = Array.from({ length: 100 }, (_, i) => i + 3000);
+    portRange.push(5000);
     const checkPortAvailability = (port) => {
         return new Promise((resolve, reject) => {
             const server = net.createServer();
@@ -50,7 +52,7 @@ const path = require("path");
         console.error("No ports available");
         process.exit();
     }
-    const port = process.env.PORT || tempPort || 5000; // set the port to the value of the PORT environment variable, or to the first available port in the range 3000-3099, or to 5000 if the environment variable is not set and no ports are available
+    const port = process.env.PORT || tempPort; // set the port to the value of the PORT environment variable, or to the first available port in the range 3000-3099, or to 5000 if the environment variable is not set
     const { FlashCard, socketMessageTypes, getLineNumber } = require("./web/common.js");
     process.title = "CleverDecks";
     ////////////////////////////////////////////////////////////////// Create data directory //////////////////////////////////////////////////////////////////////////////
@@ -77,9 +79,12 @@ const path = require("path");
     const FlashCardDatabase = require("./dbase.js"); // import the FlashCardDatabase class
     const defaultDataPath = path.join(os.homedir(), "CleverDecks"); // set the default data path to the user's home directory
     const dataPath = process.env.DATA_PATH || defaultDataPath; // set the data path to the value of the DATA_PATH environment variable, or to the defaultDataPath if the environment variable is not set
+    const dataBaseProgressCallback = (progress) => {
+        logger?.log(getLineNumber() + ".index.js	 - FlashCardDatabase loading progress: " + Math.floor(progress) + "%", "info");
+    };
     let flashcard_db; // create a variable to hold the flashcard database
     try {
-        flashcard_db = new FlashCardDatabase(logger, dataPath); // create a new FlashCardDatabase object
+        flashcard_db = new FlashCardDatabase(logger, dataPath, dataBaseProgressCallback); // create a new FlashCardDatabase object
     } catch (err) {
         logger?.log(getLineNumber() + ".index.js	 - Error creating FlashCardDatabase: " + err, "error");
         if (err.message === "metadata is locked") process.stdout.write("The flashcard database is locked. Please close any other instances of the app and try again.\n");
@@ -90,22 +95,84 @@ const path = require("path");
 
 
     //////////////////////////////////////////////////////////////// Server endpoints /////////////////////////////////////////////////////////////////////////////////////
-    // TODO: Add metadata location changing
-    // TODO: Add port changing
-    // TODO: Add endpoint for interpreting math expressions into MathJax compatible strings
+    // TODO: Add metadata location changing endpoint
 
-    // endpoint: /api/getCards
-    // Type: GET
-    // sends a JSON object with the card data
-    // query parameters (optional):
-    // - numberOfCards: the number of cards to get
-    // - offset: the number of cards to skip
-    // - collection: the name of the collection to get cards from
-    // - tags: a comma separated list of tags to filter by
-    // - difficulty: a number from 1 to 5 to filter by
-    // - search: a string to search for in the question or answer
-    // - dateCreatedRange: a string in the format "YYYY-MM-DD,YYYY-MM-DD" to filter by date created
-    // - dateModifiedRange: a string in the format "YYYY-MM-DD,YYYY-MM-DD" to filter by date modified
+    /**
+     * @description - api endpoint to set the server port and update the .env file
+     * @listens GET /api/setNewServerPort
+     * @param {number} newPort - the new port to set
+     * @returns {object} - JSON object with the status of the request
+     */
+    app.get("api/setNewServerPort", (req, res) => {
+        logger?.log(getLineNumber() + ".index.js	 - GET /api/setNewServerPort", "debug");
+        req.on("data", (data) => {
+            const newPort = data.newPort;
+            if (newPort === undefined) {
+                res.send({ status: "error", reason: "newPort not found" });
+                logger?.log(getLineNumber() + ".index.js	 - newPort not found", "error");
+                res.send({ status: "error", reason: "newPort not found" });
+                return;
+            }
+            if (typeof newPort !== "number") {
+                res.send({ status: "error", reason: "newPort is not a number" });
+                logger?.log(getLineNumber() + ".index.js	 - newPort is not a number", "error");
+                res.send({ status: "error", reason: "newPort is not a number" });
+                return;
+            }
+            if (newPort <= 1024 || newPort >= 49151) {
+                res.send({ status: "error", reason: "newPort is out of range" });
+                logger?.log(getLineNumber() + ".index.js	 - newPort is out of range", "error");
+                res.send({ status: "error", reason: "newPort is out of range" });
+                return;
+            }
+            logger?.log(getLineNumber() + ".index.js	 - Setting new server port: " + newPort, "debug");
+            if (updateEnvFile("PORT", newPort)) {
+                server.close(() => {
+                    server.listen(newPort);
+                });
+                res.send({ status: "ok" });
+            } else {
+                res.send({ status: "error", reason: "error updating .env file" });
+                logger?.log(getLineNumber() + ".index.js	 - Error updating .env file", "error");
+            }
+        });
+    });
+
+    /**
+     * @description - api endpoint to interpret a math expression or array of math expressions
+     * @listens POST /api/interpretMath
+     * @param {string|Array} expression - the math expression to interpret or an array of math expressions
+     * @returns {object} - JSON object with the interpreted math expression(s)
+     */
+    app.post("api/interpretMath", (req, res) => {
+        logger?.log(getLineNumber() + ".index.js	 - POST /api/interpretMath", "debug");
+        req.on("data", async (data) => {
+            let inExpression = data.expression;
+            let result = null;
+            try {
+                result = await chatbot.interpretMathExpression(inExpression);
+            } catch (err) {
+                logger?.log(getLineNumber() + ".index.js	 - Error interpreting math expression: " + err, "error");
+                res.send({ status: "error", reason: err });
+            }
+            logger?.log(getLineNumber() + ".index.js	 - Math expression interpreted: " + result, "trace");
+            res.send({ status: "ok", result: result });
+        });
+    });
+
+    /**
+     * @description - api endpoint to get flash cards
+     * @listens GET /api/getCards
+     * @param {number} numberOfCards - the number of cards to get
+     * @param {number} offset - the number of cards to skip
+     * @param {string} collection - the name of the collection to get cards from
+     * @param {string} tags - a comma separated list of tags to filter by
+     * @param {number} difficulty - a number from 1 to 5 to filter by
+     * @param {string} search - a string to search for in the question or answer
+     * @param {string} dateCreatedRange - a string in the format "YYYY-MM-DD,YYYY-MM-DD" to filter by date created
+     * @param {string} dateModifiedRange - a string in the format "YYYY-MM-DD,YYYY-MM-DD" to filter by date modified
+     * @returns {object} - JSON object with the card data, array of flash cards
+     */
     app.get("/api/getCards", (req, res) => {
         logger?.log(getLineNumber() + ".index.js	 - GET /api/getCards", "debug");
         let requestParams = req.query;
@@ -113,20 +180,26 @@ const path = require("path");
         if (requestParams.offset === undefined) requestParams.offset = 0;
         if (requestParams.collection === undefined) requestParams.collection = null;
         if (requestParams.tags === undefined) requestParams.tags = null;
+        if (typeof requestParams.tags === "string") requestParams.tags = requestParams.tags.split(",");
         if (requestParams.difficulty === undefined) requestParams.difficulty = null;
         if (requestParams.search === undefined) requestParams.search = null;
         if (requestParams.dateCreatedRange === undefined) requestParams.dateCreatedRange = null;
         if (requestParams.dateModifiedRange === undefined) requestParams.dateModifiedRange = null;
-        let cards = flashcard_db.getCards(requestParams);
+        if (requestParams.all === undefined) requestParams.all = false;
+        // if (requestParams.method === undefined) requestParams.method = "AND";
+        let cards = flashcard_db.getCards(requestParams, requestParams.method);
         let offset = requestParams.offset;
         let numberOfCards = requestParams.numberOfCards;
         cards = cards.slice(offset, offset + numberOfCards);
-        res.send({ status: "ok", cards: cards, count: flashcard_db.getCountOfCards(requestParams), total: flashcard_db.getCountOfAllCards() });
+        res.send({ status: "ok", cards: cards });
     });
 
-    // endpoint: /api/getCollections
-    // Type: GET
-    // sends a JSON object with the names of the collections
+    /**
+     * @description - api endpoint to get the names of the collections
+     * @listens GET /api/getCollections
+     * @returns {object} - JSON object with the names of the collections
+     * @requires - none
+     */
     app.get("/api/getCollections", (req, res) => {
         logger?.log(getLineNumber() + ".index.js	 - GET /api/getCollections", "debug");
         // get the collection names from the flash card database class
@@ -134,14 +207,18 @@ const path = require("path");
         res.send({ status: "ok", collections: collectionNames });
     });
 
-    // endpoint: /api/saveNewCards
-    // Type: POST
-    // receives a JSON object with the card data and saves it to the database
+    /**
+     * @description - api endpoint to save new flash cards
+     * @listens POST /api/saveNewCards
+     * @param {Array} cardData - the card data to save
+     * @returns {object} - JSON object with the status of the request
+     * @requires - cardData - an array of flash cards
+     */
     app.post("/api/saveNewCards", (req, res) => {
         logger?.log(getLineNumber() + ".index.js	 - POST /api/saveNewCards", "debug");
         req.on("data", (data) => {
             const cardData = JSON.parse(data);
-            logger?.log(getLineNumber() + ".index.js	 - Saving new flash card: " + JSON.stringify(cardData, 2, null).substring(0,100) + "...", "debug");
+            logger?.log(getLineNumber() + ".index.js	 - Saving new flash card: " + JSON.stringify(cardData, 2, null).substring(0, 100) + "...", "debug");
             if (!Array.isArray(cardData)) {
                 res.send({ status: "error", reason: "Invalid data. Expected an array of cards." });
                 logger?.log(getLineNumber() + ".index.js	 - Invalid card data", "error");
@@ -164,9 +241,12 @@ const path = require("path");
         });
     });
 
-    // endpoint: /api/deleteCard
-    // Type: POST
-    // receives a JSON object with the card data and deletes it from the database
+    /**
+     * @description - api endpoint to delete a flash card
+     * @listens POST /api/deleteCard
+     * @param {object} cardData - the card data to delete
+     * @returns {object} - JSON object with the status of the request
+     */
     app.post("/api/deleteCard", (req, res) => {
         logger?.log(getLineNumber() + ".index.js	 - POST /api/deleteCard", "debug");
         req.on("data", (data) => {
@@ -191,11 +271,13 @@ const path = require("path");
         });
     });
 
-    // endpoint: /api/updateCard
-    // Type: POST
-    // receives a JSON object with the card data and updates it in the database. The id property is required.
-    // The other properties are optional and only the ones that are given will be updated.
-    // This endpoint is useful for updating the timesStudied, timesCorrect, timesIncorrect, timesSkipped, and timesFlagged properties.
+    /**
+     * @description - api endpoint to update a flash card
+     * @listens POST /api/updateCard
+     * @param {object} cardData - the card data to update
+     * @returns {object} - JSON object with the status of the request
+     * @requires - cardData.id - the id of the card to update
+     */
     app.post("/api/updateCard", (req, res) => {
         logger?.log(getLineNumber() + ".index.js	 - POST /api/updateCard", "debug");
         req.on("data", (data) => {
@@ -222,9 +304,15 @@ const path = require("path");
         });
     });
 
-    // endpoint: /api/generateCards
-    // Type: POST
-    // receives a string and generates flash cards from it
+    /**
+     * @description - api endpoint to generate flash cards from a given text
+     * @listens POST /api/generateCards
+     * @param {string} text - the text to generate flash cards from
+     * @param {number} numberOfCards - the number of flash cards to generate
+     * @param {number} difficulty - the difficulty of the flash cards to generate
+     * @returns {Array} - an array of flash cards
+     * @requires - socketId cookie
+     */
     app.post("/api/generateCards", (req, res) => {
         logger?.log(getLineNumber() + ".index.js	 - POST /api/generateCards", "debug");
         req.on("data", async (data) => {
@@ -237,21 +325,25 @@ const path = require("path");
                 const numberOfCards = dataObj.numberOfCards;
                 const difficulty = dataObj.difficulty;
                 const server = ioServers.find((server) => server.id === socketId);
-                let cards = await chatbot.flashCardGenerator(text, numberOfCards, difficulty, (chunk) => {
+                let streaming_cb = (chunk) => {
                     if (server !== undefined) server.socket.emit("message", { type: socketMessageTypes[0], data: { status: "working", chunk: chunk } });
-                }, true);
+                    else streaming_cb = null;
+                };
+                let cards = await chatbot.flashCardGenerator(text, numberOfCards, difficulty, streaming_cb, true);
                 if (server !== undefined) server.socket.emit("message", { type: socketMessageTypes[2], data: { status: "done" } });
                 res.send({ cards: cards, status: "ok" });
             }
         });
     });
 
-    // endpoint: /api/getWrongAnswers
-    // Type: GET
-    // sends a JSON object with the wrong answers for a given card
-    // query parameters:
-    // - cardId: the id of the card to get wrong answers for
-    // - numberOfAnswers: the number of wrong answers to get
+    /**
+     * @description - api endpoint to get wrong answers for a given card
+     * @listens GET /api/getWrongAnswers
+     * @param {string} cardId - the id of the card to get wrong answers for
+     * @param {number} numberOfAnswers - the number of wrong answers to get
+     * @returns {Array} - an array of wrong answers
+     * @requires - socketId cookie
+     */
     app.get("/api/getWrongAnswers", async (req, res) => {
         logger?.log(getLineNumber() + ".index.js	 - GET /api/getWrongAnswers", "debug");
         const requestParams = req.query;
@@ -265,44 +357,70 @@ const path = require("path");
             let chatRes;
             try {
                 let server = ioServers.find((server) => server.id === socketId);
-                chatRes = await chatbot.wrongAnswerGenerator(card, numberOfAnswers, (chunk) => {
-                    // ioServer?.emit('message', { type: socketMessageTypes[1], data: { status: 'working', chunk: chunk } });                    
+                let streaming_cb = (chunk) => {
                     if (server !== undefined) server.socket.emit("message", { type: socketMessageTypes[1], data: { status: "working", chunk: chunk } });
-                });
-                // ioServer?.emit('message', { type: socketMessageTypes[2], data: { status: 'done' } });
+                    else streaming_cb = null;
+                };
+                chatRes = await chatbot.wrongAnswerGenerator(card, numberOfAnswers, streaming_cb);
                 if (server !== undefined) server.socket.emit("message", { type: socketMessageTypes[2], data: { status: "done" } });
             } catch (err) {
                 logger?.log(getLineNumber() + ".index.js	 - Error generating wrong answers: " + err, "error");
-                res.send({ status:"error", reason: err, answers: [] });
+                res.send({ status: "error", reason: err, answers: [] });
             }
-            res.send({ answers: chatRes, status: "ok"});
+            res.send({ answers: chatRes, status: "ok" });
         } else {
             res.send({ answers: [], status: "error", reason: "card not found" });
         }
     });
 
-    // endpoint: /api/getCardCount
-    // Type: GET
-    // sends a JSON object with the number of cards that match the given parameters
-    // query parameters (optional):
-    // - all: if true, returns the total number of cards in the database
-    // - collection: the name of the collection to get cards from
-    // - tags: a comma separated list of tags to filter by
-    // - difficulty: a number from 1 to 5 to filter by
-    // - search: a string to search for in the question or answer
-    // - dateCreatedRange: a string in the format "YYYY-MM-DD,YYYY-MM-DD" to filter by date created
-    // - dateModifiedRange: a string in the format "YYYY-MM-DD,YYYY-MM-DD" to filter by date modified
+    /**
+     * @description - api endpoint to rephrase a given text
+     * @listens GET /api/rephrase
+     * @param {string} text - the text to rephrase
+     * @returns {string} - the rephrased text
+     * @requires - socketId cookie
+     */
+    app.get("/api/rephrase", async (req, res) => {
+        logger?.log(getLineNumber() + ".index.js	 - GET /api/rephrase", "debug");
+        const requestParams = req.query;
+        const cookies = req.cookies;
+        const socketId = cookies.socketId;
+        const text = requestParams.text;
+        const server = ioServers.find((server) => server.id === socketId);
+        let streaming_cb = (chunk) => {
+            if (server !== undefined) server.socket.emit("message", { type: socketMessageTypes[0], data: { status: "working", chunk: chunk } });
+            else streaming_cb = null;
+        };
+        let chatRes = await chatbot.rephraseText(text, streaming_cb);
+        if (server !== undefined) server.socket.emit("message", { type: socketMessageTypes[2], data: { status: "done" } });
+        res.send({ rephrased: chatRes, status: "ok" });
+    });
+
+    /**
+     * @description - api endpoint to get the number of cards that match the given parameters
+     * @listens GET /api/getCardCount
+     * @param {boolean} all - if true, returns the total number of cards in the database
+     * @param {string} collection - the name of the collection to get cards from
+     * @param {string} tags - a comma separated list of tags to filter by
+     * @param {number} difficulty - a number from 1 to 5 to filter by
+     * @param {string} search - a string to search for in the question or answer
+     * @param {string} dateCreatedRange - a string in the format "YYYY-MM-DD,YYYY-MM-DD" to filter by date created
+     * @param {string} dateModifiedRange - a string in the format "YYYY-MM-DD,YYYY-MM-DD" to filter by date modified
+     * @returns {object} - JSON object with the number of cards that match the given parameters
+     */
     app.get("/api/getCardCount", (req, res) => {
         logger?.log(getLineNumber() + ".index.js	 - GET /api/getCardCount", "debug");
-        const requestParams = req.query;
+        let requestParams = req.query;
         if (requestParams.collection === undefined) requestParams.collection = null;
         if (requestParams.tags === undefined) requestParams.tags = null;
+        if (typeof requestParams.tags === "string") requestParams.tags = requestParams.tags.split(",");
         if (requestParams.difficulty === undefined) requestParams.difficulty = null;
         if (requestParams.search === undefined) requestParams.search = null;
         if (requestParams.dateCreatedRange === undefined) requestParams.dateCreatedRange = null;
         if (requestParams.dateModifiedRange === undefined) requestParams.dateModifiedRange = null;
         if (requestParams.all === undefined) requestParams.all = false;
-        if (Object.prototype.hasOwnProperty.call(requestParams, "id")) {
+        if (requestParams.method === undefined) requestParams.method = "AND";
+        if (requestParams.hasOwnProperty("id")) {
             if (flashcard_db.getCardById(requestParams.id) === null) {
                 logger?.log(getLineNumber() + ".index.js	 - Card not found", "warn");
                 res.send({ status: "ok", count: 0 });
@@ -313,16 +431,17 @@ const path = require("path");
                 return;
             }
         }
-        let count = flashcard_db.getCountOfCards(requestParams);
+        let count = flashcard_db.getCountOfCards(requestParams, requestParams.method);
         logger?.log(getLineNumber() + ".index.js	 - Returning count: " + count, "debug");
         res.send({ status: "ok", count: count });
     });
 
-    // endpoint: /api/tagMatch
-    // Type: GET
-    // sends a JSON object with the tags that match the given tag/partial tag
-    // query parameters:
-    // - tag: the tag or partial tag to match
+    /**
+     * @description - api endpoint to get tags that match the given tag/partial tag
+     * @listens GET /api/tagMatch
+     * @param {string} tag - the tag or partial tag to match
+     * @returns {object} - JSON object with the tags that match the given tag/partial tag
+     */
     app.get("/api/tagMatch", (req, res) => {
         logger?.log(getLineNumber() + ".index.js	 - GET /api/tagMatch", "debug");
         logger?.log(getLineNumber() + ".index.js	 - Query: " + JSON.stringify(req.query), "trace");
@@ -338,18 +457,22 @@ const path = require("path");
         res.send({ status: "ok", tagsMatchFuzzy: tagsMatchFuzzy, tagsMatchFirstChars: tagsMatchFirstChars, tagsExistExact: tagsExistExact, tagsExistFuzzy: tagsExistFuzzy });
     });
 
-
-    // endpoint: /api/getGPTenabled
-    // Type: GET
-    // sends a JSON object with the value of apiKeyFound
+    /**
+     * @description - api endpoint to get the value of apiKeyFound
+     * @listens GET /api/getGPTenabled
+     * @returns {object} - JSON object with the value of apiKeyFound
+     */
     app.get("/api/getGPTenabled", (req, res) => {
         logger?.log(getLineNumber() + ".index.js	 - GET /api/getGPTenabled", "debug");
         res.send({ status: "ok", enabled: chatbot.apiKeyFound });
     });
 
-    // endpoint: /api/setGPTapiKey
-    // Type: POST
-    // receives a JSON object with the API key and sets it in ChatGPT class
+    /**
+     * @description - api endpoint to set the OpenAI API key
+     * @listens POST /api/setGPTapiKey
+     * @param {string} apiKey - the OpenAI API key
+     * @returns {object} - JSON object with the status of the request
+     */
     app.post("/api/setGPTapiKey", (req, res) => {
         logger?.log(getLineNumber() + ".index.js	 - POST /api/setGPTapiKey", "debug");
         req.on("data", (data) => {
@@ -365,9 +488,12 @@ const path = require("path");
         });
     });
 
-    // endpoint: /api/addLogEntry
-    // Type: POST
-    // receives a JSON object with the log entry and adds it to the logs
+    /**
+     * @description - api endpoint to add a log entry
+     * @listens POST /api/addLogEntry
+     * @param {string} message - the message to log
+     * @param {string} level - the log level, one of "info", "warn", "error", "debug", "trace"
+     */
     app.post("/api/addLogEntry", (req, res) => {
         logger?.log(getLineNumber() + ".index.js	 - POST /api/addLogEntry", "trace");
         req.on("data", (data) => {
@@ -377,16 +503,19 @@ const path = require("path");
         });
     });
 
-    // endpoint: /api/setLogLevel
-    // Type: POST
-    // receives a JSON object with the log level and sets it in the logger
+    /**
+     * @description - api endpoint to set the log level
+     * @listens POST /api/setLogLevel
+     * @param {string} logLevel - the log level, one of "off", "info", "warn", "error", "debug", "trace"
+     * @returns {object} - JSON object with the status of the request
+     */
     app.post("/api/setLogLevel", (req, res) => {
         logger?.log(getLineNumber() + ".index.js	 - POST /api/setLogLevel", "debug");
         req.on("data", (data) => {
             let logLevel = null;
             const dataObj = JSON.parse(data);
-            if (Object.prototype.hasOwnProperty.call(dataObj, "logLevel")) logLevel = dataObj.logLevel;
-            else if (Object.prototype.hasOwnProperty.call(dataObj, "level")) logLevel = dataObj.level;
+            if (dataObj.hasOwnProperty("logLevel")) logLevel = dataObj.logLevel;
+            else if (dataObj.hasOwnProperty("level")) logLevel = dataObj.level;
             if (logLevel === null) {
                 res.send({ status: "error", reason: "log level not found" });
                 logger?.log(getLineNumber() + ".index.js	 - Log level not found in request data", "error");
@@ -405,12 +534,22 @@ const path = require("path");
         });
     });
 
+    /**
+     * @description - 404 page
+     * @listens GET /web/404.html
+     * @returns {file} - the 404.html file
+     */
     app.get("/web/404.html", (req, res) => {
         logger?.log(getLineNumber() + ".index.js	 - GET /web/404.html", "debug");
         res.sendFile(__dirname + "/web/404.html");
     });
 
-    // Serve static files
+    /**
+     * @description - serve static files
+     * @listens GET /
+     * @listens GET /web/*
+     * @returns {file} - the index.html file
+     */
     app.get("/", (req, res) => {
         logger?.log(getLineNumber() + ".index.js	 - GET /", "debug");
         // forward to /web/
@@ -418,13 +557,25 @@ const path = require("path");
     });
     app.use("/web", express.static(adjustPathForPKG("web")));
 
-    // 404
+    /**
+     * @description - Not found handler
+     * @listens GET *
+     * @returns - redirect to 404.html
+     */
     app.use((req, res) => {
         logger?.log(getLineNumber() + ".index.js	 - 404 - " + req.originalUrl, "warn");
         res.status(404).redirect(`/web/404.html?originalUrl=${req.originalUrl}`);
     });
 
-    var ioServers = [];
+    var ioServers = []; // use of var is intentional.
+
+    /**
+     * @description - socket.io connection
+     * @listens connection
+     * @param {object} socket - the socket object
+     * @returns - nothing
+     * @requires - ioServers (array of objects with socket and id properties)
+     */
     io.on("connection", (socket) => {
         // generate random id
         let id = Math.random().toString(36).substring(7);
@@ -444,7 +595,7 @@ const path = require("path");
 
 
     // Get the local IP addresses of the computer
-    let interfaces = require("os").networkInterfaces();
+    const interfaces = require("os").networkInterfaces();
     let addresses = [];
     for (let k in interfaces) {
         for (let k2 in interfaces[k]) {
@@ -455,6 +606,13 @@ const path = require("path");
         }
     }
 
+    /**
+     * @description - start the server
+     * @listens listen
+     * @param {number} port - the port to listen on
+     * @returns - nothing
+     * @requires - server
+     */
     server.listen(port, () => {
         // logger?.log(`If you are using a web browser on the same computer as the app, you can use the following address:`)
         // logger?.log(`http://localhost:${port}`)
@@ -464,18 +622,86 @@ const path = require("path");
         });
     });
 
+
+
+    ////////////////////////////////////////////////////////////////////////////////////////////
+    /// Support functions
+    ////////////////////////////////////////////////////////////////////////////////////////////
+
+    /**
+     * @function adjustPathForPKG
+     * @description - adjusts the path when running the app as a standalone executable
+     * @param {string} filePath - the file path to adjust
+     * @returns {string} - the adjusted file path
+     * @throws - nothing
+     * @sideEffects - nothing
+     * @notes - this function is used to adjust the path when running the app as a standalone executable
+     * @notes - it is necessary because when the app is run as a standalone executable, the current working directory is different
+     */
+    function adjustPathForPKG(filePath) {
+        if (process.pkg) {
+            return path.join(path.dirname(process.cwd()), filePath);
+        }
+        return filePath;
+    }
+
+    /**
+     * @function updateEnvFile
+     * @description - updates the .env file with the given key / value pair
+     * @param {string} key - the key to update
+     * @param {string} value - the value to set
+     * @returns {boolean} - true if the key / value pair was updated, false otherwise
+     * @throws - nothing
+     * @notes - this function updates the .env file with the given key / value pair
+     * @notes - if the key does not exist, it is added
+     * @notes - if the key exists, its value is updated
+     */
+    function updateEnvFile(key, value) {
+        logger?.log(getLineNumber() + ".index.js	 - Updating .env file", "debug");
+        if (typeof key !== "string" || typeof value !== "string") return false;
+        const path = adjustPathForPKG(".env");
+        logger?.log(getLineNumber() + ".index.js	 - Path: " + path, "trace");
+        let fileContents = "";
+        if (fs.existsSync(path)) {
+            fileContents = fs.readFileSync(path, "utf8");
+            logger?.log(getLineNumber() + ".index.js	 - File read", "trace");
+        }
+        let lines = fileContents.split("\n");
+        let found = false;
+        for (let i = 0; i < lines.length; i++) {
+            logger?.log(getLineNumber() + ".index.js	 - Line " + i + ": " + lines[i], "trace");
+            if (lines[i].indexOf(key) === 0) {
+                logger?.log(getLineNumber() + ".index.js	 - Key found", "trace");
+                lines[i] = key + (typeof value == "string" ? "=\"" : "=") + value + (typeof value == "string" ? "\"" : "");
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            lines.push(key + (typeof value == "string" ? "=\"" : "=") + value + (typeof value == "string" ? "\"" : ""));
+        }
+        fileContents = lines.join("\n");
+        try {
+            fs.writeFileSync(path, fileContents);
+            logger?.log(getLineNumber() + ".index.js	 - File written", "trace");
+            return true;
+        } catch (e) {
+            logger?.error(e);
+            return false;
+        }
+    }
     // Open the default web browser to the app
     logger?.log(getLineNumber() + ".index.js	 - Opening the default web browser to the app", "info");
-    let child_process = require("child_process");
+    const child_process = require("child_process");
     function browseURL(url) {
         logger?.log(getLineNumber() + ".index.js	 - Browsing URL: " + url, "debug");
-        var validatePath = isValidateUrl(url);
+        const validatePath = isValidateUrl(url);
         logger?.log(getLineNumber() + ".index.js	 - Is URL valid: " + validatePath, "debug");
         if (!validatePath) { return null; }
         logger?.log(getLineNumber() + ".index.js	 - Process platform: " + process.platform, "debug");
-        var start = (process.platform == "darwin" ? "open" : process.platform == "win32" ? "start" : "xdg-open");
+        const start = (process.platform == "darwin" ? "open" : process.platform == "win32" ? "start" : "xdg-open");
         logger?.log(getLineNumber() + ".index.js	 - Start command: " + start, "trace");
-        var childProcess = child_process.exec(start + " " + validatePath, function (err) {
+        const childProcess = child_process.exec(start + " " + validatePath, function (err) {
             if (err) { console.error("\r\n", err); }
         });
         return childProcess;
@@ -511,73 +737,4 @@ const path = require("path");
     process.on("uncaughtException", EXIT);
     process.on("SIGHUP", EXIT);
     process.on("exit", () => { });
-
-
-
-    ////////////////////////////////////////////////////////////////////////////////////////////
-    /// Support functions
-    ////////////////////////////////////////////////////////////////////////////////////////////
-
-    /**
- * @function adjustPathForPKG
- * @description - adjusts the path when running the app as a standalone executable
- * @param {string} filePath - the file path to adjust
- * @returns {string} - the adjusted file path
- * @throws - nothing
- * @sideEffects - nothing
- * @notes - this function is used to adjust the path when running the app as a standalone executable
- * @notes - it is necessary because when the app is run as a standalone executable, the current working directory is different
- */
-    function adjustPathForPKG(filePath) {
-        if (process.pkg) {
-            return path.join(path.dirname(process.cwd()), filePath);
-        }
-        return filePath;
-    }
-
-    /**
- * @function updateEnvFile
- * @description - updates the .env file with the given key / value pair
- * @param {string} key - the key to update
- * @param {string} value - the value to set
- * @returns {boolean} - true if the key / value pair was updated, false otherwise
- * @throws - nothing
- * @notes - this function updates the .env file with the given key / value pair
- * @notes - if the key does not exist, it is added
- * @notes - if the key exists, its value is updated
- */
-    function updateEnvFile(key, value) {
-        logger?.log(getLineNumber() + ".index.js	 - Updating .env file", "debug");
-        if (typeof key !== "string" || typeof value !== "string") return false;
-        const path = adjustPathForPKG(".env");
-        logger?.log(getLineNumber() + ".index.js	 - Path: " + path, "trace");
-        let fileContents = "";
-        if (fs.existsSync(path)) {
-            fileContents = fs.readFileSync(path, "utf8");
-            logger?.log(getLineNumber() + ".index.js	 - File read", "trace");
-        }
-        let lines = fileContents.split("\n");
-        let found = false;
-        for (let i = 0; i < lines.length; i++) {
-            logger?.log(getLineNumber() + ".index.js	 - Line " + i + ": " + lines[i], "trace");
-            if (lines[i].indexOf(key) === 0) {
-                logger?.log(getLineNumber() + ".index.js	 - Key found", "trace");
-                lines[i] = key + (typeof value == "string" ? "=\"" : "=") + value + (typeof value == "string" ? "\"" : "");
-                found = true;
-                break;
-            }
-        }
-        if (!found) {
-            lines.push(key + (typeof value == "string" ? "=\"" : "=") + value + (typeof value == "string" ? "\"" : ""));
-        }
-        fileContents = lines.join("\n");
-        try {
-            fs.writeFileSync(path, fileContents);
-            logger?.log(getLineNumber() + ".index.js	 - File written", "trace");
-            return true;
-        } catch (e) {
-            logger?.error(e);
-            return false;
-        }
-    }
 })();
