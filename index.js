@@ -110,19 +110,16 @@ const path = require("path");
             if (newPort === undefined) {
                 res.send({ status: "error", reason: "newPort not found" });
                 logger?.log(getLineNumber() + ".index.js	 - newPort not found", "error");
-                res.send({ status: "error", reason: "newPort not found" });
                 return;
             }
             if (typeof newPort !== "number") {
                 res.send({ status: "error", reason: "newPort is not a number" });
                 logger?.log(getLineNumber() + ".index.js	 - newPort is not a number", "error");
-                res.send({ status: "error", reason: "newPort is not a number" });
                 return;
             }
             if (newPort <= 1024 || newPort >= 49151) {
                 res.send({ status: "error", reason: "newPort is out of range" });
                 logger?.log(getLineNumber() + ".index.js	 - newPort is out of range", "error");
-                res.send({ status: "error", reason: "newPort is out of range" });
                 return;
             }
             logger?.log(getLineNumber() + ".index.js	 - Setting new server port: " + newPort, "debug");
