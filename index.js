@@ -1,17 +1,19 @@
 /* eslint-disable no-prototype-builtins */
-const fs = require("fs");
-const os = require("node:os");
-const express = require("express");
-const http = require("http");
-const _url = require("url");
-const socketio = require("socket.io");
-const app = express();
+const fs = require("fs"); // import the fs module, which is a module for interacting with the file system
+const os = require("node:os"); // import the os module, which is a module for interacting with the operating system
+const express = require("express"); // import the express module, which is a module for creating web servers
+const http = require("http"); // import the http module, which is a module for creating an HTTP server
+const _url = require("url"); // import the url module, which is a module for working with URLs
+const socketio = require("socket.io"); // import the socket.io library, which is a library for real-time web applications. It enables real-time, bidirectional and event-based communication between web clients and servers.
+const app = express(); // create an express app, which is a web server framework for Node.js
 const cookieParser = require("cookie-parser");
-app.use(cookieParser());
+app.use(cookieParser()); // cookie parser middleware, for parsing browser cookies
 const server = http.createServer(app);
 const io = socketio(server);
-const net = require("net");
-const path = require("path");
+const net = require("net"); // import the net module, which is a module for creating TCP servers and clients
+const path = require("path"); // import the path module, which is a module for working with file paths
+const bonjour = require("bonjour")(); // import the bonjour module, which is a module for creating and publishing mDNS services
+const cleverDecksHostname = "cleverdecks.local";
 (async () => {
     // this loads the API key from the .env file. 
     // For development, you should create a .env file in the root directory of the project and add the following line to it:
@@ -19,8 +21,7 @@ const path = require("path");
     require("dotenv").config();
     // determine what ports are available
     let tempPort = 0;
-    let portRange = Array.from({ length: 100 }, (_, i) => i + 3000);
-    portRange.push(5000);
+    let portRange = [1024, 49151];
     const checkPortAvailability = (port) => {
         return new Promise((resolve, reject) => {
             const server = net.createServer();
@@ -37,22 +38,28 @@ const path = require("path");
             });
         });
     };
-
-    for (let i = 0; i < portRange.length; i++) {
-        let port = portRange[i];
-        let available = await checkPortAvailability(port);
+    console.log("Checking for available ports...");
+    process.stdout.write("Checking port: ");
+    for (let i = portRange[0]; i < portRange[1]; i++) {
+        process.stdout.write(i + " ".repeat(6-String(i).length));
+        process.stdout.moveCursor(-6, 0);
+        let available = false;
+        try{
+            available = await checkPortAvailability(i);
+        }catch(err){
+            // just eat the error, om nom nom
+        }
         if (available) {
-            tempPort = port;
+            tempPort = i;
             break;
         }
     }
-
     // if no ports are available, exit the app
     if (tempPort === 0) {
         console.error("No ports available");
         process.exit();
     }
-    const port = process.env.PORT || tempPort; // set the port to the value of the PORT environment variable, or to the first available port in the range 3000-3099, or to 5000 if the environment variable is not set
+    const port = process.env.PORT || tempPort; // set the port to the value of the PORT environment variable, or to the first available port in the range of 1024 to 49151
     const { FlashCard, socketMessageTypes, getLineNumber } = require("./web/common.js");
     process.title = "CleverDecks";
     ////////////////////////////////////////////////////////////////// Create data directory //////////////////////////////////////////////////////////////////////////////
@@ -616,12 +623,14 @@ const path = require("path");
     server.listen(port, () => {
         // logger?.log(`If you are using a web browser on the same computer as the app, you can use the following address:`)
         // logger?.log(`http://localhost:${port}`)
-        logger?.log(getLineNumber() + ".index.js	 - If you are using a web browser on a different computer on the same network, you can try the following addresses:");
+        logger?.log(getLineNumber() + ".index.js	 - If you are using a web browser on a different computer (or mobile device) on the same network, open your browser to "+cleverDecksHostname+":"+port);
+        logger?.log(getLineNumber() + "If that doesn't work, you can try the following addresses:");
         addresses.forEach((address) => {
             logger?.log(`${getLineNumber()}.index.js \t- http://${address}:${port}`);
         });
     });
 
+    bonjour.publish({ name: "CleverDecks", type: "http", port: port , host: cleverDecksHostname, txt: { "path": "/web/index.html" } });
 
 
     ////////////////////////////////////////////////////////////////////////////////////////////
@@ -693,6 +702,12 @@ const path = require("path");
     // Open the default web browser to the app
     logger?.log(getLineNumber() + ".index.js	 - Opening the default web browser to the app", "info");
     const child_process = require("child_process");
+    /**
+     * @function browseURL
+     * @description - opens the default web browser to the given URL
+     * @param {string} url - the URL to open
+     * @returns {object} - the child process object
+     */
     function browseURL(url) {
         logger?.log(getLineNumber() + ".index.js	 - Browsing URL: " + url, "debug");
         const validatePath = isValidateUrl(url);
@@ -707,6 +722,12 @@ const path = require("path");
         return childProcess;
 
     }
+    /**
+     * @function isValidateUrl
+     * @description - validates the given URL
+     * @param {string} url - the URL to validate
+     * @returns {string} - the validated URL
+     */
     function isValidateUrl(url) {
         let strPath = _url.toString(url);
         logger?.log(getLineNumber() + ".index.js	 - URL: " + strPath, "trace");
@@ -720,7 +741,7 @@ const path = require("path");
         if (strPath.indexOf("\\.") !== -1) { return false; }
         return url;
     }
-    browseURL("http://localhost:3000/");
+    browseURL("http://"+cleverDecksHostname+":" + port + "/");
 
     // When the app is closed, finalize the logger
     const EXIT = () => {

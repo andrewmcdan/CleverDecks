@@ -65,10 +65,10 @@ class Logger {
         let newEntry = { date: new Date().toLocaleString(), message: message, level: logLevels[level] }; // create a new log entry
         this.logs.push(newEntry); // add the new log entry to the logs array
         if (this.consoleLogging) console.log(newEntry.date + " - " + newEntry.level.padEnd(longestLogLevelsLength," ") + " - " + newEntry.message); // log the message to the console
-        if(this.logs.length >= 50 && !this.writeInProcess) this.writeOutLogs(); // write out the logs to a file if there are 10 or more entries in the logs buffer array
+        if(!this.writeInProcess && this.logs.length >= 50) this.writeOutLogs(); // write out the logs to a file if there are 10 or more entries in the logs buffer array
         // if the writeLogInterval is not set, set it to write out the logs every 30 seconds if there are any logs to write out
         if(this.writeLogInterval == null) this.writeLogInterval = setInterval(() => { 
-            if(this.logs.length > 0 && !this.writeInProcess) this.writeOutLogs(); 
+            if(!this.writeInProcess && this.logs.length > 0) this.writeOutLogs(); 
         }, 30 * 1000);
     }
 

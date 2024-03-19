@@ -9,7 +9,9 @@
   "scripts": {
     "test": "jest",
     "start": "node start.js",
-    "build:css": "npx tailwindcss -i web/inputStyles.css -o web/styles.css --watch"
+    "build:css": "npx tailwindcss -i web/inputStyles.css -o web/styles.css --watch",
+    "processForPkg": "node processForPkg.js",
+    "package": "npm run processForPkg && pkg ."
   },
   "repository": {
     "type": "git",
@@ -22,6 +24,7 @@
   },
   "homepage": "https://github.com/andrewmcdan/CleverDecks#readme",
   "dependencies": {
+    "bonjour": "^3.5.0",
     "cookie-parser": "^1.4.6",
     "dotenv": "^16.4.2",
     "express": "^4.18.2",
@@ -33,6 +36,7 @@
   "pkg": {
     "assets": [
       "node_modules/openai/**/*",
+      "node_modules/socket.io/client-dist/*.js",
       "web/**/*"
     ],
     "scripts": "index.js",
