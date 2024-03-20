@@ -789,7 +789,7 @@ let setStatusMessage = () => { };
                 let li = document.createElement("li");
                 li.setAttribute("searchIndex", thisSearchIndex.toString());
                 li.classList.add("searchResult");
-                li.innerHTML = tag;
+                li.innerHTML = "Tag: " + tag;
                 li.addEventListener("click", (event) => {
                     searchBox.value = event.target.innerHTML;
                     searchBox.dispatchEvent(new Event("input"));
