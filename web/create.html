@@ -65,16 +65,68 @@
                     </div>
                 </div>
             </nav>
-            <div class="content">
-                <div id="cardCount">
+            <div id="content" class="p-4">
 
-                </div>
-                <div id="totalCardCount">
 
-                </div>
-                <div id="flashCardContainer">
-                    <!-- FlashCard components will be added here -->
-                </div>
+                <h1 class="text-2xl font-bold mb-4">Create Flashcard - Manual Mode</h1>
+  
+                <!-- Toggle Mode Button -->
+                <button onclick="switchToAIMode()" class="bg-purple-500 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded mb-4">Switch to AI Mode</button>
+                
+                <!-- Manual Flashcard Creation Form -->
+                <form id="manualCreationForm">
+                  <div class="mb-4">
+                    <label for="question" class="block mb-2 text-sm font-medium text-gray-900">Question:</label>
+                    <input type="text" id="question" name="question" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" required value="This area will suggest similar questions">
+                  </div>
+                  <div class="mb-4">
+                    <label for="answer" class="block mb-2 text-sm font-medium text-gray-900">Answer:</label>
+                    <input type="text" id="answer" name="answer" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" required value="This are will suggest similar answers">
+                  </div>
+                  <div class="mb-4">
+                    <label for="tags" class="block mb-2 text-sm font-medium text-gray-900">Tags (comma-separated):</label>
+                    <input type="text" id="tags" name="tags" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" value="This area will autocomplete with existing tags">
+                  </div>
+                  <div class="mb-4">
+                    <label for="tags" class="block mb-2 text-sm font-medium text-gray-900">Collection:</label>
+                    <input type="text" id="tags" name="tags" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" value="This area will autocomplete with existing collection names">
+                  </div>
+                  <!-- Submit Button -->
+                  <button type="submit" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">Create Flashcard</button>
+                </form>
+
+
+
+
+                <!--<h1 class="text-2xl font-bold mb-4">Create Flashcard - AI Mode</h1>
+
+                <!- Toggle Mode Button ->
+                <button onclick="switchToManualMode()"
+                    class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mb-4">Switch to Manual
+                    Mode</button>
+
+                <!- AI Flashcard Generation Form ->
+                <form id="aiCreationForm">
+                    <div class="mb-4">
+                        <label for="sourceText" class="block mb-2 text-sm font-medium text-gray-900">Source
+                            Text:</label>
+                        <textarea id="sourceText" name="sourceText" rows="4"
+                            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+                            placeholder="Enter text to generate flashcards..." required></textarea>
+                    </div>
+                    <div class="mb-4">
+                        <label for="numCards" class="block mb-2 text-sm font-medium text-gray-900">Number of Cards to
+                            Generate:</label>
+                        <input type="number" id="numCards" name="numCards" min="1"
+                            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+                            required>
+                    </div>
+                    <!- Submit Button ->
+                    <button type="submit"
+                        class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">Generate
+                        Flashcards</button>
+                </form>
+            -->
             </div>
             <footer class="bg-gray-800 text-white items-center justify-center w-full p-6">
                 <div class="flex items-center mb-4 justify-center">
