@@ -47,6 +47,16 @@
                     </div>
                 </div>
                 <div class="px-4 realtive">
+                    <div id="searchReturnContainer"
+                        class="absolute gone top-10 bg-white shadow-md shadow-white rounded-sm border border-gray-200 p-4 text-black">
+                        <p>Returned results: <span id="searchResultsCount">0</span></p>
+                        <p>
+                            <button class="jborder-2 border-black rounded-sm border bg-white p-1"
+                                id="loadAddButton">Load - Add</button>
+                            <button class="jborder-2 border-black rounded-sm border bg-white p-1"
+                                id="loadNewButton">Load - New</button>
+                        </p>
+                    </div>
                     <div id="searchResultsContainer"
                         class="absolute gone top-10 bg-white shadow-md shadow-white rounded-sm border border-gray-200 p-4">
                         <ul id="searchResultsList" class="text-black w-full">
@@ -65,14 +75,17 @@
                     </div>
                 </div>
             </nav>
-            <div id="content" class="p-4">
+            <div id="content" class="p-6">
                 <!-- Total Flashcard Count Display -->
                 <div id="cardCount" class="text-lg font-semibold mb-4">
-                    Flashcards Loaded: N
+                    Total Flashcards: <span id="totalCardCount"></span>
                 </div>
-
+                <div id="collectionInfo" class="mb-4 text-sm font-medium text-gray-900">
+                    <p>Collection Information:</p>
+                </div>
+                <hr>
                 <!-- Settings Section -->
-                <div class="settings mb-6">
+                <div class="settings my-6">
                     <h2 class="text-xl font-semibold mb-2">Settings</h2>
                     <div>
                         <label for="api-key" class="block mb-2 text-sm font-medium text-gray-900">OpenAI API
@@ -80,6 +93,10 @@
                         <input type="text" id="api-key" name="api-key"
                             class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
                             placeholder="Enter your API Key">
+                        <div class="popup_text gone absolute bg-gray-200 text-black p-2 rounded-lg"
+                            style="width: 300px;">This is the API key that will be used to access the OpenAI API. You
+                            can get an API key by signing up for an account at <a
+                                href="https://platform.openai.com/signup" target="_blank">OpenAI</a>.</div>
                     </div>
                     <div class="mt-4">
                         <label for="logging-level" class="block mb-2 text-sm font-medium text-gray-900">Logging
@@ -91,24 +108,49 @@
                             <option value="error">Error</option>
                             <option value="debug">Debug</option>
                         </select>
+                        <div class="popup_text gone absolute bg-gray-200 text-black p-2 rounded-lg">This setting
+                            controls the amount of information that is logged to the launcher and the log file. If you
+                            are experiencing issues, you may want to set this to "Debug" to get more information.</div>
+                    </div>
+                    <div class="mt-4">
+                        <label for="port_number" class="block mb-2 text-sm font-medium text-gray-900">Port Number
+                            (CleverDecks.local:PORT_NUMBER):</label>
+                        <input type="number" id="port_number" name="port_number"
+                            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+                            placeholder="Enter your port number, 1024-49151">
+                        <div class="popup_text gone absolute bg-gray-200 text-black p-2 rounded-lg">If you are going to
+                            bookmark CleverDecks, it's probably a good idea to set a port number here. Otherwise it may
+                            change every time you start the app.</div>
+                    </div>
+                    <div class="mt-4">
+                        <button id="save-settings" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Save Settings</button>
                     </div>
                 </div>
-
+                <hr>
                 <!-- Additional Information or Widgets -->
-                <div class="additional-info mb-6">
+                <div class="additional-info my-6">
                     <h2 class="text-xl font-semibold mb-2">Your Progress</h2>
                     <!-- Dynamically populated based on user's study and quiz history -->
                     <p>Placeholder for graphs, charts, or any other visual representation of the user's progress.</p>
                 </div>
+                <hr>
                 <!-- Flashcard Management Section -->
-                <div class="flashcard-management mb-6">
+                <div class="flashcard-management my-6">
                     <h2 class="text-xl font-semibold mb-2">Flashcard Management</h2>
-                    <div id="flashcardList" class="mb-4">
-                        Dynamically populated list of flashcards with edit and delete options
+                    <div id="numberOfLoadedCards" class="text-gray-900">
+                        <p>Number of Flashcards Loaded: <span id="loadedCardCount">Use the search at the top of the page
+                                to load some cards...</span></p>
+                    </div>
+                    <div id="flashCardContainer" class="flex flex-wrap w-full">
+                        <!-- Flashcards will be added here -->
+                    </div>
+                    <div id="flashCardToBeEditedContainer" class="gone fixed editbox drop-shadow-lg shadow-lg shadow-black bg-white border border-black rounded-md">
+                        <div class="w-full h-full flex flex-wrap p-2" id="flashCardToBeEdited">
+                            
+                        </div>
                     </div>
                 </div>
             </div>
-
             <footer class="bg-gray-800 text-white items-center justify-center w-full p-6">
                 <div class="flex items-center mb-4 justify-center">
                     <a href="https://github.com/andrewmcdan/CleverDecks" target="_blank" class="px-2 py-4">GitHub</a> |
@@ -124,7 +166,8 @@
                     </a>
                 </div>
                 <div class="flex items-center mt-4 justify-around">
-                    <p>Copyright &copy; 2024 by Edwin Maldonado, Andrew McDaniel, Bryce Martin-White, Elizabeth King,
+                    <p>Copyright &copy; 2024 by Edwin Maldonado, Andrew McDaniel, Bryce Martin-White, Elizabeth
+                        King,
                         and
                         Uday
                         Kadarla. All rights reserved.</p>
@@ -145,49 +188,268 @@
     /*
         Styles unique to this page go here
         */
+    .popup_text {
+        width: 400px;
+        z-index: 1;
+    }
+
+    .flashcard{
+        width: 32%;
+        min-width: 300px;
+    }
+
+    .edit {
+        background-color: #4CAF50;
+        /* Green */
+        border: none;
+        color: white;
+        padding: 5px 10px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 16px;
+        margin: 4px 2px;
+        cursor: pointer;
+    }
+
+    .delete {
+        background-color: #f44336;
+        /* Red */
+        border: none;
+        color: white;
+        padding: 5px 10px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 16px;
+        margin: 4px 2px;
+        cursor: pointer;
+    }
+
+    .editBox {
+        height: 54vh;
+        width: 50vw;
+        top: 18.5vh;
+        left: 27.5vw;
+    }
+
+    #flashCardToBeEditedContainer {
+        z-index: 100;
+    }
 </style>
 <script>
     (async () => {
         await CleverDecks.waitReady();
-
         // JavaScript unique to this page goes here
         // There is a global variable called CleverDecks that has methods for accessing the backend. See web.js for more information.
 
-
-        ///////////////// Example / Testing //////////////////////
-
-        CleverDecks.getCards({ search: "Paris", method: "AND", collection: "Countries" }).then((cards) => {
-
-            console.log({ cards });
-
-        }).catch((error) => {
-            console.error({ error });
+        const popupTexts = document.querySelectorAll('.popup_text');
+        popupTexts.forEach((popupText) => {
+            popupText.parentElement.addEventListener('mouseover', () => {
+                popupText.classList.remove('gone');
+                let scrollX = window.scrollX;
+                let scrollY = window.scrollY;
+                popupText.style.left = `${event.clientX + 3 + scrollX}px`;
+                popupText.style.top = `${event.clientY + scrollY}px`;
+                popupText.parentElement.addEventListener('mousemove', () => {
+                    popupText.style.left = `${event.clientX + 3 + scrollX}px`;
+                    popupText.style.top = `${event.clientY + scrollY}px`;
+                });
+            });
+            popupText.parentElement.addEventListener('mouseout', () => {
+                popupText.classList.add('gone');
+            });
         });
 
-
-
-        let cardCountDivHTML = '';
-        let cardCountDiv = document.getElementById('cardCount');
+        let collectionInfoDiv = document.getElementById('collectionInfo');
+        let collectionInfoDivHTML = collectionInfoDiv.innerHTML;
         let totalCardCountDiv = document.getElementById('totalCardCount');
-
         let collectionNames = await CleverDecks.getCollectionNames();
         let collectionCount = collectionNames.length;
-        cardCountDivHTML += `<p>There are ${collectionCount} collections available to study.</p>`;
+        collectionInfoDivHTML += `<p>There are ${collectionCount} collections available to study.</p>`;
         CleverDecks.getCardCount({ all: true }).then((count) => {
-            cardCount = count;
-            totalCardCountDiv.innerHTML = `<p>There are ${cardCount} total cards available to study.</p>`;
+            totalCardCountDiv.innerHTML = count;
         }).catch((error) => {
             console.error({ error });
         })
         for (let i = 0; i < collectionCount; i++) {
             CleverDecks.getCardCount({ collection: collectionNames[i] }).then((count) => {
-                cardCountDivHTML += `<p>Collection ${i + 1} (${collectionNames[i]}) has ${count} cards.</p>`;
-                cardCountDiv.innerHTML = cardCountDivHTML;
+                collectionInfoDivHTML += `<p>Collection ${i + 1} (${collectionNames[i]}) has ${count} cards.</p>`;
+                collectionInfoDiv.innerHTML = collectionInfoDivHTML;
             }).catch((error) => {
                 console.error({ error });
             });
         }
+
+        const numberOfLoadedCardsDiv = document.getElementById('numberOfLoadedCards');
+        const loadedCardCountSpan = document.getElementById('loadedCardCount');
+        const cardCount = document.getElementById('cardCount');
+        const totalCardCount = document.getElementById('totalCardCount');
+        const searchButton = document.getElementById('searchButton');
+        const searchBox = document.getElementById('search');
+        const searchReturnContainer = document.getElementById('searchReturnContainer');
+        const searchResultsCount = document.getElementById('searchResultsCount');
+        const searchResultsContainer = document.getElementById('searchResultsContainer');
+        const loadAddButton = document.getElementById('loadAddButton');
+        const loadNewButton = document.getElementById('loadNewButton');
+
+        document.addEventListener("click", (event) => {
+            if (event.target.id === "searchReturnContainer") return;
+            if (event.target.id === "searchResultsCount") return;
+            if (event.target === searchBox) return;
+            searchReturnContainer.classList.add("gone");
+        });
+
+        let loadedCards = [];
+        let searchResultsCards = [];
+
+        searchButton.onclick = async () => {
+            // Get the search term
+            const searchTerm = search.value;
+            if (searchTerm === '') return;
+            let results = null;
+
+            if (searchTerm.startsWith("Tag: ")) {
+                results = await CleverDecks.getCards({ tags: [searchTerm.substring(5)] });
+                results.push(...await CleverDecks.getCards({ tags: [searchTerm.substring(5).toLowerCase()] }));
+            } else if (searchTerm.startsWith("Collection: ")) {
+                results = await CleverDecks.getCards({ collection: searchTerm.substring(12) });
+            } else {
+                results = await CleverDecks.getCards({ search: searchTerm });
+            }
+
+            // Add the results to the flashCardContainer
+            for (const result of results) {
+                let newCard = new FlashCard(result);
+                if (searchResultsCards.find(card => card.id === newCard.id)) continue;
+                else searchResultsCards.push(new FlashCard(result));
+            }
+            console.log(searchResultsCards);
+            searchResultsCount.innerText = searchResultsCards.length;
+            searchReturnContainer.classList.remove('gone');
+            searchResultsContainer.classList.add('gone');
+        };
+
+        loadAddButton.onclick = () => {
+            searchResultsCards = searchResultsCards.filter(card => !loadedCards.find(loadedCard => loadedCard.id === card.id));
+            loadedCards.push(...searchResultsCards);
+            loadedCardCountSpan.innerText = loadedCards.length;
+            searchReturnContainer.classList.add('gone');
+            renderLoadedCards();
+        };
+
+        loadNewButton.onclick = () => {
+            loadedCards = searchResultsCards;
+            loadedCardCountSpan.innerText = loadedCards.length;
+            searchReturnContainer.classList.add('gone');
+        };
+
+        function renderLoadedCards() {
+            const flashCardContainer = document.getElementById('flashCardContainer');
+            let loadedCardIds = loadedCards.map(card => card.id);
+            for (let i = 0; i < flashCardContainer.children.length; i++) {
+                const child = flashCardContainer.children[i];
+                const renderedCardId = child.id;
+                const cardId = parseInt(renderedCardId.split('-')[1]);
+                console.log({ cardId });
+                if (!loadedCards.find(card => card.id === cardId)) {
+                    flashCardContainer.removeChild(child);
+                } else {
+                    const card = loadedCards.find(card => card.id === cardId);
+                    const cardElement = document.getElementById(renderedCardId);
+                    cardElement.innerHTML = renderCard(card);
+                    loadedCardIds = loadedCardIds.filter(id => id !== cardId);
+                }
+            }
+            console.log({ loadedCardIds });
+            for (const cardId of loadedCardIds) {
+                const card = loadedCards.find(card => card.id === cardId);
+                const cardElement = document.createElement('div');
+                cardElement.className = 'flashCard';
+                cardElement.classList.add('border-2', 'border-gray-800', 'rounded-sm', 'p-2', 'm-1', 'w-full', 'max-w-[500px]', 'bg-white');
+                cardElement.id = `flashCard-${cardId}`;
+                cardElement.innerHTML = renderCard(card);
+                cardElement.innerHTML += `
+                <div class="controls">
+                    <button class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded" id="editCard_${cardId}">Edit</button>
+                    <button class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded" id="deleteCard_${cardId}">Delete</button>
+                </div>`;
+                flashCardContainer.appendChild(cardElement);
+                document.getElementById(`editCard_${cardId}`).onclick = () => editCard(cardId);
+                document.getElementById(`deleteCard_${cardId}`).onclick = () => deleteCard(cardId);
+            }
+            MathJax.typeset();
+        }
+
+        function renderCard(card) {
+            return `
+                <div>
+                    <p>Collection: ${card.collection}</p>
+                </div>
+                <div class="front">
+                    <p>Question: ${card.question}</p>
+                </div>
+                <div class="back">
+                    <p>Answer: ${card.answer}</p>
+                </div>
+                <div class="tags">
+                    Tags: ${card.tags.map(tag => `<span class="tag">${tag}</span>`).join(', ')}
+                </div>
+        `;
+        }
+
+        function renderEditCard(card) {
+            if(card.question.includes("$$") || card.answer.includes("$$")){
+                // TODO: Add MathJax support for editing cards
+            }
+            // TODO: add chatGPT interpretation of math expressions into mathJax compatible format
+            return `
+            <div class="w-full">
+                <label for="cardID" class="block mb-1 text-sm font-medium p-2 rounded-lg">Card
+                    ID:</label>
+                <input readonly type="text" id="cardToEditCardID" name="cardID" value="${card.id}"
+                    class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-gray-500 focus:border-gray-500 block w-full p-2">
+                <div class="w-full">
+                    <label for="Collection"
+                        class="block mb-1 text-sm font-medium p-2 rounded-lg">Collection:</label>
+                    <input type="text" id="cardToEditCollection" name="Collection"
+                        value="${card.collection}"
+                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-gray-500 focus:border-gray-500 block w-full p-2">
+                </div>
+                <div class="front w-full">
+                    <label for="Question"
+                        class="block mb-1 text-sm font-medium p-2 rounded-lg">Question:</label>
+                    <input type="text" id="cardToEditQuestion" name="Question" value="${card.question}"
+                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-gray-500 focus:border-gray-500 block w-full p-2">
+                </div>
+                <div class="back w-full">
+                    <label for="Answer"
+                        class="block mb-1 text-sm font-medium p-2 rounded-lg">Answer:</label>
+                    <input type="text" id="cardToEditAnswer" name="Answer" value="${card.answer}"
+                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-gray-500 focus:border-gray-500 block w-full p-2">
+                </div>
+                <div class="tags w-full">
+                    <label for="Tags"
+                        class="block mb-1 text-sm font-medium p-2 rounded-lg">Tags:</label>
+                    <input type="text" id="cardToEditTags" name="Tags" value="${card.tags.join(', ')}"
+                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-gray-500 focus:border-gray-500 block w-full p-2">
+                </div>
+                <div class="controls w-full mt-4 p-2">
+                    <button onclick="saveEditedCard()" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">Save</button>
+                    <button onclick="resetEditCard(${card.id})" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Reset</button>
+                </div>
+            </div>
+        `;
+        }
+
+        function editCard(id){
+            const flashCardToBeEdited = document.getElementById('flashCardToBeEdited');
+            const card = loadedCards.find(card => card.id === id);
+            flashCardToBeEdited.innerHTML = renderEditCard(card);
+            document.getElementById('flashCardToBeEditedContainer').classList.remove('gone');
+        }
     })();
+
 </script>
 
 </html>
