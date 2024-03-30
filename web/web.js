@@ -312,9 +312,11 @@ class CleverDecks_class {
                     reject("Error generating cards");
                 }
             }).then(data => {
+                this.logEntry(getLineNumber() + ".web.js - Data: " + JSON.stringify(data), "debug");
                 if (data.status == "ok") {
                     let cards = [];
                     let id = 1;
+                    if(Array.isArray(data.cards) === false) data.cards = [data.cards];
                     data.cards.forEach(card => {
                         card.id = id++;
                         cards.push(new FlashCard(card));
@@ -596,6 +598,37 @@ class CleverDecks_class {
             });
         });
     }
+
+    /**
+     * @method interpretMath
+     * @description - interprets a math expression
+     * @param {string} expression - the math expression to interpret
+     * @returns - a promise that resolves with a string, the interpreted math expression
+     * @rejects - a string with the reason for the rejection
+     */
+    interpretMath(expression) {
+        return new Promise((resolve, reject) => {
+            this.logEntry(getLineNumber() + ".web.js - Interpreting math: " + expression, "debug");
+            fetch(_apiBase + "interpretMath?expression=" + expression).then(response => {
+                this.logEntry(getLineNumber() + ".web.js - Response: " + response, "debug");
+                if (response.ok) {
+                    return response.json();
+                } else {
+                    this.logEntry(getLineNumber() + ".web.js - Error interpreting math: " + "Error interpreting math", "error");
+                    reject("Error interpreting math");
+                }
+            }).then(data => {
+                if (data.status == "ok") resolve(data.result);
+                else {
+                    this.logEntry(getLineNumber() + ".web.js - Error interpreting math: " + data.reason, "error");
+                    reject(data.reason);
+                }
+            }).catch(err => {
+                this.logEntry(getLineNumber() + ".web.js - Error interpreting math: " + err, "error");
+                reject(err + getLineNumber());
+            });
+        });
+    }
 }
 
 class TextStreamer {
@@ -665,6 +698,7 @@ let setStatusMessage = () => { };
             let option = document.createElement("option");
             option.value = collections[i];
             option.text = collections[i];
+            option.style.maxWidth = "50%";
             collectionNames.push(collections[i]);
             collectionSelect.appendChild(option);
         }

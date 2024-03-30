@@ -70,7 +70,7 @@
                     </div>
                     <div id="cardDropDown" class="size-1/2  text-black">
                         <select id="collectionSelect">
-                            <option>Study a Collection(Quick Load)</option>
+                            <option style="max-width: 50%;">Study a Collection(Quick Load)</option>
                         </select>
                     </div>
                 </div>
@@ -123,7 +123,9 @@
                             change every time you start the app.</div>
                     </div>
                     <div class="mt-4">
-                        <button id="save-settings" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Save Settings</button>
+                        <button id="save-settings"
+                            class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Save
+                            Settings</button>
                     </div>
                 </div>
                 <hr>
@@ -144,9 +146,10 @@
                     <div id="flashCardContainer" class="flex flex-wrap w-full">
                         <!-- Flashcards will be added here -->
                     </div>
-                    <div id="flashCardToBeEditedContainer" class="gone fixed editbox drop-shadow-lg shadow-lg shadow-black bg-white border border-black rounded-md">
+                    <div id="flashCardToBeEditedContainer"
+                        class="gone fixed editbox drop-shadow-lg shadow-lg shadow-black bg-white border border-black rounded-md">
                         <div class="w-full h-full flex flex-wrap p-2" id="flashCardToBeEdited">
-                            
+
                         </div>
                     </div>
                 </div>
@@ -193,7 +196,7 @@
         z-index: 1;
     }
 
-    .flashcard{
+    .flashcard {
         width: 32%;
         min-width: 300px;
     }
@@ -399,7 +402,7 @@
         }
 
         function renderEditCard(card) {
-            if(card.question.includes("$$") || card.answer.includes("$$")){
+            if (card.question.includes("$$") || card.answer.includes("$$")) {
                 // TODO: Add MathJax support for editing cards
             }
             // TODO: add chatGPT interpretation of math expressions into mathJax compatible format
@@ -442,7 +445,7 @@
         `;
         }
 
-        function editCard(id){
+        function editCard(id) {
             const flashCardToBeEdited = document.getElementById('flashCardToBeEdited');
             const card = loadedCards.find(card => card.id === id);
             flashCardToBeEdited.innerHTML = renderEditCard(card);

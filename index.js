@@ -41,12 +41,12 @@ const cleverDecksHostname = "cleverdecks.local";
     console.log("Checking for available ports...");
     process.stdout.write("Checking port: ");
     for (let i = portRange[0]; i < portRange[1]; i++) {
-        process.stdout.write(i + " ".repeat(6-String(i).length));
+        process.stdout.write(i + " ".repeat(6 - String(i).length));
         process.stdout.moveCursor(-6, 0);
         let available = false;
-        try{
+        try {
             available = await checkPortAvailability(i);
-        }catch(err){
+        } catch (err) {
             // just eat the error, om nom nom
         }
         if (available) {
@@ -110,7 +110,7 @@ const cleverDecksHostname = "cleverdecks.local";
      * @param {number} newPort - the new port to set
      * @returns {object} - JSON object with the status of the request
      */
-    app.get("api/setNewServerPort", (req, res) => {
+    app.get("/api/setNewServerPort", (req, res) => {
         logger?.log(getLineNumber() + ".index.js	 - GET /api/setNewServerPort", "debug");
         req.on("data", (data) => {
             const newPort = data.newPort;
@@ -144,24 +144,29 @@ const cleverDecksHostname = "cleverdecks.local";
 
     /**
      * @description - api endpoint to interpret a math expression or array of math expressions
-     * @listens POST /api/interpretMath
+     * @listens GET /api/interpretMath
      * @param {string|Array} expression - the math expression to interpret or an array of math expressions
      * @returns {object} - JSON object with the interpreted math expression(s)
      */
-    app.post("api/interpretMath", (req, res) => {
-        logger?.log(getLineNumber() + ".index.js	 - POST /api/interpretMath", "debug");
-        req.on("data", async (data) => {
-            let inExpression = data.expression;
-            let result = null;
-            try {
-                result = await chatbot.interpretMathExpression(inExpression);
-            } catch (err) {
-                logger?.log(getLineNumber() + ".index.js	 - Error interpreting math expression: " + err, "error");
-                res.send({ status: "error", reason: err });
-            }
-            logger?.log(getLineNumber() + ".index.js	 - Math expression interpreted: " + result, "trace");
-            res.send({ status: "ok", result: result });
-        });
+    app.get("/api/interpretMath", async (req, res) => {
+        logger?.log(getLineNumber() + ".index.js	 - GET /api/interpretMath", "debug");
+        const data = req.query;
+        let inExpression = data.expression;
+        if (inExpression === undefined) {
+            res.send({ status: "error", reason: "expression not found" });
+            logger?.log(getLineNumber() + ".index.js	 - Expression not found", "error");
+            return;
+        }
+        logger?.log(getLineNumber() + ".index.js	 - Interpreting math expression: " + inExpression, "trace");
+        let result = null;
+        try {
+            result = await chatbot.interpretMathExpression(inExpression);
+        } catch (err) {
+            logger?.log(getLineNumber() + ".index.js	 - Error interpreting math expression: " + err, "error");
+            res.send({ status: "error", reason: err });
+        }
+        logger?.log(getLineNumber() + ".index.js	 - Math expression interpreted: " + result, "trace");
+        res.send({ status: "ok", result: result });
     });
 
     /**
@@ -230,15 +235,17 @@ const cleverDecksHostname = "cleverdecks.local";
             }
             logger?.log(getLineNumber() + ".index.js	 - Number of cards being saved: " + cardData.length, "trace");
             let success = true;
+            let newCard;
             for (let i = 0; i < cardData.length; i++) {
-                let card = new FlashCard(cardData[i]);
-                if (!flashcard_db.addCard(card)) {
+                newCard = new FlashCard(cardData[i]);
+                logger?.log(getLineNumber() + ".index.js	 - Saving card: " + JSON.stringify(cardData[i], 2, null).substring(0, 100), "trace");
+                if (!flashcard_db.addCard(newCard)) {
                     success = false;
                     logger?.log(getLineNumber() + ".index.js	 - Error saving card: " + JSON.stringify(cardData[i], 2, null), "error");
                 }
             }
             if (success) {
-                res.send({ status: "ok" });
+                res.send({ status: "ok" , card: newCard });
             } else {
                 res.send({ status: "error", reason: "error saving card" });
             }
@@ -325,9 +332,10 @@ const cleverDecksHostname = "cleverdecks.local";
             if (dataObj.text === undefined) res.send({ status: "error", reason: "text property not found" });
             else if (dataObj.text === "") res.send({ status: "empty" });
             else {
+                console.log({ dataObj });
                 const text = dataObj.text;
-                const numberOfCards = dataObj.numberOfCards;
-                const difficulty = dataObj.difficulty;
+                const numberOfCards = parseInt(dataObj.numberOfCards);
+                const difficulty = parseInt(dataObj.difficulty);
                 const server = ioServers.find((server) => server.id === socketId);
                 let streaming_cb = (chunk) => {
                     if (server !== undefined) server.socket.emit("message", { type: socketMessageTypes[0], data: { status: "working", chunk: chunk } });
@@ -620,14 +628,14 @@ const cleverDecksHostname = "cleverdecks.local";
     server.listen(port, () => {
         // logger?.log(`If you are using a web browser on the same computer as the app, you can use the following address:`)
         // logger?.log(`http://localhost:${port}`)
-        logger?.log(getLineNumber() + ".index.js	 - If you are using a web browser on a different computer (or mobile device) on the same network, open your browser to "+cleverDecksHostname+":"+port);
+        logger?.log(getLineNumber() + ".index.js	 - If you are using a web browser on a different computer (or mobile device) on the same network, open your browser to " + cleverDecksHostname + ":" + port);
         logger?.log(getLineNumber() + "If that doesn't work, you can try the following addresses:");
         addresses.forEach((address) => {
             logger?.log(`${getLineNumber()}.index.js \t- http://${address}:${port}`);
         });
     });
 
-    bonjour.publish({ name: "CleverDecks", type: "http", port: port , host: cleverDecksHostname, txt: { "path": "/web/index.html" } });
+    bonjour.publish({ name: "CleverDecks", type: "http", port: port, host: cleverDecksHostname, txt: { "path": "/web/index.html" } });
 
 
     ////////////////////////////////////////////////////////////////////////////////////////////
@@ -738,7 +746,7 @@ const cleverDecksHostname = "cleverdecks.local";
         if (strPath.indexOf("\\.") !== -1) { return false; }
         return url;
     }
-    browseURL("http://"+cleverDecksHostname+":" + port + "/");
+    browseURL("http://" + cleverDecksHostname + ":" + port + "/");
 
     // When the app is closed, finalize the logger
     const EXIT = () => {
