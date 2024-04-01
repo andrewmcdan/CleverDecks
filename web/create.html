@@ -458,29 +458,29 @@
             let mathStuffInProgress = 0;
             if (newCard.question.includes('$$')) {
                 let mathPart = newCard.question.match(/\$\$.*\$\$/g);
-                let notMathPart = newCard.question.replace(/\$\$.*\$\$/g, '');
+                let notMathPart = newCard.question.replace(/\$\$.*\$\$/g, '&$&$');
                 mathStuffInProgress += 1;
                 CleverDecks.interpretMath(newCard.question).then((newMathPart) => {
-                    newCard.question = notMathPart + newMathPart;
-                    mathStuffInProgress -= 1;
+                    newCard.question = notMathPart.replace('&$&$', newMathPart);
                     let questionDiv = document.getElementById(`question_${newCard.id}`);
                     questionDiv.innerHTML = `Question: ${newCard.question}`;
                 }).catch((err) => {
-                    console.log(err);
+                    console.log(err); 
+                }).finally(() => {
                     mathStuffInProgress -= 1;
                 });
             }
             if (newCard.answer.includes('$$')) {
                 let mathPart = newCard.answer.match(/\$\$.*\$\$/g);
-                let notMathPart = newCard.answer.replace(/\$\$.*\$\$/g, '');
+                let notMathPart = newCard.answer.replace(/\$\$.*\$\$/g, '&$&$');
                 mathStuffInProgress += 1;
                 CleverDecks.interpretMath(newCard.answer).then((newMathPart) => {
-                    newCard.answer = notMathPart + newMathPart;
-                    mathStuffInProgress -= 1;
+                    newCard.answer = notMathPart.replace('&$&$', newMathPart);
                     let answerDiv = document.getElementById(`answer_${newCard.id}`);
                     answerDiv.innerHTML = `Answer: ${newCard.answer}`;
                 }).catch((err) => {
                     console.log(err);
+                }).finally(() => {
                     mathStuffInProgress -= 1;
                 });
             }
