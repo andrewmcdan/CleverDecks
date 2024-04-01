@@ -453,6 +453,8 @@ class CleverDecks_class {
                     let tagsMatchFirstChars = data.tagsMatchFirstChars;
                     // concatenate the two arrays and remove duplicates
                     let tagsMatch = tagsMatchFuzzy.concat(tagsMatchFirstChars.filter(tag => tagsMatchFuzzy.indexOf(tag) === -1));
+                    // rerun deduplication
+                    tagsMatch = tagsMatch.filter((tag, index) => tagsMatch.indexOf(tag) === index);
                     // order the array starting with the one most like the provided tag
                     tagsMatch.sort((a, b) => levenshteinDistance(tag, a.substring(0, tag.length)) - levenshteinDistance(tag, b.substring(0, tag.length)));
                     data.tagsMatch = tagsMatch;
@@ -464,6 +466,38 @@ class CleverDecks_class {
                 }
             }).catch(err => {
                 this.logEntry(getLineNumber() + ".web.js - Error fetching tag match: " + err, "error");
+                reject(err + getLineNumber());
+            });
+        });
+    }
+
+    collectionMatch(collection) {
+        return new Promise((resolve, reject) => {
+            fetch(_apiBase + "collectionMatch?collection=" + collection).then(response => {
+                if (response.ok) {
+                    return response.json();
+                } else {
+                    this.logEntry(getLineNumber() + ".web.js - Error fetching collection match: " + "Error fetching collection match", "error");
+                    reject("Error fetching collection match");
+                }
+            }).then(data => {
+                if (data.status == "ok") {
+                    let collectionsMatchFuzzy = data.collectionsMatchFuzzy;
+                    let collectionsMatchFirstChars = data.collectionsMatchFirstChars;
+                    // concatenate the two arrays and remove duplicates
+                    let collectionsMatch = collectionsMatchFuzzy.concat(collectionsMatchFirstChars.filter(collection => collectionsMatchFuzzy.indexOf(collection) === -1));
+                    // rerun deduplication
+                    collectionsMatch = collectionsMatch.filter((collection, index) => collectionsMatch.indexOf(collection) === index);
+                    // order the array starting with the one most like the provided collection
+                    collectionsMatch.sort((a, b) => levenshteinDistance(collection, a.substring(0, collection.length)) - levenshteinDistance(collection, b.substring(0, collection.length)));
+                    resolve(collectionsMatch);
+                }
+                else {
+                    this.logEntry(getLineNumber() + ".web.js - Error fetching collection match: " + data.reason, "error");
+                    reject(data.reason);
+                }
+            }).catch(err => {
+                this.logEntry(getLineNumber() + ".web.js - Error fetching collection match: " + err, "error");
                 reject(err + getLineNumber());
             });
         });

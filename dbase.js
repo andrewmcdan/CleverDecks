@@ -590,6 +590,61 @@ class FlashCardDatabase {
     }
 
     /**
+     * @method collectionNameMatchFuzzy
+     * @description - gets an array of collection names that match the given name using fuzzy matching
+     * @param {string} name - the name to match
+     * @returns {Array} - an array of strings
+     */
+    collectionNameMatchFuzzy(name) {
+        this.logger?.log(getLineNumber() + ".dbase.js	 - Collection name: " + name, "trace");
+        let matches = [];
+        if (this.collections.length == 0) return matches;
+        // get the 5 closest matches...
+        // make a temp array of this.collections that are not in matches
+        let tempArray = this.collections.filter((collection) => !matches.includes(collection.name));
+        // create and array of objects with the name and the distance, but only compare to the substring of the name that is the same length as the search name. ex: name = "abc", collection.name = "abcdef" -> distance = 0
+        let distances = tempArray.map((collection) => {
+            return {
+                name: collection.name,
+                distance: fuzzyMatch.distance(name, collection.name.substring(0, name.length))
+            };
+        });
+        // append to distances with the name and the distance, but this time compare to the whole name. ex: name = "abc", collection.name = "abcdef" -> distance = 3
+        distances = distances.concat(this.collections.map((collection) => {
+            return {
+                name: collection.name,
+                distance: fuzzyMatch.distance(name, collection.name)
+            };
+        }));
+        // append to distances with the name and the distance, but this time compare to the substring where the name is shifted to the end of the string. add an offset to distance that is calculated from length of name. ex: name = "abc", collection.name = "defabc" -> distance = 0 + Math.floor((name.length-1)/3) = 0 + 0 = 0
+        distances = distances.concat(this.collections.map((collection) => {
+            return {
+                name: collection.name,
+                distance: (fuzzyMatch.distance(name, collection.name.substring(collection.name.length - name.length)) + Math.floor((name.length - 1) / 3))
+            };
+        }));
+        // sort the distances array by distance
+        distances.sort((a, b) => a.distance - b.distance);
+        // get the top 5 matches
+        for (let i = 0; i < 5; i++) {
+            if (distances[i] !== undefined) matches.push(distances[i].name);
+        }
+        this.logger?.log(getLineNumber() + ".dbase.js	 - Matches: " + JSON.stringify(matches, 2, null), "trace");
+        return matches;
+    }
+
+    /**
+     * @method collectionNameMatchFirstChars
+     * @description - gets an array of collection names that match the given name based on the first characters
+     * @param {string} name - the name to match
+     * @returns {Array} - an array of strings
+     */
+    collectionNameMatchFirstChars(name) {
+        this.logger?.log(getLineNumber() + ".dbase.js	 - Collection name: " + name, "trace");
+        return this.collections.filter((collection) => collection.name.startsWith(name)).map((collection) => collection.name);
+    }
+
+    /**
      * @method getCollectionNames
      * @description - gets an array of collection names
      * @returns {Array} - an array of strings

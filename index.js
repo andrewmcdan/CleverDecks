@@ -470,6 +470,26 @@ const cleverDecksHostname = "cleverdecks.local";
     });
 
     /**
+     * @description - api endpoint to get collections that match the given collection/partial collection
+     * @listens GET /api/collectionMatch
+     * @param {string} collection - the collection or partial collection to match
+     * @returns {object} - JSON object with the collections that match the given collection/partial collection
+     */
+    app.get("/api/collectionMatch", (req, res) => {
+        logger?.log(getLineNumber() + ".index.js	 - GET /api/collectionMatch", "debug");
+        logger?.log(getLineNumber() + ".index.js	 - Query: " + JSON.stringify(req.query), "trace");
+        const collection = req.query.collection;
+        if (typeof collection !== "string") {
+            logger?.log(getLineNumber() + ".index.js	 - Invalid collection: " + collection, "error");
+            res.send({ status: "error", reason: "invalid data type" });
+        }
+        let collectionsMatchFuzzy = flashcard_db.collectionNameMatchFuzzy(collection);
+        let collectionsMatchFirstChars = flashcard_db.collectionNameMatchFirstChars(collection);
+
+        res.send({ status: "ok", collectionsMatchFuzzy: collectionsMatchFuzzy, collectionsMatchFirstChars: collectionsMatchFirstChars });
+    });
+
+    /**
      * @description - api endpoint to get the value of apiKeyFound
      * @listens GET /api/getGPTenabled
      * @returns {object} - JSON object with the value of apiKeyFound

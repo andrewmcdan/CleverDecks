@@ -1,6 +1,7 @@
 // TODO: Add logs destination parameter to constructor
 
 const fs = require("fs");
+const logFileMaxLines = 10000;
 const logLevels = ["off", "info", "warn", "error", "debug", "trace"];
 const longestLogLevelsLength = logLevels.reduce((max, str) => Math.max(max, str.length), 0);
 /**
@@ -117,8 +118,8 @@ class Logger {
                 if(this.consoleLogging) console.log("Logs written to file");
                 let logFile = fs.readFileSync(this.logsDestination, "utf8");
                 let logLines = logFile.split("\n");
-                if(logLines.length > 10000) {
-                    fs.writeFileSync(this.logsDestination, logLines.slice(logLines.length - 10000).join("\n"));
+                if(logLines.length > logFileMaxLines) {
+                    fs.writeFileSync(this.logsDestination, logLines.slice(logLines.length - logFileMaxLines).join("\n"));
                 }
             }
         });
