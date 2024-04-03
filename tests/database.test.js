@@ -1,5 +1,5 @@
-const FlashCardDB = require('../database');
-const Logger = require('../logger');
+const FlashCardDB = require("../dbase");
+const {Logger} = require("../logger");
 const logger = new Logger();
 
 test('FlashCardDB class exists', ()=> {

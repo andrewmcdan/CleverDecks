@@ -1,0 +1,136 @@
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=0.4">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" href="img/favicon-180x180.png" type="image/png">
+    <!-- MathJax -- This library is used to render mathematical expressions. -->
+    <script>MathJax = {chtml: {scale: 1.5},tex: {formatError: (jax, error) => {jax.formatError(error);}}};</script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="common.js"></script>
+    <!-- Socket.io library -->
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="web.js"></script>
+    <title>CleverDecks - About Us</title>
+</head>
+
+<body class="min-w-500px flex bg-gray-600 h-auto justify-evenly">
+    <div class=" bg-transparent">
+        <!-- Left spacer -->
+    </div>
+    <div class="">
+        <div class="container w-[1600px] shadow-xl bg-white shadow-black">
+            <nav class="navbar bg-gray-800 text-white flex">
+                <div class="items-start container px-0 py-0 flex mx-0 my-0">
+                    <div id="logo" class="size-24 border-4 border-black" onclick="window.location.href = 'index.html'">
+                        <img src="img/CD_logo_1024x1024.png" alt="CleverDecks">
+                    </div>
+                    <div class="navBtn flex items-center justify-center size-24 hover:bg-white hover:text-black "
+                        onclick="window.location.href = 'index.html'">
+                        <p class="text-center text-2xl">Home</p>
+                    </div>
+                    <div class="navBtn flex items-center justify-center size-24 hover:bg-white hover:text-black"
+                        onclick="window.location.href = 'study.html'">
+                        <p class="text-center text-2xl">Study</p>
+                    </div>
+                    <div class="navBtn flex items-center justify-center size-24 hover:bg-white hover:text-black"
+                        onclick="window.location.href = 'quiz.html'">
+                        <p class="text-center text-2xl">Quiz</p>
+                    </div>
+                    <div class="navBtn flex items-center justify-center size-24 hover:bg-white hover:text-black"
+                        onclick="window.location.href = 'create.html'">
+                        <p class="text-center text-2xl">Create</p>
+                    </div>
+                </div>
+                <div class="px-4 realtive">
+                    <div id="searchResultsContainer" class="absolute gone top-10 bg-white shadow-md shadow-white rounded-sm border border-gray-200 p-4">
+                        <ul id="searchResultsList" class="text-black w-full">
+                            <!-- Search results will be added here -->
+                        </ul>
+                    </div>
+                    <div id="cardSearch" class="size-1/2 flex items-center text-black">
+                        <input type="text" id="search" placeholder="Search..." onkeyup="" autocomplete="off">
+                        <button class="border-2 border-white text-white" id="searchButton" onclick="">Search</button>
+
+                    </div>
+                    <div id="cardDropDown" class="size-1/2  text-black">
+                        <select id="collectionSelect">
+                            <option>Study a Collection(Quick Load)</option>
+                        </select>
+                    </div>
+                </div>
+            </nav>
+            <div class="content">
+                <div class="px-4 py-8 sm:px-8 lg:px-16 xl:px-20 mx-auto">
+                    <div class="hero bg-gray-100 p-8 rounded-lg shadow-lg">
+                      <h1 class="text-3xl md:text-4xl lg:text-5xl font-bold text-center mb-4 underline">About CleverDecks</h1>
+                      <p class="text-md md:text-lg lg:text-xl text-center text-gray-800">Empowering your study sessions with AI-driven flashcards, crafted by a passionate team of college students.</p>
+                    </div>
+                  
+                    <div class="mt-12">
+                      <h2 class="text-2xl font-bold text-gray-900 underline">Our Mission</h2>
+                      <p class="mt-4 text-md md:text-lg text-gray-700">To revolutionize the way students learn by integrating advanced AI technology into traditional study methods, making learning more efficient, engaging, and accessible for everyone.</p>
+                    </div>
+                  
+                    <div class="mt-12">
+                      <h2 class="text-2xl font-bold text-gray-900 underline">How It Works</h2>
+                      <p class="mt-4 text-md md:text-lg text-gray-700">CleverDecks uses AI to create personalized flashcards from your notes. Just upload your study material, and let AI do the rest, helping you focus on what's important.</p>
+                    </div>
+                  
+                    <div class="mt-12 text-center">
+                      <a href="index.html" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full">
+                        Get Started with CleverDecks
+                      </a>
+                    </div>
+                  </div>                  
+            </div>
+            <footer class="bg-gray-800 text-white items-center justify-center w-full p-6">
+                <div class="flex items-center mb-4 justify-center">
+                    <a href="https://github.com/andrewmcdan/CleverDecks" target="_blank" class="px-2 py-4">GitHub</a> |
+                    <a href="https://github.com/andrewmcdan/CleverDecks?tab=AGPL-3.0-1-ov-file" target="_blank"
+                        class="px-2 py-4">License</a>
+                    |
+                    <a href="about-us.html" target="_blank" class="px-2 py-4">About Us</a> |
+                    <a href="flashcards.html" target="_blank" class="px-2 py-4">My FlashCards</a>
+                </div>
+                <div class="footer-logo flex items-center justify-center">
+                    <a href="/">
+                        <img src="img/CD_logo_1024x1024.png" alt="CleverDecks Logo" style="height: 100px;">
+                    </a>
+                </div>
+                <div class="flex items-center mt-4 justify-around">
+                    <p>Copyright &copy; 2024 by Edwin Maldonado, Andrew McDaniel, Bryce Martin-White, Elizabeth King, and Uday Kadarla. All rights reserved.</p>
+                </div>
+            </footer>
+            <div class="fixed bottom-0 left-0 z-10 bg-black" id="status">
+                <div class="flex items-center justify-center bg-red-500 text-white p-0.5" id="statusMessageContainer">
+                    <p class="text-center text-l font-mono m-0 p-0" id="statusMessage">Status: Connecting</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class=" bg-transparent">
+        <!-- Left spacer -->
+    </div>
+</body>
+<style>
+    /*
+        Styles unique to this page go here
+        */
+</style>
+<script>
+    (async () => {
+        await CleverDecks.waitReady();
+
+        // JavaScript unique to this page goes here
+        // There is a global variable called CleverDecks that has methods for accessing the backend. See web.js for more information.
+
+
+    })();
+</script>
+
+</html>

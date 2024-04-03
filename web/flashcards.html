@@ -15,7 +15,7 @@
     <!-- Socket.io library -->
     <script src="/socket.io/socket.io.js"></script>
     <script src="web.js"></script>
-    <title>CleverDecks - Quiz</title>
+    <title>CleverDecks - My FlashCards</title>
 </head>
 
 <body class="min-w-500px flex bg-gray-600 h-auto justify-evenly">
@@ -37,7 +37,7 @@
                         onclick="window.location.href = 'study.html'">
                         <p class="text-center text-2xl">Study</p>
                     </div>
-                    <div class="navBtn flex items-center justify-center size-24 bg-white text-black"
+                    <div class="navBtn flex items-center justify-center size-24 hover:bg-white hover:text-black"
                         onclick="window.location.href = 'quiz.html'">
                         <p class="text-center text-2xl">Quiz</p>
                     </div>
@@ -65,106 +65,15 @@
                     </div>
                 </div>
             </nav>
-            <div id="content" class="p-4">
-                <h1 class="text-2xl font-bold mb-4">Take a Quiz</h1>
-                <!-- Total Flashcard Count Display -->
-                <div id="cardCount" class="text-lg font-semibold mb-4">
-                    Flashcards Loaded: N
+            <div class="content">
+                <div id="totalCardCount" class="text-lg font-semibold mb-4">
+                    Total Cards: <span id="cardCount">0</span>
                 </div>
-
-                <!-- Quiz Instructions/Description -->
-                <!--<p class="mb-4"><!--Use the search to load flashcards for the quiz and press "Generate Quiz" when you're ready.--><!--</p>-->
-                <!-- Start Quiz Button 
-                <button id="startQuizBtn" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded mb-4">Start Quiz</button>-->
-                <!-- Quiz Questions Container -->
-                <!--<div id="quizQuestionsContainer" class="">
-                   Dynamically populated with quiz questions
-                </div>-->
-                <!-- Submit Quiz Button -->
-                <!--<button id="submitQuizBtn" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mt-4 hidden">Submit Quiz</button>
-                <!- Quiz Results Display ->
-                <div id="quizResults" class="mt-4 hidden">
-                  <!- Results will be shown here after quiz submission ->
-                </div>-->
-
-
-                <!-- Placeholder for an ongoing quiz with 3 questions ->
-                <!- Question 1 ->
-                <div class="quiz-question mb-6">
-                    <p class="font-semibold mb-2">Question 1: What is the capital of France?</p>
-                    <div class="answer-options">
-                        <label class="option-label flex"><input type="radio" name="question1" value="A" class="mx-2"> A. Madrid</label>
-                        <label class="option-label flex"><input type="radio" name="question1" value="B" class="mx-2"> B. Berlin</label>
-                        <label class="option-label flex"><input type="radio" name="question1" value="C" class="mx-2"> C. Paris</label>
-                        <label class="option-label flex"><input type="radio" name="question1" value="D" class="mx-2"> D. Lisbon</label>
-                    </div>
+                <div id="flashCardContainer" class="min-h-96">
+                    <!-- FlashCard components will be added here -->
+                    Flashcards will be rendered here.
                 </div>
-
-                <!- Question 2 ->
-                <div class="quiz-question mb-6">
-                    <p class="font-semibold mb-2">Question 2: Who wrote 'To Kill a Mockingbird'?</p>
-                    <div class="answer-options">
-                        <label class="option-label flex"><input type="radio" name="question2" value="A" class="mx-2"> A. Harper
-                            Lee</label>
-                        <label class="option-label flex"><input type="radio" name="question2" value="B" class="mx-2"> B. Mark
-                            Twain</label>
-                        <label class="option-label flex"><input type="radio" name="question2" value="C" class="mx-2"> C. Ernest
-                            Hemingway</label>
-                        <label class="option-label flex"><input type="radio" name="question2" value="D" class="mx-2"> D. Jane
-                            Austen</label>
-                    </div>
-                </div>
-
-                <!- Question 3 ->
-                <div class="quiz-question mb-6">
-                    <p class="font-semibold mb-2">Question 3: Which element has the chemical symbol 'O'?</p>
-                    <div class="answer-options">
-                        <label class="option-label flex"><input type="radio" name="question3" value="A" class="mx-2"> A. Gold</label>
-                        <label class="option-label flex"><input type="radio" name="question3" value="B" class="mx-2"> B. Oxygen</label>
-                        <label class="option-label flex"><input type="radio" name="question3" value="C" class="mx-2"> C. Hydrogen</label>
-                        <label class="option-label flex"><input type="radio" name="question3" value="D" class="mx-2"> D. Carbon</label>
-                    </div>
-                </div>
-
-                <!- Submit Quiz Button ->
-                <button type="submit" id="submitQuizBtn"
-                    class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mt-4">Submit
-                    Quiz</button>-->
-
-
-
-
-
-
-
-
-
-
-
-                
-
-
-<h1 class="text-2xl font-bold mb-4">Quiz Results</h1>
-  
-  <!- Simulated Results ->
-  <div id="quizResults">
-    <p class="mb-2">Congratulations on completing the quiz!</p>
-    <p class="mb-2">Your Score: <strong>2/3</strong></p>
-    
-    <!- Feedback for each question ->
-    <div class="quiz-feedback mb-2">
-      <p><strong>Question 1:</strong> Correct!</p>
-      <p><strong>Question 2:</strong> Correct!</p>
-      <p><strong>Question 3:</strong> Incorrect. The correct answer is B. Oxygen.</p>
-    </div>
-    
-    <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" onclick="restartQuiz()">Take Another Quiz</button>
-  </div>
-
-
-                    
             </div>
-
             <footer class="bg-gray-800 text-white items-center justify-center w-full p-6">
                 <div class="flex items-center mb-4 justify-center">
                     <a href="https://github.com/andrewmcdan/CleverDecks" target="_blank" class="px-2 py-4">GitHub</a> |
@@ -210,6 +119,40 @@
         // There is a global variable called CleverDecks that has methods for accessing the backend. See web.js for more information.
 
 
+        CleverDecks.getCollectionNames().then(async (collections) => {
+            let collectionCount = collections.length;
+            let count = await CleverDecks.getCardCount({ all: true });
+            document.getElementById('cardCount').innerHTML = count;
+            for (let i = 0; i < collectionCount; i++) {
+                let cards = await CleverDecks.getCards({ collection: collections[i] });
+                for (let p = 0; p < cards.length; p++) {
+                    let newCardContainer = document.createElement('div');
+                    newCardContainer.classList.add('border-2', 'border-black');
+                    // print card id
+                    let idDiv = document.createElement('div');
+                    idDiv.innerHTML = `Card ID: ${cards[p].id} Collection: ${collections[i]}`;
+                    let questionDiv = document.createElement('div');
+                    questionDiv.innerHTML = cards[p].question;
+                    let answerDiv = document.createElement('div');
+                    answerDiv.innerHTML = cards[p].answer;
+                    // add card creation date
+                    let dateDiv = document.createElement('div');
+                    dateDiv.innerHTML = `Date Created: ${cards[p].dateCreated}`;
+                    newCardContainer.appendChild(idDiv);
+                    newCardContainer.appendChild(questionDiv);
+                    newCardContainer.appendChild(answerDiv);
+                    newCardContainer.appendChild(dateDiv);
+                    // add tags
+                    let tagsDiv = document.createElement('div');
+                    tagsDiv.innerHTML = `Tags: ${cards[p].tags.join(', ')}`;
+                    newCardContainer.appendChild(tagsDiv);
+                    flashCardContainer.appendChild(newCardContainer);
+                }
+            }
+            MathJax.typeset();
+        }).catch((error) => {
+            console.error({ error });
+        });
     })();
 </script>
 

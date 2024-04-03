@@ -1,7 +1,7 @@
 const ChatGPT = require('../chatGPT');
-const Logger = require('../logger');
+const {Logger} = require('../logger');
 const envVars = require("dotenv").config({ path: __dirname + "/../.env" });
-const logger = new Logger();
+const logger = new Logger(false, "trace", null);
 const commonClasses = require('../web/common.js');
 const FlashCard = commonClasses.FlashCard;
 
@@ -930,3 +930,5 @@ test('ChatGPT class has a parseGPTjsonResponse method', () => {
 
 // TODO: input response not a string, empty string, null, undefined
 // TODO: input response not a valid json string
+
+logger.finalize();

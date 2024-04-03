@@ -1,60 +1,277 @@
 <html>
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <link rel="stylesheet" href="styles.css">
-        <link rel="icon" href="img/favicon-180x180.png" type="image/png">
-        <!-- MathJax -- This library is used to render mathematical expressions. -->
-        <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-        <script src="common.js"></script>
-        <title>CleverDecks - Study</title>
-    </head>
-    <body>
-        <nav class="navbar">
-            <div id="logo" onclick="window.location.href = 'index.html'">
-                <img src="img/CD_logo_1024x1024.png" alt="CleverDecks">
-            </div>
-            <div class="navBtn" onclick="window.location.href = 'index.html'">
-                <p>Home</p>
-            </div>
-            <div class="navBtn" onclick="window.location.href = 'study.html'">
-                <p>Study</p>
-            </div>
-            <div class="navBtn" onclick="window.location.href = 'quiz.html'">
-                <p>Quiz</p>
-            </div>
-            <div class="navBtn" onclick="window.location.href = 'create.html'">
-                <p>Create</p>
-            </div>
-        </nav>
-        <div class="content">
-            <h1>Study</h1>
-            <p>My first web page.</p>
-        </div>
-        <footer>
-            <p>
-                <div class="footer-content">
-                    <a href="https://github.com/andrewmcdan/CleverDecks" target="_blank">GitHub</a> |
-                    <a href="https://github.com/andrewmcdan/CleverDecks?tab=AGPL-3.0-1-ov-file" target="_blank">License</a> |
-                    <a href="about-us.html" target="_blank">About Us</a> |
-                    <a href="web/flashcards.html" target="_blank">My FlashCards</a>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=0.4">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" href="img/favicon-180x180.png" type="image/png">
+    <!-- MathJax -- This library is used to render mathematical expressions. -->
+    <script>MathJax = { chtml: { scale: 1.5 }, tex: { formatError: (jax, error) => { jax.formatError(error); } } };</script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="common.js"></script>
+    <!-- Socket.io library -->
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="web.js"></script>
+    <title>CleverDecks - Study</title>
+</head>
+
+<body class="min-w-500px flex bg-gray-600 h-auto justify-evenly">
+    <div class=" bg-transparent">
+        <!-- Left spacer -->
+    </div>
+    <div class="">
+        <div class="container w-[1600px] shadow-xl bg-white shadow-black">
+            <nav class="navbar bg-gray-800 text-white flex">
+                <div class="items-start container px-0 py-0 flex mx-0 my-0">
+                    <div id="logo" class="size-24 border-4 border-black" onclick="window.location.href = 'index.html'">
+                        <img src="img/CD_logo_1024x1024.png" alt="CleverDecks">
+                    </div>
+                    <div class="navBtn flex items-center justify-center size-24 hover:bg-white hover:text-black "
+                        onclick="window.location.href = 'index.html'">
+                        <p class="text-center text-2xl">Home</p>
+                    </div>
+                    <div class="navBtn flex items-center justify-center size-24 bg-white text-black"
+                        onclick="window.location.href = 'study.html'">
+                        <p class="text-center text-2xl">Study</p>
+                    </div>
+                    <div class="navBtn flex items-center justify-center size-24 hover:bg-white hover:text-black"
+                        onclick="window.location.href = 'quiz.html'">
+                        <p class="text-center text-2xl">Quiz</p>
+                    </div>
+                    <div class="navBtn flex items-center justify-center size-24 hover:bg-white hover:text-black"
+                        onclick="window.location.href = 'create.html'">
+                        <p class="text-center text-2xl">Create</p>
+                    </div>
                 </div>
-                <div class="footer-logo">
+                <div class="px-4 realtive">
+                    <div id="searchReturnContainer"
+                        class="absolute gone top-10 bg-white shadow-md shadow-white rounded-sm border border-gray-200 p-4 text-black">
+                        <p>Returned results: <span id="searchResultsCount">0</span></p>
+                        <p>
+                            <button class="jborder-2 border-black rounded-sm border bg-white p-1"
+                                id="loadAddButton">Load - Add</button>
+                            <button class="jborder-2 border-black rounded-sm border bg-white p-1"
+                                id="loadNewButton">Load - New</button>
+                        </p>
+                    </div>
+                    <div id="searchResultsContainer"
+                        class="absolute gone top-10 bg-white shadow-md shadow-white rounded-sm border border-gray-200 p-4">
+                        <ul id="searchResultsList" class="text-black w-full">
+                            <!-- Search results will be added here -->
+                        </ul>
+                    </div>
+                    <div id="cardSearch" class="size-1/2 flex items-center text-black">
+                        <input type="text" id="search" placeholder="Search..." onkeyup="" autocomplete="off">
+                        <button class="border-2 border-white text-white" id="searchButton">Search</button>
+                    </div>
+                    <div id="cardDropDown" class="size-1/2  text-black">
+                        <select id="collectionSelect">
+                            <option>Study a Collection(Quick Load)</option>
+                        </select>
+                    </div>
+                </div>
+            </nav>
+            <div class="content" class="min-h-screen">
+                <div id="cardCount">
+                </div>
+                <div id="totalCardCount">
+                </div>
+                <div id="flashCardContainer"
+                    class="max-w-xl mx-auto p-4 bg-white shadow-2xl shadow-black drop-shadow-2xl rounded-lg m-10">
+                    <div class="flex justify-between mb-3">
+                        <div>Difficulty: <span class="text-sm text-gray-600">Medium</span></div>
+                        <div>Collection: <span class="text-sm text-gray-600">Math Basics</span></div>
+                    </div>
+                    <div class="flex justify-between mb-3">
+                        <div>Tags: <span class="text-sm text-gray-600">Algebra, Geometry</span></div>
+                        <div>Show Answers: <input type="checkbox" /></div>
+                    </div>
+                    <div class="mb-3">
+                        Date Created: <span class="text-sm text-gray-600">2023-03-18</span>
+                    </div>
+                    <div class="mb-6">
+                        <div>Times Studied: <span class="text-sm text-gray-600">10</span></div>
+                        <div>Times Skipped: <span class="text-sm text-gray-600">2</span></div>
+                        <div>Times Missed: <span class="text-sm text-gray-600">1</span></div>
+                    </div>
+                    <div id="flashCardContent" class="flashcard-flip bg-white rounded-lg shadow-lg m-10"
+                        style="height: 200px; position: relative;">
+                        <div
+                            class="flashcard-face flashcard-front text-lg font-medium text-gray-800 flex items-center justify-center shadow-2xl shadow-black drop-shadow-xl">
+                            Question Here
+                        </div>
+                        <div
+                            class="flashcard-face flashcard-back text-lg font-medium text-gray-800 flex items-center justify-center shadow-2xl shadow-black drop-shadow-xl">
+                            Answer Here
+                        </div>
+                    </div>
+                    <div class="flex justify-between">
+                        <button
+                            class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-700 transition duration-300"
+                            onclick="flipCard()">Flip</button>
+                        <button
+                            class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-700 transition duration-300">
+                            <p>I got it right!</p>
+                            <p>(Next Card)</p>
+                        </button>
+                        <button
+                            class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-700 transition duration-300">
+                            <p>I missed that one</p>
+                            <p>(Next Card)</p>
+                        </button>
+                        <button
+                            class="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-700 transition duration-300">Skip</button>
+                        <button
+                            class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-700 transition duration-300 flex items-center justify-center"
+                            onclick="toggleFlag()">
+                            <img id="flagIcon" src="img/unflagged.svg" alt="unflagged" width="24px"></button>
+                    </div>
+                </div>
+            </div>
+            <footer class="bg-gray-800 text-white items-center justify-center w-full p-6">
+                <div class="flex items-center mb-4 justify-center">
+                    <a href="https://github.com/andrewmcdan/CleverDecks" target="_blank" class="px-2 py-4">GitHub</a> |
+                    <a href="https://github.com/andrewmcdan/CleverDecks?tab=AGPL-3.0-1-ov-file" target="_blank"
+                        class="px-2 py-4">License</a>
+                    |
+                    <a href="about-us.html" target="_blank" class="px-2 py-4">About Us</a> |
+                    <a href="flashcards.html" target="_blank" class="px-2 py-4">My FlashCards</a>
+                </div>
+                <div class="footer-logo flex items-center justify-center">
                     <a href="/">
-                        <img src="img/CD_logo_1024x1024.png" alt="CleverDecks Logo" style="height: 100px;"> <!-- Adjust size as needed -->
+                        <img src="img/CD_logo_1024x1024.png" alt="CleverDecks Logo" style="height: 100px;">
                     </a>
                 </div>
-            </p>
-            <p>Copyright &copy; 2024 by Edwin Maldonado, Andrew McDaniel, Bryce Martin-White, Elizabeth King, and Uday Kadarla. All rights reserved.</p>
-        </footer>
-    </body>
-    <style>
-        /*
+                <div class="flex items-center mt-4 justify-around">
+                    <p>Copyright &copy; 2024 by Edwin Maldonado, Andrew McDaniel, Bryce Martin-White, Elizabeth King,
+                        and
+                        Uday
+                        Kadarla. All rights reserved.</p>
+                </div>
+            </footer>
+            <div class="fixed bottom-0 left-0 z-10 bg-black" id="status">
+                <div class="flex items-center justify-center bg-red-500 text-white p-0.5" id="statusMessageContainer">
+                    <p class="text-center text-l font-mono m-0 p-0" id="statusMessage">Status: Connecting</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class=" bg-transparent">
+        <!-- Left spacer -->
+    </div>
+</body>
+<style>
+    /*
         Styles unique to this page go here
         */
-    </style>
-    <script>
-        console.log('Hello World');
-        // TODO: Add all the Javascript here to make the page interactive
-    </script>
+    .flashcard-flip {
+        transform-style: preserve-3d;
+        transition: transform 0.6s;
+    }
+
+    /* The flipped state of the card. */
+    .flashcard-flip.flipped {
+        transform: rotateY(180deg);
+    }
+
+    /* Front and back faces of the card */
+    .flashcard-face {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        backface-visibility: hidden;
+        background-size: 100% 1.5em;
+        background-image: linear-gradient(to bottom, #9dc1e6 1px, transparent 1px);
+        /* Hide the back side of the card when flipped */
+    }
+
+    /* Styling for the back face to ensure it's flipped initially */
+    .flashcard-back {
+        transform: rotateY(180deg);
+    }
+</style>
+<script>
+
+    function flipCard() {
+        const card = document.getElementById('flashCardContent');
+        card.classList.toggle('flipped');
+    }
+
+    function toggleFlag() {
+        const flagIcon = document.getElementById('flagIcon');
+        if (flagIcon.classList.contains('flagged')) {
+            flagIcon.classList.remove('flagged');
+            flagIcon.src = "img/unflagged.svg";
+            flagIcon.alt = "unflagged";
+        } else {
+            flagIcon.classList.add('flagged');
+            flagIcon.src = "img/flagged.svg";
+            flagIcon.alt = "flagged";
+        }
+    }
+
+
+    (async () => {
+        await CleverDecks.waitReady();
+
+        // JavaScript unique to this page goes here
+        // There is a global variable called CleverDecks that has methods for accessing the backend. See web.js for more information.
+        const flashCardContainer = document.getElementById('flashCardContainer');
+        const cardCount = document.getElementById('cardCount');
+        const totalCardCount = document.getElementById('totalCardCount');
+        const searchButton = document.getElementById('searchButton');
+        const searchBox = document.getElementById('search');
+        const searchReturnContainer = document.getElementById('searchReturnContainer');
+        const searchResultsCount = document.getElementById('searchResultsCount');
+        const searchResultsContainer = document.getElementById('searchResultsContainer');
+        const loadAddButton = document.getElementById('loadAddButton');
+        const loadNewButton = document.getElementById('loadNewButton');
+
+        document.addEventListener("click", (event) => {
+            if (event.target.id === "searchReturnContainer") return;
+            if (event.target.id === "searchResultsCount") return;
+            if (event.target === searchBox) return;
+            searchReturnContainer.classList.add("gone");
+        });
+
+        let loadedCards = [];
+        let searchResultsCards = [];
+
+        // This function will be called when the user clicks the search button
+        searchButton.onclick = async () => {
+            // Get the search term
+            const searchTerm = search.value;
+            if (searchTerm === '') return;
+            let results = null;
+
+            if (searchTerm.startsWith("Tag: ")) {
+                results = await CleverDecks.getCards({ tags: [searchTerm.substring(5)] });
+                results.push(...await CleverDecks.getCards({ tags: [searchTerm.substring(5).toLowerCase()] }));
+            } else if (searchTerm.startsWith("Collection: ")) {
+                results = await CleverDecks.getCards({ collection: searchTerm.substring(12) });
+            } else {
+                results = await CleverDecks.getCards({ search: searchTerm });
+            }
+            // Clear the flashCardContainer
+            flashCardContainer.innerHTML = '';
+            // Add the results to the flashCardContainer
+            for (const result of results) {
+                let newCard = new FlashCard(result);
+                // check if the card is already loaded
+                if (searchResultsCards.find(card => card.id === newCard.id)) continue;
+                else searchResultsCards.push(new FlashCard(result));
+            }
+            console.log(searchResultsCards);
+            // Update the search results count
+            searchResultsCount.innerText = searchResultsCards.length;
+            // Show the search results container
+            searchReturnContainer.classList.remove('gone');
+            searchResultsContainer.classList.add('gone');
+        };
+    })();
+</script>
+
 </html>
