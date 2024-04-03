@@ -768,7 +768,7 @@ const cleverDecksHostname = "cleverdecks.local";
         if (strPath.indexOf("\\.") !== -1) { return false; }
         return url;
     }
-    browseURL("http://" + cleverDecksHostname + ":" + port + "/");
+    if(process.env.AUTO_OPEN_BROWSER === "true" || process.env.AUTO_OPEN_BROWSER === true) browseURL("http://" + cleverDecksHostname + ":" + port + "/");
 
     // When the app is closed, finalize the logger
     const EXIT = () => {
