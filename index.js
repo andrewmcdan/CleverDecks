@@ -41,8 +41,10 @@ const cleverDecksHostname = "cleverdecks.local";
     console.log("Checking for available ports...");
     process.stdout.write("Checking port: ");
     for (let i = portRange[0]; i < portRange[1]; i++) {
-        process.stdout.write(i + " ".repeat(6 - String(i).length));
-        process.stdout.moveCursor(-6, 0);
+        if(process.stdout.isTTY){
+            process.stdout.write(i + " ".repeat(6 - String(i).length));
+            process.stdout.moveCursor(-6, 0);
+        }
         let available = false;
         try {
             available = await checkPortAvailability(i);
