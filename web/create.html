@@ -9,7 +9,19 @@
     <link rel="stylesheet" href="styles.css">
     <link rel="icon" href="img/favicon-180x180.png" type="image/png">
     <!-- MathJax -- This library is used to render mathematical expressions. -->
-    <script>MathJax = { chtml: { scale: 1.5 }, tex: { formatError: (jax, error) => { jax.formatError(error); } } };</script>
+    <script>
+        MathJax = {
+            chtml: {
+                scale: 0.9
+            },
+            tex: {
+                formatError: (jax, error) => { jax.formatError(error); }
+            },
+            svg: {
+                scale: 0.9
+            }
+        };
+    </script>
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script src="common.js"></script>
     <!-- Socket.io library -->
@@ -134,12 +146,15 @@
                             id="manualCreateSubmit">Create
                             Flashcard</button>
                     </form>
+
+
                     <div id="manualCreationConfirm"
-                        class="fixed gone confirm-window drop-shadow-lg shadow-lg shadow-black bg-white border border-black rounded-md">
-                        <div class="w-full h-full flex flex-wrap p-2" id="flashCardToBeConfirmed">
+                        class="fixed gone confirm-window drop-shadow-lg shadow-lg shadow-black bg-white border border-black rounded-md text-lg">
+                        <div class="w-full h-full flex flex-col justify-between p-4" id="flashCardToBeConfirmed">
 
                         </div>
                     </div>
+
                 </div>
                 <div id="aiCreationMode" class="gone">
                     <h1 class="text-2xl font-bold mb-4">Create Flashcard - AI Mode</h1>
@@ -157,7 +172,7 @@
                                 Text:</label>
                             <textarea id="sourceText" name="sourceText" rows="4"
                                 class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
-                                placeholder="Enter text to generate flashcards..." required></textarea>
+                                placeholder="Enter text to generate flashcards..." maxlength="16384" required></textarea>
                         </div>
                         <div class="mb-4">
                             <label for="numCards" class="block mb-2 text-sm font-medium text-gray-900">Number of Cards
@@ -180,6 +195,11 @@
                             id="aiGenerateSubmit">Generate
                             Flashcards</button>
                     </form>
+                </div>
+                <div id="aiCreationConfirm"
+                    class="gone border border-black rounded-md text-lg">
+                    <div class="w-full h-full flex flex-col justify-between p-4" id="aiFlashCardsToBeConfirmed">
+                </div>
                 </div>
 
             </div>
@@ -244,6 +264,7 @@
     const switchToManualMode = () => {
         document.getElementById('manualCreationMode').classList.remove('gone');
         document.getElementById('aiCreationMode').classList.add('gone');
+        document.getElementById('aiCreationConfirm').classList.add('gone');
     }
 
     (async () => {
@@ -433,6 +454,79 @@
             const difficulty = document.getElementById('difficulty_ai').value;
             CleverDecks.generateCardsFromText(sourceText, numCards, difficulty).then((cards) => {
                 console.log(cards);
+                if(!Array.isArray(cards)) {
+                    // TODO: handle error
+                }else{
+                    const aiFlashCardsToBeConfirmed = document.getElementById('aiFlashCardsToBeConfirmed');
+                    document.getElementById('aiCreationConfirm').classList.remove('gone');
+                    for(let i = 0; i < cards.length; i++){                       
+                        aiFlashCardsToBeConfirmed.innerHTML += renderConfirmCard(cards[i], true);
+                        let mathStuff = cards[i].question.includes("$$") || cards[i].answer.includes("$$");
+                        let mathInProgressCounter = 0;
+                        if (cards[i].question.includes("$$")) {
+                            let mathPart = cards[i].question.match(/\$\$.*\$\$/g);
+                            let notMathPart = cards[i].question.replace(/\$\$.*\$\$/g, "=PLACEHOLDER=");
+                            mathInProgressCounter++;
+                            CleverDecks.interpretMath(mathPart).then((newMathPart) => {
+                                cards[i].question = notMathPart.replace(/=PLACEHOLDER=/g, () => newMathPart); // This weird notation is necessary due to the way replace works with strings with "$$" in them.
+                                document.getElementById(`question_${cards[i].id}`).innerHTML = cards[i].question;
+                            }).catch((err) => {
+                                console.log(err);
+                            }).finally(() => {
+                                mathInProgressCounter--;
+                            });
+                        }
+                        if (cards[i].answer.includes("$$")) {
+                            let mathPart = cards[i].answer.match(/\$\$.*\$\$/g);
+                            let notMathPart = cards[i].answer.replace(/\$\$.*\$\$/g, "=PLACEHOLDER=");
+                            mathInProgressCounter++;
+                            CleverDecks.interpretMath(mathPart).then((newMathPart) => {
+                                cards[i].answer = notMathPart.replace(/=PLACEHOLDER=/g, () => newMathPart);  // This weird notation is necessary due to the way replace works with strings with "$$" in them.
+                                document.getElementById(`answer_${cards[i].id}`).innerHTML = cards[i].answer;
+                            }).catch((err) => {
+                                console.log(err);
+                            }).finally(() => {
+                                mathInProgressCounter--;
+                            });
+                        }
+                        
+                        let mathInProgress = document.getElementById('mathInProgress_' + cards[i].id);
+                        if(mathInProgressCounter > 0){
+                            mathInProgress.classList.remove('gone');
+                            let mathInProgressIntervalCounter = 0;
+                            let mathInProgressInterval;
+                            if (mathStuff === true) {
+                                mathInProgressInterval = setInterval(() => {
+                                    mathInProgress.innerHTML = `Math interpretation in progress... ${rotationChars[mathInProgressIntervalCounter++ % 4]}`;
+                                    if(mathInProgressCounter === 0){
+                                        clearInterval(mathInProgressInterval);
+                                        mathInProgress.classList.add('gone');
+                                        MathJax.typeset();
+                                    }
+                                }, 250);
+                            }
+                        }
+                        const confirmButton = document.getElementById('confirmButton_' + cards[i].id);
+                        confirmButton.addEventListener('click', async () => {
+                            clearInterval(mathInProgressInterval);
+                            CleverDecks.saveNewCards(cards[i]).then((card) => {
+                                console.log(card);
+                            }).catch((err) => {
+                                console.error(err);
+                                confirmButton.innerHTML = 'Error';
+                                confirmButton.classList.add('bg-red-500');
+                                confirmButton.classList.remove('bg-green-500');
+                                setTimeout(() => {
+                                    confirmButton.innerHTML = 'Confirm';
+                                    confirmButton.classList.remove('bg-red-500');
+                                    confirmButton.classList.add('bg-green-500');
+                                }, 3000);
+                            });
+                        });
+
+
+                    }
+                }
             }).catch((err) => {
                 console.error(err);
             });
@@ -454,88 +548,133 @@
             const collection = document.getElementById('collection').value;
             const difficulty = document.getElementById('difficulty').value;
             let newCard = new FlashCard({ id: 0, question: question, answer: answer, tags: tagsArray, collection: collection, difficulty: difficulty });
-            let mathStuff = newCard.question.includes('$$') || newCard.answer.includes('$$');
+
+
+            // popup confirmation window
+            popupConfirm.classList.remove('gone');
+            const flashCardToBeConfirmed = document.getElementById('flashCardToBeConfirmed');
+            flashCardToBeConfirmed.innerHTML = renderConfirmCard(newCard);
+            
+            CleverDecks.getCollectionNames().then((collections) => {
+                if(collections.length > 0 && !collections.includes(newCard.collection)) {
+                    const questionPrompt = document.getElementById(`collection_heading_${newCard.id}`);
+                    questionPrompt.innerHTML = `<span class="bg-yellow-500">(New)</span> Collection: <span class="font-normal" id="collection_${newCard.id}"> ${newCard.collection}</span>`;                   
+                }
+            }).catch((err) => {
+                console.error(err);
+            });
+            let mathStuff = newCard.question.includes("$$") || newCard.answer.includes("$$");
             let mathStuffInProgress = 0;
-            if (newCard.question.includes('$$')) {
+            if (newCard.question.includes("$$")) {
                 let mathPart = newCard.question.match(/\$\$.*\$\$/g);
-                let notMathPart = newCard.question.replace(/\$\$.*\$\$/g, '&$&$');
+                let notMathPart = newCard.question.replace(/\$\$.*\$\$/g, "=PLACEHOLDER=");
                 mathStuffInProgress += 1;
-                CleverDecks.interpretMath(newCard.question).then((newMathPart) => {
-                    newCard.question = notMathPart.replace('&$&$', newMathPart);
-                    let questionDiv = document.getElementById(`question_${newCard.id}`);
-                    questionDiv.innerHTML = `Question: ${newCard.question}`;
-                }).catch((err) => {
-                    console.log(err); 
-                }).finally(() => {
-                    mathStuffInProgress -= 1;
-                });
-            }
-            if (newCard.answer.includes('$$')) {
-                let mathPart = newCard.answer.match(/\$\$.*\$\$/g);
-                let notMathPart = newCard.answer.replace(/\$\$.*\$\$/g, '&$&$');
-                mathStuffInProgress += 1;
-                CleverDecks.interpretMath(newCard.answer).then((newMathPart) => {
-                    newCard.answer = notMathPart.replace('&$&$', newMathPart);
-                    let answerDiv = document.getElementById(`answer_${newCard.id}`);
-                    answerDiv.innerHTML = `Answer: ${newCard.answer}`;
+                CleverDecks.interpretMath(mathPart).then((newMathPart) => {
+                    newCard.question = notMathPart.replace(/=PLACEHOLDER=/g, () => newMathPart); // This weird notation is necessary due to the way replace works with strings with "$$" in them.
+                    document.getElementById(`question_${newCard.id}`).innerHTML = newCard.question;
                 }).catch((err) => {
                     console.log(err);
                 }).finally(() => {
                     mathStuffInProgress -= 1;
                 });
             }
-            // popup confirmation window
-            popupConfirm.classList.remove('gone');
-            const flashCardToBeConfirmed = document.getElementById('flashCardToBeConfirmed');
-            let innerHTML = renderCard(newCard);
-            if (mathStuffInProgress > 0) {
-                innerHTML += `<p id="mathInProgress">Math is being processed...</p>`;
+            if (newCard.answer.includes("$$")) {
+                let mathPart = newCard.answer.match(/\$\$.*\$\$/g);
+                let notMathPart = newCard.answer.replace(/\$\$.*\$\$/g, "=PLACEHOLDER=");
+                mathStuffInProgress += 1;
+                CleverDecks.interpretMath(mathPart).then((newMathPart) => {
+                    newCard.answer = notMathPart.replace(/=PLACEHOLDER=/g, () => newMathPart);  // This weird notation is necessary due to the way replace works with strings with "$$" in them.
+                    document.getElementById(`answer_${newCard.id}`).innerHTML = newCard.answer;
+                }).catch((err) => {
+                    console.log(err);
+                }).finally(() => {
+                    mathStuffInProgress -= 1;
+                });
             }
-            flashCardToBeConfirmed.innerHTML = innerHTML;
+            let mathInProgress = document.getElementById('mathInProgress_' + newCard.id);
+            mathInProgress.classList.remove('gone');
             let mathInProgressIntervalCounter = 0;
             let mathInProgressInterval;
-            if (mathStuffInProgress > 0) {
+            if (mathStuffInProgress > 0 && mathStuff === true) {
                 mathInProgressInterval = setInterval(() => {
-                    let mathInProgress = document.getElementById('mathInProgress');
-                    if (mathStuffInProgress === 0 && mathInProgress !== null) {
-                        mathInProgress.remove();
-                        MathJax.typeset();
+                    if (mathStuffInProgress === 0) {
                         clearInterval(mathInProgressInterval);
+                        mathInProgress.classList.add('gone');
+                        MathJax.typeset();
                     }
-                    mathInProgress.innerHTML = `Math is being processed... ${rotationChars[mathInProgressIntervalCounter++ % 4]}`;
+                    mathInProgress.innerHTML = `Math interpretation in progress... ${rotationChars[mathInProgressIntervalCounter++ % 4]}`;
                 }, 250);
             }
-            MathJax.typeset();
-            flashCardToBeConfirmed.innerHTML = innerHTML + `<button id="confirmButton" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">Confirm</button>`;
-            document.getElementById('confirmButton').addEventListener('click', async () => {
+            const confirmButton = document.getElementById('confirmButton_' + newCard.id);
+            confirmButton.addEventListener('click', async () => {
                 // TODO: check to see if collection exists and if not verify that the user wants to create a new collection
                 clearInterval(mathInProgressInterval);
                 CleverDecks.saveNewCards(newCard).then((card) => {
                     console.log(card);
                     popupConfirm.classList.add('gone');
+                    document.getElementById('flashCardToBeConfirmed').innerHTML = '';
+                    question.value = '';
+                    answer.value = '';
+                    question.focus();
                 }).catch((err) => {
                     console.error(err);
+                    confirmButton.innerHTML = 'Error';
+                    confirmButton.classList.add('bg-red-500');
+                    confirmButton.classList.remove('bg-green-500');
+                    setTimeout(() => {
+                        confirmButton.innerHTML = 'Confirm';
+                        confirmButton.classList.remove('bg-red-500');
+                        confirmButton.classList.add('bg-green-500');
+                    }, 3000);
                 });
+            });
+            confirmButton.focus();
+            document.addEventListener('click', (e) => {
+                if (e.target !== manualCreationConfirm && !manualCreationConfirm.contains(e.target)) {
+                    popupConfirm.classList.add('gone');
+                    document.removeEventListener('click', () => { });
+                    document.getElementById('flashCardToBeConfirmed').innerHTML = '';
+                }
             });
         });
 
-        function renderCard(card) {
+        function renderConfirmCard(card, extras = true) {
             return `
-                <div id="collection_${card.id}">
-                    <p>Collection: ${card.collection}</p>
+                <div class="mb-2">
+                    <p class="font-semibold" id="collection_heading_${card.id}">Collection:<span class="font-normal" id="collection_${card.id}"> ${card.collection}</span></p>
                 </div>
-                <div class="front" id="question_${card.id}">
-                    <p>Question: ${card.question}</p>
+                <div class="front mb-2">
+                    <p class="font-semibold">Question: <span class="font-normal" id="question_${card.id}">${card.question}</span></p>
                 </div>
-                <div class="back" id="answer_${card.id}">
-                    <p>Answer: ${card.answer}</p>
+                <div class="back mb-2">
+                    <p class="font-semibold">Answer: <span class="font-normal" id="answer_${card.id}">${card.answer}</span></p>
                 </div>
-                <div class="tags" id=tags_${card.id}>
-                    Tags: ${card.tags.map(tag => `<span class="tag">${tag}</span>`).join(', ')}
+                <div class="tags mb-2" id="tags_${card.id}">
+                    <p class="font-semibold">Tags: ${card.tags.map(tag => `<span class="tag font-normal text-sm bg-gray-200 rounded-full px-2">${tag}</span>`).join(' ')}</p>
                 </div>
-        `;
+                ` + (extras ? `
+                <p id="mathInProgress_${card.id}" class="gone text-md italic text-gray-600 mb-4">Math interpretation in progress...</p>
+                <button id="confirmButton_${card.id}" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition duration-300 ease-in-out self-end">Confirm</button>
+        `:``);
         }
 
+        function renderEditableCard(card){
+            return `
+                <div class="mb-2">
+                    <p class="font-semibold" id="collection_heading_${card.id}">Collection:<span class="font-normal" id="collection_${card.id}"> ${card.collection}</span></p>
+                </div>
+                <div class="front mb-2">
+                    <p class="font-semibold">Question: <span class="font-normal" id="question_${card.id}">${card.question}</span></p>
+                </div>
+                <div class="back mb-2">
+                    <p class="font-semibold">Answer: <span class="font-normal" id="answer_${card.id}">${card.answer}</span></p>
+                </div>
+                <div class="tags mb-2" id="tags_${card.id}">
+                    <p class="font-semibold">Tags: ${card.tags.map(tag => `<span class="tag font-normal text-sm bg-gray-200 rounded-full px-2">${tag}</span>`).join(' ')}</p>
+                </div>
+                <button id="confirmButton_${card.id}" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition duration-300 ease-in-out self-end">Confirm</button>
+            `;
+        }
     })();
 </script>
 

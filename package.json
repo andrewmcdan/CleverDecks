@@ -7,7 +7,7 @@
     "CleverDecks": "index.js"
   },
   "scripts": {
-    "test": "jest",
+    "test": "jest --coverage=true",
     "start": "node start.js",
     "build:css": "npx tailwindcss -i web/inputStyles.css -o web/styles.css --watch",
     "processForPkg": "node processForPkg.js",

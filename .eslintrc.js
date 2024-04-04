@@ -37,6 +37,7 @@ module.exports = {
         "semi": [
             "error",
             "always"
-        ]
+        ],
+        "async-promise-executor": "no-error",
     }
 };

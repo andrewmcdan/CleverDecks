@@ -336,6 +336,10 @@ const cleverDecksHostname = "cleverdecks.local";
             else {
                 console.log({ dataObj });
                 const text = dataObj.text;
+                if(text.length > 16384){
+                    res.send({ status: "error", reason: "text too long" });
+                    return;
+                }
                 const numberOfCards = parseInt(dataObj.numberOfCards);
                 const difficulty = parseInt(dataObj.difficulty);
                 const server = ioServers.find((server) => server.id === socketId);

@@ -266,63 +266,62 @@ class ChatGPT {
      * @returns {Array} - an array of MathML expressions wrapped in $$...$$ delimiters
      * @throws {Error} - if the expression is not a string or an array of strings
      */
-    // TODO: add a callback for streaming data / progress as this could take a long time for a large number of expressions
-    async interpretMathExpression(expression) {
-        const checkIfMathExpression = async (str) => {
-            const numberOfTimesToCheck = 4; // check 4 times and take the majority vote to determine if the string is a math expression. This is to reduce the chance of false positives / negatives
-            this.logger?.log(getLineNumber() + ".chatGPT.js	 - Checking if the string is a math expression...", "debug");
-            let question = "Is \"" + str + "\" a math expression? please only respond with one word: \"yes\" or \"no\"";
-            let waiterArray = []; // This array will hold the promises that will resolve when the responses are received. This allows all the requests to run in parallel.
-            let responses = [];
-            for(let i = 0; i < numberOfTimesToCheck; i++) {
-                waiterArray.push(new Promise((resolve) => {
-                    (async() => { 
-                        await this.generateResponse(question, true, () => { }, (res) => { responses.push(res); resolve(); });
-                    })();
-                }));
-            }
-            await Promise.all(waiterArray);
-            let yes = 0;
-            let no = 0;
-            for (let i = 0; i < responses.length; i++) {
-                if (responses[i].toLowerCase() === "yes") yes++;
-                if (responses[i].toLowerCase() === "no") no++;
-            }
-            let response = (yes > no) ? "yes" : "no";
-            if (response.toLowerCase() === "no") return false;
-            if (response.toLowerCase() === "yes") return true;
+    // TODO: add ability to cancel this function if it takes too long
+    async interpretMathExpression(expression, streamingData_cb = ()=>{}) {
+        const checkIfMathExpression = (str) => {
+            return new Promise(async (resolve) => {
+                const numberOfTimesToCheck = 4; // check 4 times and take the majority vote to determine if the string is a math expression. This is to reduce the chance of false positives / negatives
+                this.logger?.log(getLineNumber() + ".chatGPT.js	 - Checking if the string is a math expression..." + str, "debug");
+                let question = "Is \"" + str + "\" a math expression? please only respond with one word: \"yes\" or \"no\"";
+                let waiterArray = []; // This array will hold the promises that will resolve when the responses are received. This allows all the requests to run in parallel.
+                let responses = [];
+                for(let i = 0; i < numberOfTimesToCheck; i++) {
+                    waiterArray.push(new Promise((resolve) => {
+                        (async() => { 
+                            await this.generateResponse(question, true, streamingData_cb, (res) => { responses.push(res); resolve(); });
+                        })();
+                    }));
+                }
+                await Promise.all(waiterArray);
+                let yes = 0;
+                let no = 0;
+                for (let i = 0; i < responses.length; i++) {
+                    if (responses[i].toLowerCase() === "yes") yes++;
+                    if (responses[i].toLowerCase() === "no") no++;
+                }
+                resolve (yes > no);
+            });
         };
         if (expression === undefined || expression === null) {
             this.logger?.log(getLineNumber() + ".chatGPT.js	 - interpretMathExpression requires a string or an array of strings as an argument", "error");
             return [];
         }
-        let prompt = "Please convert the following mathematical expression(s) into LaTeX expression(s) for use in MathJax and wrap them in $$...$$ delimiters. I only need the wrapped expressions, nothing else.\n";
+        let prompt = "Please convert the following mathematical expression(s) into LaTeX expression(s) for use in MathJax and wrap them in $$...$$ delimiters. I only need the wrapped expressions, nothing else. Do not evaluate the expressions.\n";
         if (Array.isArray(expression)) {
             let isEmpty = true;
-            // TODO: rework this to use promises so that checkIfMathExpression can run in parallel
-            for (let i = 0; i < expression.length; i++) {
-                if (typeof expression[i] === "string" && expression[i].length > 0) isEmpty = false;
-                if (await checkIfMathExpression(expression[i])) prompt += expression[i] + "\n";
-                else {
-                    this.logger?.log(getLineNumber() + ".chatGPT.js	 - One or more strings is not a valid mathematical expression: " + expression[i], "error");
-                    return [];
-                }
+            if(expression.every(str => typeof str === "string" && str.length > 0)) isEmpty = false;
+            let isMathExpPromises = [];
+            let isMathExpResults = [];
+            expression.forEach(async (str) => {
+                isMathExpPromises.push(checkIfMathExpression(str).then((res) => { isMathExpResults.push(res); }));
+            });
+            await Promise.all(isMathExpPromises);
+            if (isMathExpResults.every(res => res === true)) prompt += expression.join("\n");
+            else {
+                this.logger?.log(getLineNumber() + ".chatGPT.js	 - One or more strings is not a valid mathematical expression", "error");
+                return [];
             }
             if (isEmpty) {
                 this.logger?.log(getLineNumber() + ".chatGPT.js	 - interpretMathExpression requires a string or an array of strings as an argument", "error");
                 return [];
             }
-        } else if (typeof expression === "string") {
-            if (expression !== "") {
-                if (await checkIfMathExpression(expression)) {prompt += expression;
-                }
-                else {
-                    this.logger?.log(getLineNumber() + ".chatGPT.js	 - interpretMathExpression requires a string or an array of strings as an argument", "error");
-                    return [];
-                }
-            }
+        } else if (typeof expression === "string" && expression.length > 0) {
+            let checkResult = false;
+            let p = checkIfMathExpression(expression).then((res) => { checkResult = res; });
+            await p;
+            if (checkResult) prompt += expression;
             else {
-                this.logger?.log(getLineNumber() + ".chatGPT.js	 - interpretMathExpression requires a string or an array of strings as an argument", "error");
+                this.logger?.log(getLineNumber() + ".chatGPT.js	 - String is not a valid mathematical expression", "error");
                 return [];
             }
         } else {
@@ -331,7 +330,7 @@ class ChatGPT {
         }
 
         this.logger?.log(getLineNumber() + ".chatGPT.js	 - Interpreting math expression(s)...", "debug");
-        let response = await this.generateResponse(prompt, false, () => { }, () => { });
+        let response = await this.generateResponse(prompt, false, streamingData_cb, () => { });
         // read through response and find the MathML expressions
         let returnedExpressions = [];
         let start = response.indexOf("$$");
