@@ -41,7 +41,7 @@ const cleverDecksHostname = "cleverdecks.local";
     console.log("Checking for available ports...");
     process.stdout.write("Checking port: ");
     for (let i = portRange[0]; i < portRange[1]; i++) {
-        if(process.stdout.isTTY){
+        if (process.stdout.isTTY) {
             process.stdout.write(i + " ".repeat(6 - String(i).length));
             process.stdout.moveCursor(-6, 0);
         }
@@ -247,7 +247,7 @@ const cleverDecksHostname = "cleverdecks.local";
                 }
             }
             if (success) {
-                res.send({ status: "ok" , card: newCard });
+                res.send({ status: "ok", card: newCard });
             } else {
                 res.send({ status: "error", reason: "error saving card" });
             }
@@ -336,7 +336,7 @@ const cleverDecksHostname = "cleverdecks.local";
             else {
                 console.log({ dataObj });
                 const text = dataObj.text;
-                if(text.length > 16384){
+                if (text.length > 16384) {
                     res.send({ status: "error", reason: "text too long" });
                     return;
                 }
@@ -730,9 +730,8 @@ const cleverDecksHostname = "cleverdecks.local";
             return false;
         }
     }
-    // Open the default web browser to the app
-    logger?.log(getLineNumber() + ".index.js	 - Opening the default web browser to the app", "info");
-    const child_process = require("child_process");
+
+
     /**
      * @function browseURL
      * @description - opens the default web browser to the given URL
@@ -740,6 +739,7 @@ const cleverDecksHostname = "cleverdecks.local";
      * @returns {object} - the child process object
      */
     function browseURL(url) {
+        const child_process = require("child_process");
         logger?.log(getLineNumber() + ".index.js	 - Browsing URL: " + url, "debug");
         const validatePath = isValidateUrl(url);
         logger?.log(getLineNumber() + ".index.js	 - Is URL valid: " + validatePath, "debug");
@@ -772,7 +772,11 @@ const cleverDecksHostname = "cleverdecks.local";
         if (strPath.indexOf("\\.") !== -1) { return false; }
         return url;
     }
-    if(process.env.AUTO_OPEN_BROWSER === "true" || process.env.AUTO_OPEN_BROWSER === true) browseURL("http://" + cleverDecksHostname + ":" + port + "/");
+    if (process.env.AUTO_OPEN_BROWSER !== "false" && process.env.AUTO_OPEN_BROWSER !== false) {
+        // Open the default web browser to the app
+        logger?.log(getLineNumber() + ".index.js	 - Opening the default web browser to the app", "info");
+        browseURL("http://" + cleverDecksHostname + ":" + port + "/");
+    }
 
     // When the app is closed, finalize the logger
     const EXIT = () => {
@@ -783,9 +787,19 @@ const cleverDecksHostname = "cleverdecks.local";
         process.exit();
     };
 
+    // listen on stdin for "terminate"
+    process.stdin.resume();
+    process.stdin.setEncoding("utf8");
+    process.stdin.on("data", (data) => {
+        if (data.trim() === "terminate") {
+            EXIT();
+        }
+    });
+
     // Catch all the ways the program can exit
     process.on("SIGINT", EXIT);
     process.on("SIGTERM", EXIT);
+    process.on("SIGKILL", EXIT);
     process.on("uncaughtException", EXIT);
     process.on("SIGHUP", EXIT);
     process.on("exit", () => { });

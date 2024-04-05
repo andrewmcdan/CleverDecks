@@ -78,6 +78,16 @@
                 </div>
             </nav>
             <div id="content" class="p-4">
+                <div id="processingOverlay" class="fixed top-0 left-0 w-full h-full bg-black bg-opacity-50 z-10 gone">
+                    <div class="flex items-center justify-center h-full">
+                        <p class="text-white text-2xl">Processing...</p>
+                        <p class="text-white text-2xl ml-4" id="processingMessage"
+                            style="font-family: Segoe Boot Semilight;"></p>
+                    </div>
+                </div>
+                <div id="processingCancel" class="fixed bottom-0 right-0 bg-black z-11 gone">
+                    <button class="text-white">Cancel</button>
+                </div>
 
                 <div id="manualCreationMode">
                     <h1 class="text-2xl font-bold mb-4">Create Flashcard - Manual Mode</h1>
@@ -172,7 +182,8 @@
                                 Text:</label>
                             <textarea id="sourceText" name="sourceText" rows="4"
                                 class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
-                                placeholder="Enter text to generate flashcards..." maxlength="16384" required></textarea>
+                                placeholder="Enter text to generate flashcards..." maxlength="16384"
+                                required></textarea>
                         </div>
                         <div class="mb-4">
                             <label for="numCards" class="block mb-2 text-sm font-medium text-gray-900">Number of Cards
@@ -196,10 +207,9 @@
                             Flashcards</button>
                     </form>
                 </div>
-                <div id="aiCreationConfirm"
-                    class="gone border border-black rounded-md text-lg">
-                    <div class="w-full h-full flex flex-col justify-between p-4" id="aiFlashCardsToBeConfirmed">
-                </div>
+                <div id="aiCreationConfirm" class="gone text-lg">
+                    <div class="flex flex-col justify-between p-2" id="aiFlashCardsToBeConfirmed">
+                    </div>
                 </div>
 
             </div>
@@ -253,9 +263,16 @@
     .collectionSuggestionSelected {
         background-color: #3182ce;
     }
+
+    @font-face {
+        font-family: 'Segoe Boot Semilight';
+        src: url('/web/segoe_slboot.ttf') format('truetype');
+    }
 </style>
 <script>
     const rotationChars = ['-', '\\', '|', '/'];
+    const rotationCharsStart = 0xE052;
+    const rotationCharsEnd = 0xE0C6;
     const switchToAIMode = () => {
         document.getElementById('manualCreationMode').classList.add('gone');
         document.getElementById('aiCreationMode').classList.remove('gone');
@@ -447,91 +464,6 @@
             }
         });
 
-        aiCreationForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const sourceText = document.getElementById('sourceText').value;
-            const numCards = document.getElementById('numCards').value;
-            const difficulty = document.getElementById('difficulty_ai').value;
-            CleverDecks.generateCardsFromText(sourceText, numCards, difficulty).then((cards) => {
-                console.log(cards);
-                if(!Array.isArray(cards)) {
-                    // TODO: handle error
-                }else{
-                    const aiFlashCardsToBeConfirmed = document.getElementById('aiFlashCardsToBeConfirmed');
-                    document.getElementById('aiCreationConfirm').classList.remove('gone');
-                    for(let i = 0; i < cards.length; i++){                       
-                        aiFlashCardsToBeConfirmed.innerHTML += renderConfirmCard(cards[i], true);
-                        let mathStuff = cards[i].question.includes("$$") || cards[i].answer.includes("$$");
-                        let mathInProgressCounter = 0;
-                        if (cards[i].question.includes("$$")) {
-                            let mathPart = cards[i].question.match(/\$\$.*\$\$/g);
-                            let notMathPart = cards[i].question.replace(/\$\$.*\$\$/g, "=PLACEHOLDER=");
-                            mathInProgressCounter++;
-                            CleverDecks.interpretMath(mathPart).then((newMathPart) => {
-                                cards[i].question = notMathPart.replace(/=PLACEHOLDER=/g, () => newMathPart); // This weird notation is necessary due to the way replace works with strings with "$$" in them.
-                                document.getElementById(`question_${cards[i].id}`).innerHTML = cards[i].question;
-                            }).catch((err) => {
-                                console.log(err);
-                            }).finally(() => {
-                                mathInProgressCounter--;
-                            });
-                        }
-                        if (cards[i].answer.includes("$$")) {
-                            let mathPart = cards[i].answer.match(/\$\$.*\$\$/g);
-                            let notMathPart = cards[i].answer.replace(/\$\$.*\$\$/g, "=PLACEHOLDER=");
-                            mathInProgressCounter++;
-                            CleverDecks.interpretMath(mathPart).then((newMathPart) => {
-                                cards[i].answer = notMathPart.replace(/=PLACEHOLDER=/g, () => newMathPart);  // This weird notation is necessary due to the way replace works with strings with "$$" in them.
-                                document.getElementById(`answer_${cards[i].id}`).innerHTML = cards[i].answer;
-                            }).catch((err) => {
-                                console.log(err);
-                            }).finally(() => {
-                                mathInProgressCounter--;
-                            });
-                        }
-                        
-                        let mathInProgress = document.getElementById('mathInProgress_' + cards[i].id);
-                        if(mathInProgressCounter > 0){
-                            mathInProgress.classList.remove('gone');
-                            let mathInProgressIntervalCounter = 0;
-                            let mathInProgressInterval;
-                            if (mathStuff === true) {
-                                mathInProgressInterval = setInterval(() => {
-                                    mathInProgress.innerHTML = `Math interpretation in progress... ${rotationChars[mathInProgressIntervalCounter++ % 4]}`;
-                                    if(mathInProgressCounter === 0){
-                                        clearInterval(mathInProgressInterval);
-                                        mathInProgress.classList.add('gone');
-                                        MathJax.typeset();
-                                    }
-                                }, 250);
-                            }
-                        }
-                        const confirmButton = document.getElementById('confirmButton_' + cards[i].id);
-                        confirmButton.addEventListener('click', async () => {
-                            clearInterval(mathInProgressInterval);
-                            CleverDecks.saveNewCards(cards[i]).then((card) => {
-                                console.log(card);
-                            }).catch((err) => {
-                                console.error(err);
-                                confirmButton.innerHTML = 'Error';
-                                confirmButton.classList.add('bg-red-500');
-                                confirmButton.classList.remove('bg-green-500');
-                                setTimeout(() => {
-                                    confirmButton.innerHTML = 'Confirm';
-                                    confirmButton.classList.remove('bg-red-500');
-                                    confirmButton.classList.add('bg-green-500');
-                                }, 3000);
-                            });
-                        });
-
-
-                    }
-                }
-            }).catch((err) => {
-                console.error(err);
-            });
-        });
-
         manualCreationForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const question = document.getElementById('question').value;
@@ -554,11 +486,11 @@
             popupConfirm.classList.remove('gone');
             const flashCardToBeConfirmed = document.getElementById('flashCardToBeConfirmed');
             flashCardToBeConfirmed.innerHTML = renderConfirmCard(newCard);
-            
+
             CleverDecks.getCollectionNames().then((collections) => {
-                if(collections.length > 0 && !collections.includes(newCard.collection)) {
+                if (collections.length > 0 && !collections.includes(newCard.collection)) {
                     const questionPrompt = document.getElementById(`collection_heading_${newCard.id}`);
-                    questionPrompt.innerHTML = `<span class="bg-yellow-500">(New)</span> Collection: <span class="font-normal" id="collection_${newCard.id}"> ${newCard.collection}</span>`;                   
+                    questionPrompt.innerHTML = `<span class="bg-yellow-500">(New)</span> Collection: <span class="font-normal" id="collection_${newCard.id}"> ${newCard.collection}</span>`;
                 }
             }).catch((err) => {
                 console.error(err);
@@ -638,6 +570,267 @@
             });
         });
 
+        aiCreationForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const sourceText = document.getElementById('sourceText').value;
+            const numCards = document.getElementById('numCards').value;
+            const difficulty = document.getElementById('difficulty_ai').value;
+            const overlay = document.getElementById('processingOverlay');
+            overlay.classList.remove('gone');
+            let overlayIntervalCounter = 0;
+            let processingSpinnerInterval = setInterval(() => {
+                let charCode = rotationCharsStart + overlayIntervalCounter++ % (rotationCharsEnd - rotationCharsStart);
+                document.getElementById('processingMessage').innerHTML = `${String.fromCharCode(charCode)}`;
+            }, 50);
+            CleverDecks.generateCardsFromText(sourceText, numCards, difficulty).then((cards) => {
+                
+                clearInterval(processingSpinnerInterval);
+                overlay.classList.add('gone');
+                console.log(cards);
+                if (!Array.isArray(cards)) {
+                    // TODO: handle error
+                } else {
+                    // TODO: break this out into a function
+                    const aiFlashCardsToBeConfirmed = document.getElementById('aiFlashCardsToBeConfirmed');
+                    aiFlashCardsToBeConfirmed.innerHTML = '';
+                    document.getElementById('aiCreationConfirm').classList.remove('gone');
+                    for (let i = 0; i < cards.length; i++) {
+                        let newCard = document.createElement('div');
+                        newCard.innerHTML += renderEditableCard(cards[i]);
+                        aiFlashCardsToBeConfirmed.appendChild(newCard);
+
+                        const newCardCollection = document.getElementById(`collection_${cards[i].id}`);
+                        newCardCollection.addEventListener('input', async (e) => {
+                            const inputValue = e.target.value;
+                            if (inputValue) {
+                                console.log(inputValue)
+                                CleverDecks.collectionMatch(inputValue).then((response) => {
+                                    if (!Array.isArray(response)) {
+                                        response = [response];
+                                    }
+                                    const collectionSuggestions = document.getElementById(`collectionSuggestions_${cards[i].id}`);
+                                    collectionSuggestions.classList.remove('gone');
+                                    collectionSuggestions.innerHTML = response.map(collection => `<div class="collectionSuggestion">${collection}</div>`).join('');
+                                }).catch((err) => {
+                                    console.error(err);
+                                });
+                            }
+                        });
+                        newCardCollection.addEventListener('keydown', async (e) => {
+                            const collectionSuggestions = document.getElementById(`collectionSuggestions_${cards[i].id}`);
+                            if (collectionSuggestions !== null) {
+                                if (e.key === 'Down' || e.key === 'ArrowDown') {
+                                    // walk through the children of collectionSuggestions and find the first one that is has the class collectionSuggestionSelected
+                                    let selectedCollection = collectionSuggestions.querySelector('.collectionSuggestionSelected');
+                                    if (selectedCollection === null) {
+                                        collectionSuggestions.children[0].classList.add('collectionSuggestionSelected');
+                                    } else if (selectedCollection === collectionSuggestions.children[collectionSuggestions.children.length - 1]) {
+                                        selectedCollection.classList.remove('collectionSuggestionSelected');
+                                        collectionSuggestions.children[0].classList.add('collectionSuggestionSelected');
+                                    } else {
+                                        let nextCollection = selectedCollection.nextElementSibling;
+                                        if (nextCollection !== null) {
+                                            selectedCollection.classList.remove('collectionSuggestionSelected');
+                                            nextCollection.classList.add('collectionSuggestionSelected');
+                                        }
+                                    }
+                                }
+                                if (e.key === 'Up' || e.key === 'ArrowUp') {
+                                    // walk through the children of collectionSuggestions and find the first one that is has the class collectionSuggestionSelected
+                                    let selectedCollection = collectionSuggestions.querySelector('.collectionSuggestionSelected');
+                                    if (selectedCollection === null) {
+                                        collectionSuggestions.children[collectionSuggestions.children.length - 1].classList.add('collectionSuggestionSelected');
+                                    } else if (selectedCollection === collectionSuggestions.children[0]) {
+                                        selectedCollection.classList.remove('collectionSuggestionSelected');
+                                        collectionSuggestions.children[collectionSuggestions.children.length - 1].classList.add('collectionSuggestionSelected');
+                                    } else {
+                                        let previousCollection = selectedCollection.previousElementSibling;
+                                        if (previousCollection !== null) {
+                                            selectedCollection.classList.remove('collectionSuggestionSelected');
+                                            previousCollection.classList.add('collectionSuggestionSelected');
+                                        }
+                                    }
+                                }
+                                if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    let selectedCollection = collectionSuggestions.querySelector('.collectionSuggestionSelected');
+                                    if (selectedCollection !== null) {
+                                        let collectionText = selectedCollection.innerText;
+                                        newCardCollection.value = collectionText;
+                                        collectionSuggestions.classList.add('gone');
+                                    }
+                                }
+                            }
+                        });
+                        newCardCollection.addEventListener('blur', async (e) => {
+                            const collectionSuggestions = document.getElementById(`collectionSuggestions_${cards[i].id}`);
+                            if (collectionSuggestions !== null) {
+                                collectionSuggestions.classList.add('gone');
+                            }
+                        });
+
+                        const tagsContainer = document.getElementById(`tags_${cards[i].id}`);
+                        tagsContainer.children[0].addEventListener('click', (e) => {
+                            console.log('clicked');
+                            tagsContainer.innerHTML = `<p class="font-semibold">Tags: <input type="text" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" value="${cards[i].tags.join(', ')}" id="editedTags_${cards[i].id}"></input></p>`;
+                            const newCardTags = document.getElementById(`editedTags_${cards[i].id}`);
+                            newCardTags.addEventListener('input', async (e) => {
+                                const inputValue = e.target.value;
+                                const inputTags = inputValue.split(',').map(tag => tag.trim());
+                                if (inputValue) {
+                                    CleverDecks.tagMatch(inputTags[inputTags.length - 1]).then((response) => {
+                                        const fuzzyMatches = response.tagsMatchFuzzy;
+                                        const tagsSuggestions = document.getElementById(`tagSuggestions_${cards[i].id}`);
+                                        tagsSuggestions.classList.remove('gone');
+                                        tagsSuggestions.innerHTML = fuzzyMatches.map(tag => `<div class="tagSuggestion">${tag}, </div>`).join('');
+                                    }).catch((err) => {
+                                        console.error(err);
+                                    });
+                                }
+                            });
+                            newCardTags.addEventListener('keydown', async (e) => {
+                                const tagsSuggestions = document.getElementById(`tagSuggestions_${cards[i].id}`);
+                                if (tagsSuggestions !== null) {
+                                    if (e.key === 'Down' || e.key === 'ArrowDown') {
+                                        // walk through the children of tagsSuggestions and find the first one that is has the class tagSuggestionSelected
+                                        let selectedTag = tagsSuggestions.querySelector('.tagSuggestionSelected');
+                                        if (selectedTag === null) {
+                                            tagsSuggestions.children[0].classList.add('tagSuggestionSelected');
+                                        } else if (selectedTag === tagsSuggestions.children[tagsSuggestions.children.length - 1]) {
+                                            selectedTag.classList.remove('tagSuggestionSelected');
+                                            tagsSuggestions.children[0].classList.add('tagSuggestionSelected');
+                                        } else {
+                                            let nextTag = selectedTag.nextElementSibling;
+                                            if (nextTag !== null) {
+                                                selectedTag.classList.remove('tagSuggestionSelected');
+                                                nextTag.classList.add('tagSuggestionSelected');
+                                            }
+                                        }
+                                    }
+                                    if (e.key === 'Up' || e.key === 'ArrowUp') {
+                                        // walk through the children of tagsSuggestions and find the first one that is has the class tagSuggestionSelected
+                                        let selectedTag = tagsSuggestions.querySelector('.tagSuggestionSelected');
+                                        if (selectedTag === null) {
+                                            tagsSuggestions.children[tagsSuggestions.children.length - 1].classList.add('tagSuggestionSelected');
+                                        } else if (selectedTag === tagsSuggestions.children[0]) {
+                                            selectedTag.classList.remove('tagSuggestionSelected');
+                                            tagsSuggestions.children[tagsSuggestions.children.length - 1].classList.add('tagSuggestionSelected');
+                                        } else {
+                                            let previousTag = selectedTag.previousElementSibling;
+                                            if (previousTag !== null) {
+                                                selectedTag.classList.remove('tagSuggestionSelected');
+                                                previousTag.classList.add('tagSuggestionSelected');
+                                            }
+                                        }
+                                    }
+                                    if (e.key === 'Enter') {
+                                        e.preventDefault();
+                                        let selectedTag = tagsSuggestions.querySelector('.tagSuggestionSelected');
+                                        if (selectedTag !== null) {
+                                            let tagText = selectedTag.innerText;
+                                            let tagsValue = newCardTags.value;
+                                            let tagsArray = tagsValue.split(',');
+                                            tagsArray[tagsArray.length - 1] = tagText;
+                                            newCardTags.value = tagsArray.join(', ');
+                                            tagsSuggestions.classList.add('gone');
+                                        }
+                                    }
+                                }
+                            });
+                            newCardTags.addEventListener('blur', async (e) => {
+                                const tagsSuggestions = document.getElementById(`tagSuggestions_${cards[i].id}`);
+                                if (tagsSuggestions !== null) {
+                                    tagsSuggestions.classList.add('gone');
+                                }
+                            });
+                        });
+                        let mathStuff = cards[i].question.includes("$$") || cards[i].answer.includes("$$");
+                        let mathInProgressCounter = 0;
+                        if (cards[i].question.includes("$$")) {
+                            let mathPart = cards[i].question.match(/\$\$.*\$\$/g);
+                            let notMathPart = cards[i].question.replace(/\$\$.*\$\$/g, "=PLACEHOLDER=");
+                            mathInProgressCounter++;
+                            CleverDecks.interpretMath(mathPart).then((newMathPart) => {
+                                cards[i].question = notMathPart.replace(/=PLACEHOLDER=/g, () => newMathPart); // This weird notation is necessary due to the way replace works with strings with "$$" in them.
+                                document.getElementById(`question_${cards[i].id}`).value = cards[i].question;
+                            }).catch((err) => {
+                                console.log(err);
+                            }).finally(() => {
+                                mathInProgressCounter--;
+                            });
+                        }
+                        if (cards[i].answer.includes("$$")) {
+                            let mathPart = cards[i].answer.match(/\$\$.*\$\$/g);
+                            let notMathPart = cards[i].answer.replace(/\$\$.*\$\$/g, "=PLACEHOLDER=");
+                            mathInProgressCounter++;
+                            CleverDecks.interpretMath(mathPart).then((newMathPart) => {
+                                cards[i].answer = notMathPart.replace(/=PLACEHOLDER=/g, () => newMathPart);  // This weird notation is necessary due to the way replace works with strings with "$$" in them.
+                                document.getElementById(`answer_${cards[i].id}`).value = cards[i].answer;
+                            }).catch((err) => {
+                                console.log(err);
+                            }).finally(() => {
+                                mathInProgressCounter--;
+                            });
+                        }
+
+                        let mathInProgress = document.getElementById('mathInProgress_' + cards[i].id);
+                        let mathInProgressInterval;
+                        if (mathInProgressCounter > 0) {
+                            mathInProgress.classList.remove('gone');
+                            let mathInProgressIntervalCounter = 0;
+                            if (mathStuff === true) {
+                                mathInProgressInterval = setInterval(() => {
+                                    let charCode = rotationCharsStart + mathInProgressIntervalCounter % (rotationCharsEnd - rotationCharsStart);
+                                    mathInProgress.innerHTML = `Math interpretation in progress... ${String.fromCharCode(charCode)}`;
+                                    if (mathInProgressCounter === 0) {
+                                        clearInterval(mathInProgressInterval);
+                                        mathInProgress.classList.add('gone');
+                                        MathJax.typeset();
+                                    }
+                                }, 250);
+                            }
+                        }
+                        const confirmButton = document.getElementById('confirmButton_' + cards[i].id);
+                        confirmButton.addEventListener('click', async () => {
+                            if (mathInProgressInterval !== undefined) clearInterval(mathInProgressInterval);
+                            // find all the edited tags and update the card object
+                            const editedTags = document.getElementById(`editedTags_${cards[i].id}`);
+                            if (editedTags !== null) {
+                                let tagsArray = editedTags.value.split(',');
+                                for (let j = 0; j < tagsArray.length; j++) {
+                                    tagsArray[j] = tagsArray[j].trim();
+                                    if (tagsArray[j] === '') {
+                                        tagsArray.splice(j, 1);
+                                        j--;
+                                    }
+                                }
+                                cards[i].tags = tagsArray;
+                            }
+                            CleverDecks.saveNewCards(cards[i]).then((card) => {
+                                console.log(card);
+                                newCard.remove();
+                                // TODO:
+                            }).catch((err) => {
+                                console.error(err);
+                                confirmButton.innerHTML = 'Error';
+                                confirmButton.classList.add('bg-red-500');
+                                confirmButton.classList.remove('bg-green-500');
+                                setTimeout(() => {
+                                    confirmButton.innerHTML = 'Confirm';
+                                    confirmButton.classList.remove('bg-red-500');
+                                    confirmButton.classList.add('bg-green-500');
+                                }, 3000);
+                            });
+                        });
+
+                        console.log('done');
+                    }
+                }
+            }).catch((err) => {
+                console.error(err);
+            });
+        });
+
         function renderConfirmCard(card, extras = true) {
             return `
                 <div class="mb-2">
@@ -655,24 +848,32 @@
                 ` + (extras ? `
                 <p id="mathInProgress_${card.id}" class="gone text-md italic text-gray-600 mb-4">Math interpretation in progress...</p>
                 <button id="confirmButton_${card.id}" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition duration-300 ease-in-out self-end">Confirm</button>
-        `:``);
+        `: ``);
         }
 
-        function renderEditableCard(card){
+        function renderEditableCard(card) {
             return `
-                <div class="mb-2">
-                    <p class="font-semibold" id="collection_heading_${card.id}">Collection:<span class="font-normal" id="collection_${card.id}"> ${card.collection}</span></p>
+            <div class="border border-black rounded-md p-2 mb-4">
+                <div class="mb-2 ">
+                    <p class="font-semibold" id="collection_heading_${card.id}">Collection:<input type="text" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" id="collection_${card.id}" value="${card.collection}"></input></p>
+                </div>
+                <div id="collectionSuggestions_${card.id}"
+                    class="gone absolute bg-white border-gray-300 border text-black text-sm rounded-lg p-2.5">
                 </div>
                 <div class="front mb-2">
-                    <p class="font-semibold">Question: <span class="font-normal" id="question_${card.id}">${card.question}</span></p>
+                    <p class="font-semibold">Question: <input type="text" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" id="question_${card.id}" value="${card.question}"></input></p>
                 </div>
                 <div class="back mb-2">
-                    <p class="font-semibold">Answer: <span class="font-normal" id="answer_${card.id}">${card.answer}</span></p>
+                    <p class="font-semibold">Answer: <input type="text" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" id="answer_${card.id}" value="${card.answer}"></input></p>
                 </div>
                 <div class="tags mb-2" id="tags_${card.id}">
                     <p class="font-semibold">Tags: ${card.tags.map(tag => `<span class="tag font-normal text-sm bg-gray-200 rounded-full px-2">${tag}</span>`).join(' ')}</p>
                 </div>
+                <div id="tagSuggestions_${card.id}"
+                    class="gone absolute bg-white border-gray-300 border text-black text-sm rounded-lg p-2.5">
+                </div>
                 <button id="confirmButton_${card.id}" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition duration-300 ease-in-out self-end">Confirm</button>
+            </div>    
             `;
         }
     })();

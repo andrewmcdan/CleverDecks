@@ -401,10 +401,6 @@
         }
 
         function renderEditCard(card) {
-            if (card.question.includes("$$") || card.answer.includes("$$")) {
-                // TODO: Add MathJax support for editing cards
-            }
-            // TODO: add chatGPT interpretation of math expressions into mathJax compatible format
             return `
             <div class="w-full">
                 <label for="cardID" class="block mb-1 text-sm font-medium p-2 rounded-lg">Card
