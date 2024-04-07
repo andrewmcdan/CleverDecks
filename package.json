@@ -44,7 +44,10 @@
       "express": "^4.17.1",
       "openai": "^4.27.0"
     },
-    "outputPath": "dist"
+    "outputPath": "dist",
+    "targets": [
+      "node18-win-x64"
+    ]
   },
   "devDependencies": {
     "eslint": "^8.57.0",

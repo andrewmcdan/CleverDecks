@@ -256,7 +256,7 @@
                 results = await CleverDecks.getCards({ search: searchTerm });
             }
             // Clear the flashCardContainer
-            flashCardContainer.innerHTML = '';
+            // flashCardContainer.innerHTML = '';
             // Add the results to the flashCardContainer
             for (const result of results) {
                 let newCard = new FlashCard(result);

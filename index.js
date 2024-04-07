@@ -74,7 +74,7 @@ const cleverDecksHostname = "cleverdecks.local";
     //////////////////////////////////////////////////////////////////// Logging //////////////////////////////////////////////////////////////////////////////////////////
     const consoleLogging = true;
     // const logFile = 'logs.txt';
-    // logLevel, 0-5 or "off", "info", "warn", "error", "debug", "trace"
+    // logLevel, "off", "info", "warn", "error", "debug", "trace"
     const logLevel = process.env.LOG_LEVEL;
     const { Logger, logLevels } = require("./logger.js");
     const logLevelNumber = logLevels.indexOf(logLevel);
@@ -91,17 +91,23 @@ const cleverDecksHostname = "cleverdecks.local";
     const dataBaseProgressCallback = (progress) => {
         logger?.log(getLineNumber() + ".index.js	 - FlashCardDatabase loading progress: " + Math.floor(progress) + "%", "info");
     };
-    let flashcard_db; // create a variable to hold the flashcard database
+    const args = process.argv.slice(2);
+    let removeLock = false;
+    if (args.includes("--remove_lock")) {
+        removeLock = true;
+    }
+    let flashcard_db;
     try {
-        flashcard_db = new FlashCardDatabase(logger, dataPath, dataBaseProgressCallback); // create a new FlashCardDatabase object
+        flashcard_db = new FlashCardDatabase(logger, dataPath, dataBaseProgressCallback, removeLock); // create a new FlashCardDatabase object
     } catch (err) {
         logger?.log(getLineNumber() + ".index.js	 - Error creating FlashCardDatabase: " + err, "error");
-        if (err.message === "metadata is locked") process.stdout.write("The flashcard database is locked. Please close any other instances of the app and try again.\n");
+        if (err.message === "metadata is locked") {
+            process.stdout.write("The flashcard database is locked. Please close any other instances of the app and try again.\n");
+            process.stdout.write("If you are sure there are no other instances running, you can use the --remove_lock flag to remove the lock file.\n");
+            process.stdout.write("If you are using the launcher, you can use the 'Remove Lock File on Restart option' in the Help menu.\n");
+        }
         process.exit();
-        // exit the app if there was an error creating the FlashCardDatabase object. 
-        // This is a fatal error and was likely due to there being a lock on the metadata file.
     }
-
 
     //////////////////////////////////////////////////////////////// Server endpoints /////////////////////////////////////////////////////////////////////////////////////
     // TODO: Add metadata location changing endpoint
@@ -228,7 +234,14 @@ const cleverDecksHostname = "cleverdecks.local";
     app.post("/api/saveNewCards", (req, res) => {
         logger?.log(getLineNumber() + ".index.js	 - POST /api/saveNewCards", "debug");
         req.on("data", (data) => {
-            const cardData = JSON.parse(data);
+            let cardData;
+            try{
+                cardData = JSON.parse(data);
+            } catch (err) {
+                logger?.log(getLineNumber() + ".index.js	 - Invalid card data", "error");
+                res.send({ status: "error", reason: "invalid data" });
+                return;
+            }
             logger?.log(getLineNumber() + ".index.js	 - Saving new flash card: " + JSON.stringify(cardData, 2, null).substring(0, 100) + "...", "debug");
             if (!Array.isArray(cardData)) {
                 res.send({ status: "error", reason: "Invalid data. Expected an array of cards." });
@@ -582,6 +595,12 @@ const cleverDecksHostname = "cleverdecks.local";
         res.sendFile(__dirname + "/web/404.html");
     });
 
+    app.get("/exit", (req, res) => {
+        logger?.log(getLineNumber() + ".index.js	 - GET /exit", "debug");
+        res.send({ status: "ok" });
+        EXIT();
+    });
+
     /**
      * @description - serve static files
      * @listens GET /
@@ -654,8 +673,9 @@ const cleverDecksHostname = "cleverdecks.local";
     server.listen(port, () => {
         // logger?.log(`If you are using a web browser on the same computer as the app, you can use the following address:`)
         // logger?.log(`http://localhost:${port}`)
-        logger?.log(getLineNumber() + ".index.js	 - If you are using a web browser on a different computer (or mobile device) on the same network, open your browser to " + cleverDecksHostname + ":" + port);
-        logger?.log(getLineNumber() + "If that doesn't work, you can try the following addresses:");
+        logger?.log(getLineNumber() + ".index.js	 - If you are using a web browser on the same computer as the app, open your browser to http://localhost:" + port);
+        logger?.log(getLineNumber() + ".index.js	 - If you are using a web browser on a different computer (or mobile device) on the same network, open your browser to http://" + cleverDecksHostname + ":" + port);
+        logger?.log(getLineNumber() + ".index.js	 - If that doesn't work, you can try the following addresses:");
         addresses.forEach((address) => {
             logger?.log(`${getLineNumber()}.index.js \t- http://${address}:${port}`);
         });
@@ -772,6 +792,7 @@ const cleverDecksHostname = "cleverdecks.local";
         if (strPath.indexOf("\\.") !== -1) { return false; }
         return url;
     }
+
     if (process.env.AUTO_OPEN_BROWSER !== "false" && process.env.AUTO_OPEN_BROWSER !== false) {
         // Open the default web browser to the app
         logger?.log(getLineNumber() + ".index.js	 - Opening the default web browser to the app", "info");
@@ -791,7 +812,8 @@ const cleverDecksHostname = "cleverdecks.local";
     process.stdin.resume();
     process.stdin.setEncoding("utf8");
     process.stdin.on("data", (data) => {
-        if (data.trim() === "terminate") {
+        logger?.log(getLineNumber() + ".index.js	 - Data: " + data, "trace");
+        if (data.trim() === "terminate" || data.trim() === "exit" || data.trim() === "quit" || data.trim() === "q" || data.trim() === "x"){
             EXIT();
         }
     });
@@ -802,5 +824,7 @@ const cleverDecksHostname = "cleverdecks.local";
     process.on("SIGKILL", EXIT);
     process.on("uncaughtException", EXIT);
     process.on("SIGHUP", EXIT);
-    process.on("exit", () => { });
+    process.on("exit", () => { 
+        console.log("Goodbye!");
+    });
 })();

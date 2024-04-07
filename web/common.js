@@ -84,6 +84,20 @@ class FlashCard {
      */
     toString() {
         // TODO: implement a better toString method. It should return a string representation that includes localestrings for the date properties
+        let str = "Question: " + this.question + "\n";
+        str += "Answer: " + this.answer + "\n";
+        str += "Tags: " + this.tags.join(", ") + "\n";
+        str += "Difficulty: " + this.difficulty + "\n";
+        str += "Collection: " + this.collection + "\n";
+        str += "Date Created: " + (new Date(this.dateCreated).toLocaleString()) + "\n";
+        str += "Date Modified: " + (new Date(this.dateModified).toLocaleString()) + "\n";
+        str += "Date Last Studied: " + (new Date(this.dateLastStudied).toLocaleString()) + "\n";
+        str += "Times Studied: " + this.timesStudied + "\n";
+        str += "Times Correct: " + this.timesCorrect + "\n";
+        str += "Times Incorrect: " + this.timesIncorrect + "\n";
+        str += "Times Skipped: " + this.timesSkipped + "\n";
+        str += "Times Flagged: " + this.timesFlagged + "\n";
+        return str;
     }
 }
 

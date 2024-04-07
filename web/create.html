@@ -545,9 +545,9 @@
                     console.log(card);
                     popupConfirm.classList.add('gone');
                     document.getElementById('flashCardToBeConfirmed').innerHTML = '';
-                    question.value = '';
-                    answer.value = '';
-                    question.focus();
+                    document.getElementById('question').value = '';
+                    document.getElementById('answer').value = '';
+                    document.getElementById('question').focus();
                 }).catch((err) => {
                     console.error(err);
                     confirmButton.innerHTML = 'Error';
@@ -807,7 +807,7 @@
                                 cards[i].tags = tagsArray;
                             }
                             CleverDecks.saveNewCards(cards[i]).then((card) => {
-                                console.log(card);
+                                console.log(cards[i].toString());
                                 newCard.remove();
                                 // TODO:
                             }).catch((err) => {
@@ -846,7 +846,7 @@
                     <p class="font-semibold">Tags: ${card.tags.map(tag => `<span class="tag font-normal text-sm bg-gray-200 rounded-full px-2">${tag}</span>`).join(' ')}</p>
                 </div>
                 ` + (extras ? `
-                <p id="mathInProgress_${card.id}" class="gone text-md italic text-gray-600 mb-4">Math interpretation in progress...</p>
+                <p id="mathInProgress_${card.id}" class="gone text-md italic text-gray-600 mb-4"></p>
                 <button id="confirmButton_${card.id}" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition duration-300 ease-in-out self-end">Confirm</button>
         `: ``);
         }

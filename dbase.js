@@ -59,7 +59,7 @@ class FlashCardCollection {
      * @method loadCollection
      * @description - loads the flashcards from the collection into memory
      * @returns {boolean} - true if the collection was loaded, false if it was not
-     * @throws - nothing
+     * @throws - Throws an error if unable to create a backup of the collection file or if unable to load the collection
      * @sideEffects - logs a message to the console
      * @sideEffects - sets the cards property to an array of the flash cards in the collection
      * @sideEffects - sets the largestId property to the largest id number used so far
@@ -93,6 +93,7 @@ class FlashCardCollection {
                 }
             } catch (err) {
                 this.logger?.log(getLineNumber() + ".dbase.js	 - Error creating backup of " + this.name + ".json: " + err, "error");
+                throw new Error("Error creating backup of " + this.name + ".json: " + err);
             }
             try {
                 let cards = JSON.parse(data);
@@ -103,6 +104,7 @@ class FlashCardCollection {
                         newCard = new FlashCard(card);
                     } catch (err) {
                         this.logger?.log(getLineNumber() + ".dbase.js	 - Error loading flash card: " + card.id + " - " + err, "error");
+                        throw new Error("Error loading flash card: " + card.id + " - " + err);
                     }
                     // newCard.id = ++this.largestId;
                     if (newCard.id > this.largestId) this.largestId = newCard.id;
