@@ -1,6 +1,59 @@
 /* eslint-disable no-undef */
 const _apiBase = "../api/";
 
+class ObservableArray {
+    constructor() {
+        this.array = [];
+        this.eventTarget = new EventTarget();
+    }
+
+    // Method to add item and dispatch the event
+    addItem(item) {
+        this.array.push(item);
+        this.dispatchArrayUpdatedEvent({event: "add", index: this.array.length - 1, arr: this.array});
+    }
+
+    // Method to remove item and dispatch the event
+    removeItem(index) {
+        this.array.splice(index, 1);
+        this.dispatchArrayUpdatedEvent({event: "remove", index: index, arr: this.array});
+    }
+
+    checkExists(cardId) {
+        return this.array.some(card => card.id === cardId);
+    }
+
+    // Utility method to dispatch the custom event
+    dispatchArrayUpdatedEvent(obj) {
+        const event = new CustomEvent('arrayUpdated', { arr: this.array, detail: obj});
+        this.eventTarget.dispatchEvent(event);
+    }
+
+    // Method to allow external code to add event listeners
+    onArrayUpdated(callback) {
+        this.eventTarget.addEventListener('arrayUpdated', callback);
+    }
+
+    onDoneLoading(callback) {
+        this.eventTarget.addEventListener('doneLoading', callback);
+    }
+
+    doneLoading(){
+        const event = new CustomEvent('doneLoading', { arr: this.array });
+        this.eventTarget.dispatchEvent(event);
+    }
+
+    onClearArray(callback) {
+        this.eventTarget.addEventListener('clearArray', callback);
+    }
+
+    clearArray() {
+        this.array = [];
+        const event = new CustomEvent('clearArray', { arr: this.array });
+        this.eventTarget.dispatchEvent(event);
+    }
+}
+
 class CleverDecks_class {
     constructor() {
         this.socket = null;
@@ -10,7 +63,8 @@ class CleverDecks_class {
             console.log("io() is not available");
         }
         this.socketId = null;
-    }
+        this.loadedCards = new ObservableArray();
+    }    
 
     async waitReady() {
         return new Promise((resolve) => {
@@ -827,6 +881,7 @@ let setStatusMessage = () => { };
     searchBox.addEventListener("focus", () => {
         document.getElementById("searchResultsContainer").classList.remove("gone");
     });
+    const searchResultsContainer = document.getElementById("searchResultsContainer");
     searchBox.addEventListener("input", (event) => {
         const thisSearchIndex = searchIndex++;
         // create a drop down area that shows suggested tags and collections
@@ -844,8 +899,16 @@ let setStatusMessage = () => { };
             return acc;
         }, { distance: 100, match: "" });
 
+        let secondMatch = collectionNames.reduce((acc, curr) => {
+            let distance = levenshteinDistance(search, curr);
+            if (distance < acc.distance && distance > closestMatch.distance) {
+                acc.distance = distance;
+                acc.match = curr;
+            }
+            return acc;
+        }, { distance: 100, match: "" });
+
         CleverDecks.tagMatch(search).then(data => {
-            const searchResultsContainer = document.getElementById("searchResultsContainer");
             const searchResultsList = document.getElementById("searchResultsList");
             [...searchResultsList.childNodes].forEach((child) => {
                 if (child.nodeType === Node.ELEMENT_NODE && child.getAttribute("searchIndex") !== thisSearchIndex.toString()) {
@@ -874,6 +937,15 @@ let setStatusMessage = () => { };
                 searchBox.dispatchEvent(new Event("input"));
             });
             searchResultsList.appendChild(li);
+            let li2 = document.createElement("li");
+            li2.setAttribute("searchIndex", thisSearchIndex.toString());
+            li2.classList.add("searchResult");
+            li2.innerHTML = "Collection: " + secondMatch.match;
+            li2.addEventListener("click", (event) => {
+                searchBox.value = event.target.innerHTML;
+                searchBox.dispatchEvent(new Event("input"));
+            });
+            searchResultsList.appendChild(li2);
             searchResultsContainer.classList.remove("gone");
         }).catch(err => {
             if (CleverDecks.socketIoConnected === true) {
@@ -883,5 +955,60 @@ let setStatusMessage = () => { };
             }
         });
     });
+    const searchButton = document.getElementById('searchButton');
+    const searchReturnContainer = document.getElementById('searchReturnContainer');
+    const searchResultsCount = document.getElementById('searchResultsCount');
+    let searchResultsCards = [];
+    const loadAddButton = document.getElementById('loadAddButton');
+    const loadNewButton = document.getElementById('loadNewButton');
+    searchButton.onclick = async () => {
+        searchResultsCards = [];
+        // Get the search term
+        const searchTerm = search.value;
+        if (searchTerm === '') return;
+        let results = null;
+
+        if (searchTerm.startsWith("Tag: ")) {
+            results = await CleverDecks.getCards({ tags: [searchTerm.substring(5)] });
+            results.push(...await CleverDecks.getCards({ tags: [searchTerm.substring(5).toLowerCase()] }));
+        } else if (searchTerm.startsWith("Collection: ")) {
+            results = await CleverDecks.getCards({ collection: searchTerm.substring(12) });
+        } else {
+            results = await CleverDecks.getCards({ search: searchTerm });
+        }
+
+        // Add the results to the flashCardContainer
+        for (const result of results) {
+            let newCard = new FlashCard(result);
+            if (searchResultsCards.find(card => card.id === newCard.id)) continue;
+            else searchResultsCards.push(new FlashCard(result));
+        }
+        console.log(searchResultsCards);
+        searchResultsCount.innerText = searchResultsCards.length;
+        searchReturnContainer.classList.remove('gone');
+        searchResultsContainer.classList.add('gone');
+    };
+
+    loadAddButton.onclick = () => {
+        searchResultsCards = searchResultsCards.filter(card => !CleverDecks.loadedCards.array.find(loadedCard => loadedCard.id === card.id));
+        searchResultsCards.forEach(card => CleverDecks.loadedCards.addItem(card));
+        CleverDecks.loadedCards.doneLoading();
+        searchReturnContainer.classList.add('gone');
+    };
+
+    loadNewButton.onclick = () => {
+        CleverDecks.loadedCards.clearArray();
+        searchResultsCards.forEach(card => CleverDecks.loadedCards.addItem(card));
+        CleverDecks.loadedCards.doneLoading();
+        searchReturnContainer.classList.add('gone');
+    };
+    
+    document.addEventListener("click", (event) => {
+        if (event.target.id === "searchReturnContainer") return;
+        if (event.target.id === "searchResultsCount") return;
+        if (event.target === searchBox) return;
+        searchReturnContainer.classList.add("gone");
+    });
+
     CleverDecks.logEntry(getLineNumber() + ".web.js - Page setup complete", "debug");
 })();

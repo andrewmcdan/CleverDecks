@@ -291,7 +291,7 @@ const cleverDecksHostname = "cleverdecks.local";
                 logger?.log(getLineNumber() + ".index.js	 - Card not found", "error");
                 return;
             }
-            const success = flashcard_db.deleteCard(id);
+            const success = flashcard_db.deleteCard(card);
             logger?.log(getLineNumber() + ".index.js	 - Card deleted: " + success, "debug");
             res.send({ status: "ok", card: card, success: success });
         });

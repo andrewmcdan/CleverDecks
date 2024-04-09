@@ -740,6 +740,20 @@ class FlashCardDatabase {
             this.logger?.log(getLineNumber() + ".dbase.js	 - Collection not found: " + cardData.collection, "error");
             return false;
         }
+        // check if collection is empty
+        if (collection.cards.length == 1) {
+            this.logger?.log(getLineNumber() + ".dbase.js	 - Collection is empty. Deleting collection: " + collection.name, "debug");
+            let index = this.collections.findIndex((c) => c.name === collection.name);
+            this.collections.splice(index, 1);
+            try{
+                fs.unlinkSync(collection.filePath);
+            }catch(err){
+                this.logger?.log(getLineNumber() + ".dbase.js	 - Error deleting collection file: " + collection.filePath + " - " + err, "error");
+                return false;
+            }
+            this.saveCollections(true);
+            return true;
+        }
         this.saveCollections(true);
         return collection.deleteCard(cardData.id);
     }

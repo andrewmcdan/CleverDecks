@@ -605,6 +605,10 @@ video {
   left: 0px;
 }
 
+.right-0 {
+  right: 0px;
+}
+
 .top-0 {
   top: 0px;
 }
@@ -613,8 +617,12 @@ video {
   top: 2.5rem;
 }
 
-.right-0 {
-  right: 0px;
+.-left-4 {
+  left: -1rem;
+}
+
+.-top-4 {
+  top: -1rem;
 }
 
 .z-10 {
@@ -631,6 +639,10 @@ video {
 
 .m-10 {
   margin: 2.5rem;
+}
+
+.m-2 {
+  margin: 0.5rem;
 }
 
 .mx-0 {
@@ -958,6 +970,10 @@ video {
 
 .p-4 {
   padding: 1rem;
+}
+
+.p-5 {
+  padding: 1.25rem;
 }
 
 .p-6 {

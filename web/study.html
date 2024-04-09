@@ -9,7 +9,19 @@
     <link rel="stylesheet" href="styles.css">
     <link rel="icon" href="img/favicon-180x180.png" type="image/png">
     <!-- MathJax -- This library is used to render mathematical expressions. -->
-    <script>MathJax = { chtml: { scale: 1.5 }, tex: { formatError: (jax, error) => { jax.formatError(error); } } };</script>
+    <script>
+        MathJax = {
+            chtml: {
+                scale: 0.9
+            },
+            tex: {
+                formatError: (jax, error) => { jax.formatError(error); }
+            },
+            svg: {
+                scale: 0.9
+            }
+        };
+    </script>
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script src="common.js"></script>
     <!-- Socket.io library -->
@@ -75,59 +87,65 @@
                 </div>
             </nav>
             <div class="content" class="min-h-screen">
-                <div id="cardCount">
+                <div id="cardCount" class="p-4 m-2 text-lg font-semibold">
+                    Total available cards: <span id="totalAvailableCardsCount"></span>
                 </div>
-                <div id="totalCardCount">
+                <div id="totalCardCount" class="p-4 m-2 text-lg font-semibold">
+                    <p>Cards loaded for study: <span id="totalLoadedCardsCount">0</span></p>
+                    <p>Loaded cards from collections: <span id="loadedCardsCollections"></span></p>
                 </div>
+                
                 <div id="flashCardContainer"
                     class="max-w-xl mx-auto p-4 bg-white shadow-2xl shadow-black drop-shadow-2xl rounded-lg m-10">
                     <div class="flex justify-between mb-3">
-                        <div>Difficulty: <span class="text-sm text-gray-600">Medium</span></div>
-                        <div>Collection: <span class="text-sm text-gray-600">Math Basics</span></div>
+                        <div>Difficulty: <span id="difficultyRating" class="text-sm text-gray-600"></span></div>
+                        <div>Collection: <span id="collectionName" class="text-sm text-gray-600"></span></div>
                     </div>
                     <div class="flex justify-between mb-3">
-                        <div>Tags: <span class="text-sm text-gray-600">Algebra, Geometry</span></div>
-                        <div>Show Answers: <input type="checkbox" /></div>
+                        <div>Tags: <span id="tags" class="text-sm text-gray-600"></span></div>
+                        <div>Show Answers: <input id="shgowAnswersCheck" type="checkbox" /></div>
                     </div>
                     <div class="mb-3">
-                        Date Created: <span class="text-sm text-gray-600">2023-03-18</span>
+                        Date Created: <span id="dateCreated" class="text-sm text-gray-600"></span>
                     </div>
                     <div class="mb-6">
-                        <div>Times Studied: <span class="text-sm text-gray-600">10</span></div>
-                        <div>Times Skipped: <span class="text-sm text-gray-600">2</span></div>
-                        <div>Times Missed: <span class="text-sm text-gray-600">1</span></div>
+                        <div>Times Studied: <span id="timesStudied" class="text-sm text-gray-600"></span></div>
+                        <div>Times Skipped: <span id="timesSkipped" class="text-sm text-gray-600"></span></div>
+                        <div>Times Missed: <span id="timesMissed" class="text-sm text-gray-600"></span></div>
                     </div>
                     <div id="flashCardContent" class="flashcard-flip bg-white rounded-lg shadow-lg m-10"
                         style="height: 200px; position: relative;">
-                        <div
+                        <div id="flashcardFront"
                             class="flashcard-face flashcard-front text-lg font-medium text-gray-800 flex items-center justify-center shadow-2xl shadow-black drop-shadow-xl">
-                            Question Here
+                            <p><button id="startStudying_btn1" class="relative px-4 py-2 bg-green-500 text-white rounded hover:bg-green-700 transition duration-300">Start Studying</button></p>
+                            <p><div id="flashcardFrontContent" class="p-4 gone">Click "Start Studying" to begin studying.</div></p>
                         </div>
-                        <div
+                        <div id="flashcardBack"
                             class="flashcard-face flashcard-back text-lg font-medium text-gray-800 flex items-center justify-center shadow-2xl shadow-black drop-shadow-xl">
-                            Answer Here
+                            <p><button id="startStudying_btn2" class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-700 transition duration-300">Start Studying</button></p>
+                            <p><div id="flashcardBackContent" class="p-4 gone">Click "Start Studying" to begin studying.</div></p>
                         </div>
                     </div>
                     <div class="flex justify-between">
                         <button
                             class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-700 transition duration-300"
-                            onclick="flipCard()">Flip</button>
-                        <button
+                            onclick="flipCard()"><p>Flip</p><p>(Space)</p></button>
+                        <button id="iGotItRight_btn"
                             class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-700 transition duration-300">
                             <p>I got it right!</p>
-                            <p>(Next Card)</p>
+                            <p>(Next Card, D)</p>
                         </button>
-                        <button
+                        <button id="iMissedThatOne_btn"
                             class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-700 transition duration-300">
                             <p>I missed that one</p>
-                            <p>(Next Card)</p>
+                            <p>(Next Card, A)</p>
                         </button>
-                        <button
-                            class="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-700 transition duration-300">Skip</button>
-                        <button
+                        <button id="skip_btn"
+                            class="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-700 transition duration-300"><p>Skip</p><p>(S)</p></button>
+                        <button id="flag_btn"
                             class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-700 transition duration-300 flex items-center justify-center"
                             onclick="toggleFlag()">
-                            <img id="flagIcon" src="img/unflagged.svg" alt="unflagged" width="24px"></button>
+                            <p><img id="flagIcon" src="img/unflagged.svg" alt="unflagged" width="24px"></p><p>(W)</p></button>
                     </div>
                 </div>
             </div>
@@ -217,60 +235,348 @@
     (async () => {
         await CleverDecks.waitReady();
 
+
+
         // JavaScript unique to this page goes here
         // There is a global variable called CleverDecks that has methods for accessing the backend. See web.js for more information.
-        const flashCardContainer = document.getElementById('flashCardContainer');
-        const cardCount = document.getElementById('cardCount');
-        const totalCardCount = document.getElementById('totalCardCount');
-        const searchButton = document.getElementById('searchButton');
-        const searchBox = document.getElementById('search');
-        const searchReturnContainer = document.getElementById('searchReturnContainer');
-        const searchResultsCount = document.getElementById('searchResultsCount');
-        const searchResultsContainer = document.getElementById('searchResultsContainer');
-        const loadAddButton = document.getElementById('loadAddButton');
-        const loadNewButton = document.getElementById('loadNewButton');
 
-        document.addEventListener("click", (event) => {
-            if (event.target.id === "searchReturnContainer") return;
-            if (event.target.id === "searchResultsCount") return;
-            if (event.target === searchBox) return;
-            searchReturnContainer.classList.add("gone");
-        });
+        const loadedCardCount = document.getElementById('totalLoadedCardsCount');
+        const totalCardCount = document.getElementById('totalAvailableCardsCount');
+        const loadedCardsCollections = document.getElementById('loadedCardsCollections');
+
+        const startStudying_btn1 = document.getElementById('startStudying_btn1');
+        const startStudying_btn2 = document.getElementById('startStudying_btn2');
 
         let loadedCards = [];
-        let searchResultsCards = [];
+        let currentSubset = [];
+        let currentCardIndex = 0;
+        let studyIteration = 1;
 
-        // This function will be called when the user clicks the search button
-        searchButton.onclick = async () => {
-            // Get the search term
-            const searchTerm = search.value;
-            if (searchTerm === '') return;
-            let results = null;
+        const flashCardFront = document.getElementById('flashcardFrontContent');
+        const flashCardBack = document.getElementById('flashcardBackContent');
 
-            if (searchTerm.startsWith("Tag: ")) {
-                results = await CleverDecks.getCards({ tags: [searchTerm.substring(5)] });
-                results.push(...await CleverDecks.getCards({ tags: [searchTerm.substring(5).toLowerCase()] }));
-            } else if (searchTerm.startsWith("Collection: ")) {
-                results = await CleverDecks.getCards({ collection: searchTerm.substring(12) });
+        const iGotItRight_btn = document.getElementById('iGotItRight_btn');
+        const iMissedThatOne_btn = document.getElementById('iMissedThatOne_btn');
+        const skip_btn = document.getElementById('skip_btn');
+        const flag_btn = document.getElementById('flag_btn');
+        const showAnswersCheck = document.getElementById('shgowAnswersCheck');
+
+        showAnswersCheck.addEventListener('change', () => {
+            updateFlashCard();
+        });
+
+        iGotItRight_btn.addEventListener('click', () => {
+            iGotItRight();
+        });
+
+        function iGotItRight(){
+            let index = loadedCards.findIndex((card) => card.id === currentSubset[currentCardIndex].id);
+            loadedCards[index].timesStudied++;
+            loadedCards[index].timesCorrect++;
+            loadedCards[index].dateLastStudied = new Date();
+            loadedCards[index].flagForUpdate = true;
+            CleverDecks.updateCard(loadedCards[index]).then(() => {
+                console.log('Card updated');
+            }).catch((error) => {
+                console.error({ error });
+            });
+            currentCardIndex++;
+            if (currentCardIndex >= currentSubset.length) {
+                selectSubset();
+                currentCardIndex = 0;
+                studyIteration++;
+            }
+            updateFlashCard();
+        }
+
+        iMissedThatOne_btn.addEventListener('click', () => {
+            iMissedThatOne();
+        });
+
+        function iMissedThatOne(){
+            let index = loadedCards.findIndex((card) => card.id === currentSubset[currentCardIndex].id);
+            loadedCards[index].timesStudied++;
+            loadedCards[index].timesIncorrect++;
+            loadedCards[index].dateLastStudied = new Date();
+            loadedCards[index].flagForUpdate = true;
+            CleverDecks.updateCard(loadedCards[index]).then(() => {
+                console.log('Card updated');
+            }).catch((error) => {
+                console.error({ error });
+            });
+            currentCardIndex++;
+            if (currentCardIndex >= currentSubset.length) {
+                selectSubset();
+                currentCardIndex = 0;
+                studyIteration++;
+            }
+            updateFlashCard();
+        }
+
+        skip_btn.addEventListener('click', () => {
+            skip();
+        });
+
+        function skip(){
+            let index = loadedCards.findIndex((card) => card.id === currentSubset[currentCardIndex].id);
+            loadedCards[index].timesStudied++;
+            loadedCards[index].timesSkipped++;
+            loadedCards[index].flagForUpdate = true;
+            CleverDecks.updateCard(loadedCards[index]).then(() => {
+                console.log('Card updated');
+            }).catch((error) => {
+                console.error({ error });
+            });
+            currentCardIndex++;
+            if (currentCardIndex >= currentSubset.length) {
+                selectSubset();
+                currentCardIndex = 0;
+                studyIteration++;
+            }
+            updateFlashCard();
+        }
+
+        flag_btn.addEventListener('click', () => {
+            flag();
+        });
+
+        function flag(){
+            let index = loadedCards.findIndex((card) => card.id === currentSubset[currentCardIndex].id);
+            loadedCards[index].flagForUpdate = true;
+            if (loadedCards[index].timesFlagged) {
+                loadedCards[index].timesFlagged = 0;
             } else {
-                results = await CleverDecks.getCards({ search: searchTerm });
+                loadedCards[index].timesFlagged = 1;
             }
-            // Clear the flashCardContainer
-            // flashCardContainer.innerHTML = '';
-            // Add the results to the flashCardContainer
-            for (const result of results) {
-                let newCard = new FlashCard(result);
-                // check if the card is already loaded
-                if (searchResultsCards.find(card => card.id === newCard.id)) continue;
-                else searchResultsCards.push(new FlashCard(result));
+            CleverDecks.updateCard(loadedCards[index]).then(() => {
+                console.log('Card updated');
+            }).catch((error) => {
+                console.error({ error });
+            });
+            updateFlashCard();
+        }
+
+        document.addEventListener('keydown', (e) => {
+            e.preventDefault();
+            if (e.key === ' ') {
+                flipCard();
+            }else if (e.key === 'w') {
+                flag();
+            }else if (e.key === 's') {
+                skip();
+            }else if (e.key === 'a') {
+                iMissedThatOne();
+            }else if (e.key === 'd') {
+                iGotItRight();
+            }else{
+                // let the browser handle the event
+                e.stopPropagation();
             }
-            console.log(searchResultsCards);
-            // Update the search results count
-            searchResultsCount.innerText = searchResultsCards.length;
-            // Show the search results container
-            searchReturnContainer.classList.remove('gone');
-            searchResultsContainer.classList.add('gone');
-        };
+        });
+
+        startStudying_btn1.addEventListener('click', () => {
+            console.log('Start studying clicked');
+            // selectSubset();
+            updateFlashCard();
+        });
+
+        startStudying_btn2.addEventListener('click', () => {
+            console.log('Start studying clicked');
+            // selectSubset();
+            updateFlashCard();
+        });
+
+        
+
+        // get count of all cards
+        CleverDecks.getCardCount({ all: true }).then((count) => {
+            totalCardCount.innerHTML = count;
+        }).catch((error) => {
+            console.error({ error });
+        })
+
+        CleverDecks.loadedCards.onArrayUpdated((e) => {
+            loadedCardCount.innerHTML = e.detail.arr.length;
+            let collections = e.detail.arr.map((card) => card.collection);
+            collections = [...new Set(collections)];
+            loadedCardsCollections.innerHTML = collections.join(', ');
+            loadedCards = e.detail.arr;
+        });
+
+        CleverDecks.loadedCards.onDoneLoading((e) => {
+            studyIteration=1;
+            selectSubset(true);
+            // updateFlashCard();
+        });
+
+        CleverDecks.loadedCards.onClearArray((e) => {
+            loadedCardCount.innerHTML = 0;
+            loadedCardsCollections.innerHTML = '';
+            loadedCards = [];
+            currentCardIndex = 0;
+            currentSubset = [];
+            studyIteration = 1;
+            startStudying_btn1.classList.remove('gone');
+            startStudying_btn2.classList.remove('gone');
+            flashCardBack.classList.add('gone');
+            flashCardFront.classList.add('gone');
+        });
+
+
+        async function updateLoadedCardsFromServer(){
+            let awaiter = [];
+            loadedCards.forEach((card) => {
+                if(card.flagForUpdate !== undefined && card.flagForUpdate === true){
+                    card.flagForUpdate = false;
+                    awaiter.push(CleverDecks.getCards({id:card.id}).then((latestCard) => {
+                        if(Array.isArray(latestCard) && latestCard.length == 1) loadedCards[loadedCards.findIndex((c) => c.id === card.id)] = latestCard[0];
+                        else if (Array.isArray(latestCard) && latestCard.length > 1) console.error({error: "Multiple cards with the same ID"});
+                        else console.error({error: "Card not found"});
+                    }).catch((error) => {
+                        console.error({ error });
+                    }));
+                }
+            });
+            await Promise.all(awaiter);
+        }
+
+        function updateDifficultyScores() {
+            // Get the highest times studied
+            let highestTimesStudied = 0;
+            loadedCards.forEach((card) => {
+                if (card.timesStudied > highestTimesStudied) {
+                    highestTimesStudied = card.timesStudied;
+                }
+            });
+            console.log({ highestTimesStudied });
+
+            // Calculate the difficulty rating for each card
+            loadedCards.forEach((card) => {
+                let R = card.timesStudied>0?card.timesIncorrect / card.timesStudied:0;
+                console.log({ R });
+                card.difficultyRating = R * card.difficulty * (1 + (card.timesStudied / highestTimesStudied));
+            });
+        }
+
+        async function selectSubset(init = false) {
+            console.log({ currentSubset });
+            console.log({ loadedCards });
+            if(loadedCards.length === 1){
+                currentSubset = loadedCards;
+                currentCardIndex = 0;
+                return;
+            }
+            // Update the loaded cards from the server
+            if(!init)await updateLoadedCardsFromServer();
+            // Ensure scores are up to date
+            updateDifficultyScores();
+
+            let worstRatio = Math.min(...loadedCards.map(card => {
+                if(card.timesStudied === 0) return 0;
+                return card.timesIncorrect / card.timesStudied ?? 0;
+            }));
+            console.log({ worstRatio });
+            const ratioOffset = Math.ceil(0.1 * studyIteration, 1);
+            let thresholdRatio = worstRatio + ratioOffset; // Adjust this value as needed
+            console.log({ thresholdRatio });
+            console.log({ ratioOffset });
+            console.log({ studyIteration });
+
+            // Filter cards based on their difficulty score and missed/studied ratio
+            let subset = loadedCards.filter(card => {
+                let ratio = card.timesStudied>0?card.timesIncorrect / card.timesStudied:0;
+                console.log({ ratio });
+                return ratio <= thresholdRatio;
+            });
+            console.log({ subset });
+            subset = subset.reverse();
+
+            // If the subset is too large, narrow it down further
+            // Start with 50% of cards by default
+            let targetSubsetSize = Math.max(Math.ceil(loadedCards.length * 0.2),10);
+            console.log({ targetSubsetSize });
+            if (subset.length > targetSubsetSize) {
+                // Sort by difficulty score
+                subset.sort((a, b) => b.difficultyRating - b.difficultyRating);
+                // Take the top cards
+                subset = subset.slice(0, targetSubsetSize);
+            }else if(subset.length === 0){
+                subset = loadedCards.slice(0, targetSubsetSize);
+            }
+            currentSubset = subset;
+            currentCardIndex = 0;
+            console.log({ currentSubset });
+            console.log({ loadedCards });
+        }
+
+        function updateFlashCard() {
+            if (currentSubset.length === 0) {
+                // No cards to study
+                return;
+            }
+            startStudying_btn1.classList.add('gone');
+            startStudying_btn2.classList.add('gone');
+            flashCardBack.classList.remove('gone');
+            flashCardFront.classList.remove('gone');
+            const cardContainer = document.getElementById('flashCardContent');
+
+            if (!showAnswersCheck.checked && cardContainer.classList.contains('flipped')) {
+                cardContainer.classList.remove('flipped');
+            }else if(showAnswersCheck.checked && !cardContainer.classList.contains('flipped')){
+                cardContainer.classList.add('flipped');
+            }
+
+            let card = currentSubset[currentCardIndex];
+            if(showAnswersCheck.checked){
+                setTimeout(() => {
+                    flashCardFront.innerHTML = `<p>${card.question}</p>`;
+                    MathJax.typeset();
+                }, 1000);
+                flashCardBack.innerHTML = `<p>${card.answer}</p>`;
+            }else{
+                setTimeout(() => {
+                    flashCardBack.innerHTML = `<p>${card.answer}</p>`;
+                    MathJax.typeset();
+                }, 1000);
+                flashCardFront.innerHTML = `<p>${card.question}</p>`;
+            }
+
+            const difficultyRatings = ['Very Easy', 'Easy', 'Medium', 'Hard', 'Very Hard'];
+            document.getElementById('difficultyRating').innerHTML = difficultyRatings[card.difficulty-1];
+            document.getElementById('collectionName').innerHTML = card.collection;
+            // add the tags, but limit to 5
+            document.getElementById('tags').innerHTML = card.tags.slice(0, 5).join(', ');
+            document.getElementById('dateCreated').innerHTML = Date(card.dateCreated).toLocaleString().substring(0, 16);
+            document.getElementById('timesStudied').innerHTML = card.timesStudied;
+            document.getElementById('timesSkipped').innerHTML = card.timesSkipped;
+            document.getElementById('timesMissed').innerHTML = card.timesIncorrect;
+            if (card.timesFlagged) {
+                // add flagged class
+                document.getElementById('flagIcon').classList.add('flagged');
+                document.getElementById('flagIcon').src = "img/flagged.svg";
+                document.getElementById('flagIcon').alt = "flagged";
+            } else {
+                // remove flagged class
+                document.getElementById('flagIcon').classList.remove('flagged');
+                document.getElementById('flagIcon').src = "img/unflagged.svg";
+                document.getElementById('flagIcon').alt = "unflagged";
+            }
+            MathJax.typeset();
+        }
+
+        // get url parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const collection = urlParams.get('collection');
+        if (collection) {
+            let collectionSet = await CleverDecks.getCards({collection: collection});
+            if(collectionSet.length > 0){
+                CleverDecks.loadedCards.clearArray();
+                collectionSet.forEach((card) => {
+                    CleverDecks.loadedCards.addItem(card);
+                });
+                CleverDecks.loadedCards.doneLoading();
+            }
+        }
     })();
 </script>
 
