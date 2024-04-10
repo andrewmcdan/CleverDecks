@@ -452,13 +452,14 @@
 
             // Calculate the difficulty rating for each card
             loadedCards.forEach((card) => {
-                let R = card.timesStudied>0?card.timesIncorrect / card.timesStudied:0;
+                let R = card.timesStudied>0?(card.timesIncorrect + card.timesSkipped) / card.timesStudied:0;
                 console.log({ R });
                 card.difficultyRating = R * card.difficulty * (1 + (card.timesStudied / highestTimesStudied));
             });
         }
 
         async function selectSubset(init = false) {
+            let currentCardId = currentSubset[currentCardIndex]?.id;
             console.log({ currentSubset });
             console.log({ loadedCards });
             if(loadedCards.length === 1){
@@ -472,41 +473,61 @@
             updateDifficultyScores();
 
             let worstRatio = Math.min(...loadedCards.map(card => {
-                if(card.timesStudied === 0) return 0;
-                return card.timesIncorrect / card.timesStudied ?? 0;
+                if(card.timesStudied === 0) return 1;
+                return (card.timesIncorrect + card.timesSkipped) / card.timesStudied;
             }));
             console.log({ worstRatio });
-            const ratioOffset = Math.ceil(0.1 * studyIteration, 1);
-            let thresholdRatio = worstRatio + ratioOffset; // Adjust this value as needed
+            const ratioOffset = Math.min(0.2 / (Math.pow(studyIteration,1.02)), 1);
+            const thresholdRatio = worstRatio + ratioOffset; // Adjust this value as needed
             console.log({ thresholdRatio });
             console.log({ ratioOffset });
             console.log({ studyIteration });
 
             // Filter cards based on their difficulty score and missed/studied ratio
             let subset = loadedCards.filter(card => {
-                let ratio = card.timesStudied>0?card.timesIncorrect / card.timesStudied:0;
+                if(card.timesStudied === 0) return true;
+                let ratio = card.timesStudied>0?(card.timesIncorrect + card.timesSkipped) / card.timesStudied:0;
                 console.log({ ratio });
-                return ratio <= thresholdRatio;
+                return ratio >= thresholdRatio;
             });
             console.log({ subset });
-            subset = subset.reverse();
+
+            // get the minimum timesStudied
+            let minTimesStudied = Math.min(...subset.map(card => card.timesStudied));
+            // sort the subset by times studied. Cards that have never been studied are prioritized.
+            if(minTimesStudied === 0) subset.sort((a, b) => a.timesStudied - b.timesStudied);
+            // otherwise, sort by difficulty score
+            else subset.sort((a, b) => a.difficultyRating - b.difficultyRating);
 
             // If the subset is too large, narrow it down further
-            // Start with 50% of cards by default
-            let targetSubsetSize = Math.max(Math.ceil(loadedCards.length * 0.2),10);
+            // Start with 50% of cards by default, or 10 cards, whichever is larger
+            const multiplierConstant = 0.1;
+            const targetSizeConstant = 10;
+            const minimumNumberOfCards = 3;
+            let targetMultiplier = multiplierConstant * Math.pow(studyIteration,1.02);
+            let minTargetSize = Math.min(targetSizeConstant*studyIteration,loadedCards.length);
+            let targetSubsetSize = Math.max(Math.ceil(loadedCards.length * targetMultiplier),minTargetSize);
             console.log({ targetSubsetSize });
             if (subset.length > targetSubsetSize) {
-                // Sort by difficulty score
-                subset.sort((a, b) => b.difficultyRating - b.difficultyRating);
                 // Take the top cards
                 subset = subset.slice(0, targetSubsetSize);
+                // Sort by difficulty score
+                subset.sort((a, b) => a.difficultyRating - b.difficultyRating);
             }else if(subset.length === 0){
                 subset = loadedCards.slice(0, targetSubsetSize);
+            }else if(subset.length < minimumNumberOfCards){
+                // If there are less than 3 cards, add more cards
+                let additionalCards = loadedCards.filter(card => !subset.includes(card));
+                additionalCards.sort((a, b) => a.difficultyRating - b.difficultyRating);
+                subset = subset.concat(additionalCards.slice(0, 3 - subset.length));
             }
             currentSubset = subset;
             currentCardIndex = 0;
             console.log({ currentSubset });
             console.log({ loadedCards });
+            if(currentCardId == currentSubset[currentCardIndex]?.id){
+                currentCardIndex++;
+            }
         }
 
         function updateFlashCard() {
