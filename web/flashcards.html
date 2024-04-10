@@ -138,6 +138,14 @@
                     // add card creation date
                     let dateDiv = document.createElement('div');
                     dateDiv.innerHTML = `Date Created: ${cards[p].dateCreated}`;
+                    let timesStudiedDiv = document.createElement('div');
+                    timesStudiedDiv.innerHTML = `Times Studied: ${cards[p].timesStudied}`;
+                    let timeCorrectDiv = document.createElement('div');
+                    timeCorrectDiv.innerHTML = `Times Correct: ${cards[p].timesCorrect}`;
+                    let timesIncorrectDiv = document.createElement('div');
+                    timesIncorrectDiv.innerHTML = `Times Incorrect: ${cards[p].timesIncorrect}`;
+                    let timesSkippedDiv = document.createElement('div');
+                    timesSkippedDiv.innerHTML = `Times Skipped: ${cards[p].timesSkipped}`;
                     newCardContainer.appendChild(idDiv);
                     newCardContainer.appendChild(questionDiv);
                     newCardContainer.appendChild(answerDiv);
@@ -146,6 +154,10 @@
                     let tagsDiv = document.createElement('div');
                     tagsDiv.innerHTML = `Tags: ${cards[p].tags.join(', ')}`;
                     newCardContainer.appendChild(tagsDiv);
+                    newCardContainer.appendChild(timesStudiedDiv);
+                    newCardContainer.appendChild(timeCorrectDiv);
+                    newCardContainer.appendChild(timesIncorrectDiv);
+                    newCardContainer.appendChild(timesSkippedDiv);
                     flashCardContainer.appendChild(newCardContainer);
                 }
             }

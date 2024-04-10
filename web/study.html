@@ -87,6 +87,13 @@
                 </div>
             </nav>
             <div class="content" class="min-h-screen">
+                <div id="processingOverlay" class="fixed top-0 left-0 w-full h-full bg-black bg-opacity-50 z-10 gone">
+                    <div class="flex items-center justify-center h-full">
+                        <p class="text-white text-2xl">Processing...</p>
+                        <p class="text-white text-2xl ml-4" id="processingMessage"
+                            style="font-family: Segoe Boot Semilight;"></p>
+                    </div>
+                </div>
                 <div id="cardCount" class="p-4 m-2 text-lg font-semibold">
                     Total available cards: <span id="totalAvailableCardsCount"></span>
                 </div>
@@ -488,6 +495,7 @@
                 if(card.timesStudied === 0) return true;
                 let ratio = card.timesStudied>0?(card.timesIncorrect + card.timesSkipped) / card.timesStudied:0;
                 console.log({ ratio });
+                if(ratio === 0)return true;
                 return ratio >= thresholdRatio;
             });
             console.log({ subset });
@@ -508,6 +516,9 @@
             let minTargetSize = Math.min(targetSizeConstant*studyIteration,loadedCards.length);
             let targetSubsetSize = Math.max(Math.ceil(loadedCards.length * targetMultiplier),minTargetSize);
             console.log({ targetSubsetSize });
+            console.log({ minTargetSize });
+            console.log({ targetMultiplier });
+            console.log({ studyIteration });
             if (subset.length > targetSubsetSize) {
                 // Take the top cards
                 subset = subset.slice(0, targetSubsetSize);

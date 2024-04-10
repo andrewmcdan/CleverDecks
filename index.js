@@ -347,7 +347,7 @@ const cleverDecksHostname = "cleverdecks.local";
             if (dataObj.text === undefined) res.send({ status: "error", reason: "text property not found" });
             else if (dataObj.text === "") res.send({ status: "empty" });
             else {
-                console.log({ dataObj });
+                // console.log({ dataObj });
                 const text = dataObj.text;
                 if (text.length > 16384) {
                     res.send({ status: "error", reason: "text too long" });

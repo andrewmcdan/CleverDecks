@@ -477,7 +477,7 @@ class FlashCardDatabase {
                     });
                     this.collections.push(newCollection);
                 });
-                this.logger?.log(getLineNumber() + ".dbase.js	 - Alltags: \n" + JSON.stringify(this.allTags, 2, null), "debug");
+                this.logger?.log(getLineNumber() + ".dbase.js	 - Alltags: \n" + this.allTags.join(', '), "debug");
                 progress_cb(100);
                 return true;
             } catch (err) {
