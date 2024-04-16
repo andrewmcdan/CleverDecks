@@ -47,6 +47,16 @@
                     </div>
                 </div>
                 <div class="px-4 realtive">
+                    <div id="searchReturnContainer"
+                        class="absolute gone top-10 bg-white shadow-md shadow-white rounded-sm border border-gray-200 p-4 text-black">
+                        <p>Returned results: <span id="searchResultsCount">0</span></p>
+                        <p>
+                            <button class="jborder-2 border-black rounded-sm border bg-white p-1"
+                                id="loadAddButton">Load - Add</button>
+                            <button class="jborder-2 border-black rounded-sm border bg-white p-1"
+                                id="loadNewButton">Load - New</button>
+                        </p>
+                    </div>
                     <div id="searchResultsContainer"
                         class="absolute gone top-10 bg-white shadow-md shadow-white rounded-sm border border-gray-200 p-4">
                         <ul id="searchResultsList" class="text-black w-full">
@@ -55,8 +65,7 @@
                     </div>
                     <div id="cardSearch" class="size-1/2 flex items-center text-black">
                         <input type="text" id="search" placeholder="Search..." onkeyup="" autocomplete="off">
-                        <button class="border-2 border-white text-white" id="searchButton" onclick="">Search</button>
-
+                        <button class="border-2 border-white text-white" id="searchButton">Search</button>
                     </div>
                     <div id="cardDropDown" class="size-1/2  text-black">
                         <select id="collectionSelect">
@@ -68,104 +77,67 @@
             <div id="content" class="p-4">
                 <h1 class="text-2xl font-bold mb-4">Take a Quiz</h1>
                 <!-- Total Flashcard Count Display -->
-                <div id="cardCount" class="text-lg font-semibold mb-4">
-                    Flashcards Loaded: N
+                <div id="cardCountContainer" class="text-lg font-semibold mb-4">
+                    <div id="cardCount" class="p-4 m-2 text-lg font-semibold">
+                        Total available cards: <span id="totalAvailableCardsCount"></span>
+                    </div>
+                    <div id="totalCardCount" class="p-4 m-2 text-lg font-semibold">
+                        <p>Cards loaded for study: <span id="totalLoadedCardsCount">0</span></p>
+                        <p>Loaded cards from collections: <span id="loadedCardsCollections"></span></p>
+                    </div>
                 </div>
 
-                <!-- Quiz Instructions/Description -->
-                <!--<p class="mb-4"><!-Use the search to load flashcards for the quiz and press "Generate Quiz" when you're ready.--><!--</p>-->
-                <!-- Start Quiz Button 
-                <button id="startQuizBtn" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded mb-4">Start Quiz</button>-->
+                <div id="quizInstructions" class="mb-4">
+                    <!-- Quiz Instructions/Description -->
+                    <p class="mb-4">Use the search to load flashcards for the quiz and press "Generate Quiz" when you're
+                        ready.</p>
+                    <button id="generateQuizBtn"
+                        class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mb-4 gone">Generate
+                        Quiz</button>
+                </div>
+                <!-- Start Quiz Button --->
+                <div id="quizReadyContainer" class="gone mb-4">
+                    <h1 class="text-2xl font-bold mb-4">Quiz Ready</h1>
+                    <p class="mb-4">Press "Start Quiz" to begin.</p>
+                    <button id="startQuizBtn"
+                        class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded mb-4">Start
+                        Quiz</button>
+                </div>
                 <!-- Quiz Questions Container -->
-                <!--<div id="quizQuestionsContainer" class="">
-                   Dynamically populated with quiz questions
-                </div>-->
-                <!-- Submit Quiz Button -->
-                <!--<button id="submitQuizBtn" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mt-4 hidden">Submit Quiz</button>
-                <!- Quiz Results Display ->
-                <div id="quizResults" class="mt-4 hidden">
-                  <!- Results will be shown here after quiz submission ->
-                </div>-->
+                <div id="quizContentContainer" class="gone mb-4">
+                    <!-- Quiz Questions will be loaded here -->
+                    <div id="quizQuestionsContainer">
 
-
-                <!-- Placeholder for an ongoing quiz with 3 questions ->
-                <!- Question 1 ->
-                <div class="quiz-question mb-6">
-                    <p class="font-semibold mb-2">Question 1: What is the capital of France?</p>
-                    <div class="answer-options">
-                        <label class="option-label flex"><input type="radio" name="question1" value="A" class="mx-2"> A. Madrid</label>
-                        <label class="option-label flex"><input type="radio" name="question1" value="B" class="mx-2"> B. Berlin</label>
-                        <label class="option-label flex"><input type="radio" name="question1" value="C" class="mx-2"> C. Paris</label>
-                        <label class="option-label flex"><input type="radio" name="question1" value="D" class="mx-2"> D. Lisbon</label>
                     </div>
+                    <!-- Submit Quiz Button -->
+                    <button id="submitQuizBtn"
+                        class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mt-4">Submit
+                        Quiz</button>
                 </div>
 
-                <!- Question 2 ->
-                <div class="quiz-question mb-6">
-                    <p class="font-semibold mb-2">Question 2: Who wrote 'To Kill a Mockingbird'?</p>
-                    <div class="answer-options">
-                        <label class="option-label flex"><input type="radio" name="question2" value="A" class="mx-2"> A. Harper
-                            Lee</label>
-                        <label class="option-label flex"><input type="radio" name="question2" value="B" class="mx-2"> B. Mark
-                            Twain</label>
-                        <label class="option-label flex"><input type="radio" name="question2" value="C" class="mx-2"> C. Ernest
-                            Hemingway</label>
-                        <label class="option-label flex"><input type="radio" name="question2" value="D" class="mx-2"> D. Jane
-                            Austen</label>
-                    </div>
+                <!-- Quiz Results Display -->
+                <div id="quizResults" class="mt-4 gone">
+                    <!-- Results will be shown here after quiz submission -->
                 </div>
 
-                <!- Question 3 ->
-                <div class="quiz-question mb-6">
-                    <p class="font-semibold mb-2">Question 3: Which element has the chemical symbol 'O'?</p>
-                    <div class="answer-options">
-                        <label class="option-label flex"><input type="radio" name="question3" value="A" class="mx-2"> A. Gold</label>
-                        <label class="option-label flex"><input type="radio" name="question3" value="B" class="mx-2"> B. Oxygen</label>
-                        <label class="option-label flex"><input type="radio" name="question3" value="C" class="mx-2"> C. Hydrogen</label>
-                        <label class="option-label flex"><input type="radio" name="question3" value="D" class="mx-2"> D. Carbon</label>
+                <div id="quizResultsContainer" class="gone">
+                    <h1 class="text-2xl font-bold mb-4">Quiz Results</h1>
+
+                    <!-- Simulated Results -->
+                    <div id="quizResults">
+                        <p class="mb-2">Congratulations on completing the quiz!</p>
+                        <p class="mb-2">Your Score: <span id="score" class="font-bold">2/3</span></p>
+
+                        <!-- Feedback for each question -->
+                        <div class="quiz-feedback mb-2">
+                        </div>
+
+                        <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+                            onclick="restartQuiz()">Take Another Quiz</button>
                     </div>
                 </div>
-
-                <!- Submit Quiz Button ->
-                <button type="submit" id="submitQuizBtn"
-                    class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mt-4">Submit
-                    Quiz</button>-->
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-                <h1 class="text-2xl font-bold mb-4">Quiz Results</h1>
-
-                <!--Simulated Results -->
-                <div id="quizResults">
-                    <p class="mb-2">Congratulations on completing the quiz!</p>
-                    <p class="mb-2">Your Score: <strong>2/3</strong></p>
-
-                    <!-- Feedback for each question -->
-                    <div class="quiz-feedback mb-2">
-                        <p><strong>Question 1:</strong> Correct!</p>
-                        <p><strong>Question 2:</strong> Correct!</p>
-                        <p><strong>Question 3:</strong> Incorrect. The correct answer is B. Oxygen.</p>
-                    </div>
-
-                    <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-                        onclick="restartQuiz()">Take Another Quiz</button>
-                </div>
-                <div id="test_area"></div>
-
-
-
             </div>
+
 
             <footer class="bg-gray-800 text-white items-center justify-center w-full p-6">
                 <div class="flex items-center mb-4 justify-center">
@@ -203,34 +175,190 @@
     /*
         Styles unique to this page go here
         */
+    @font-face {
+        font-family: 'Segoe Boot Semilight';
+        src: url('/web/segoe_slboot.ttf') format('truetype');
+    }
 </style>
 <script>
+    function restartQuiz() {
+        // reload the page
+        location.reload();
+    }
     (async () => {
         await CleverDecks.waitReady();
 
         // JavaScript unique to this page goes here
         // There is a global variable called CleverDecks that has methods for accessing the backend. See web.js for more information.
+        const rotationChars = ['-', '\\', '|', '/'];
+        const rotationCharsStart = 0xE052;
+        const rotationCharsEnd = 0xE0C6;
+        const loadedCardCount = document.getElementById('totalLoadedCardsCount');
+        const totalCardCount = document.getElementById('totalAvailableCardsCount');
+        const loadedCardsCollections = document.getElementById('loadedCardsCollections');
+        const generateQuizBtn = document.getElementById('generateQuizBtn');
+        const quizInstructions = document.getElementById('quizInstructions');
+        const quizReadyContainer = document.getElementById('quizReadyContainer');
+        const startQuizBtn = document.getElementById('startQuizBtn');
+        const quizContentContainer = document.getElementById('quizContentContainer');
+        const quizQuestionsContainer = document.getElementById('quizQuestionsContainer');
+        const submitQuizBtn = document.getElementById('submitQuizBtn');
+        const quizResults = document.getElementById('quizResults');
+        const quizResultsContainer = document.getElementById('quizResultsContainer');
 
-        const cards = await CleverDecks.getCards({ collection: 'Calculus II' });
+        let wrongAnswers = {};
 
-        console.log(cards);
+        CleverDecks.loadedCards.onArrayUpdated((e) => {
+            loadedCardCount.innerHTML = e.detail.arr.length;
+            let collections = e.detail.arr.map((card) => card.collection);
+            collections = [...new Set(collections)];
+            loadedCardsCollections.innerHTML = collections.join(', ');
+            loadedCards = e.detail.arr;
+        });
 
-        const test_area = document.getElementById('test_area');
+        CleverDecks.loadedCards.onDoneLoading((e) => {
+            generateQuizBtn.classList.remove('gone');
+            if(CleverDecks.loadedCards.array.length == 0){
+                generateQuizBtn.disabled = true;
+            }
+            if(CleverDecks.loadedCards.array.length > 100){
+                alert("You are loading more than 100 cards. This can slow down the quiz generation process. Consider loading fewer cards.");
+            }
+        });
 
-        test_area.innerHTML = cards.map((card, index) => {
-            return renderQuizQuestion(card, ['Madrid', 'Berlin', 'Paris', 'Lisbon'], index + 1);
-        }).join('');
+        CleverDecks.loadedCards.onClearArray((e) => {
+            loadedCardCount.innerHTML = 0;
+            loadedCardsCollections.innerHTML = '';
+            generateQuizBtn.classList.add('gone');
+        });
+
+        CleverDecks.getCardCount({ all: true }).then((count) => {
+            totalCardCount.innerHTML = count;
+        }).catch((error) => {
+            console.error({ error });
+        })
+
+        let generatingSpinnerInterval = null;
+        let generatingSpinnerIntervalCounter = 0;
+        generateQuizBtn.addEventListener('click', async () => {
+            let cardNo = 0;
+            let mathInterprets = 0;
+            let numCards = CleverDecks.loadedCards.array.length;
+            generatingSpinnerInterval = setInterval(() => {
+                let charCode = rotationCharsStart + generatingSpinnerIntervalCounter++ % (rotationCharsEnd - rotationCharsStart);
+                generateQuizBtn.innerHTML = `${cardNo==numCards?(mathInterprets>0?"Awaiting Math Interpretations":"Awaiting AI..."):"Generating question number: "+cardNo} <span style='font-family: Segoe Boot Semilight;'>${String.fromCharCode(charCode)}</span>`;
+            }, 50);
+            generateQuizBtn.disabled = true;
+            
+            let counter = 0;
+            let cards = CleverDecks.loadedCards.array;
+            for(let i = 0; i < numCards; i++){
+                cardNo++;
+                CleverDecks.generateWrongAnswersFromCard(cards[i].id, 3).then((answers) => {
+                    wrongAnswers[cards[i].id.toString()] = answers;
+                    wrongAnswers[cards[i].id.toString()].forEach((answer, index) => {
+                        CleverDecks.interpretMath(answer).then((interpretedAnswer) => {
+                            if(interpretedAnswer!=null && interpretedAnswer!=""){
+                                counter--;
+                                mathInterprets++;
+                                wrongAnswers[cards[i].id.toString()][index] = interpretedAnswer;
+                                CleverDecks.interpretMath(cards[i].answer).then((interpretedCorrectAnswer) => {
+                                    wrongAnswers[cards[i].id.toString()]["correct"] = interpretedCorrectAnswer;
+                                    counter++;
+                                });
+                            }
+                            else{
+                                wrongAnswers[cards[i].id.toString()][index] = answer;
+                            }
+                        }).finally(() => {
+                            counter++;
+                        });
+                    });
+                });
+                await new Promise((resolve) => setTimeout(resolve, 250));
+            }
+            while (counter < (numCards * 3)) {
+                await new Promise((resolve) => setTimeout(resolve, 100));
+            }
+            console.log(wrongAnswers);
+            clearInterval(generatingSpinnerInterval);
+            generateQuizBtn.classList.add('gone');
+            quizInstructions.classList.add('gone');
+            quizReadyContainer.classList.remove('gone');
+        });
+
+        startQuizBtn.addEventListener('click', () => {
+            quizReadyContainer.classList.add('gone');
+            quizContentContainer.classList.remove('gone');
+            let cards = CleverDecks.loadedCards.array;
+            quizQuestionsContainer.innerHTML = cards.map((card, index) => {
+                return renderQuizQuestion(card, wrongAnswers[card.id.toString()], index + 1);
+            }).join('');
+            MathJax.typeset();
+        });
+
+        submitQuizBtn.addEventListener('click', () => {
+            // check to make sure every question has an answer
+            let quizQuestions = document.querySelectorAll('.answer-options');
+            let allQuestionsAnswered = true;
+            quizQuestions.forEach((question) => {
+                let selectedAnswer = question.querySelector('input[name^="question"]:checked');
+                if (selectedAnswer == null) {
+                    allQuestionsAnswered = false;
+                }
+            });
+            if (!allQuestionsAnswered) {
+                let unanswered = confirm('Are you sure you want to submit the quiz with unanswered questions?');
+                if (!unanswered) return;
+            }
+            
+            let cards = CleverDecks.loadedCards.array;
+            let correctCount = 0;
+            let incorrectCount = 0;
+            let skippedCount = 0;
+            let feedback = [];
+            quizQuestions.forEach((question, index) => {
+                let selectedAnswer = question.querySelector('input[name^="question"]:checked')?.value;
+                if (selectedAnswer == null) {
+                    skippedCount++;
+                    feedback.push(`Question ${index + 1}: Skipped`);
+                } else {
+                    if(selectedAnswer == "true"){
+                        correctCount++;
+                        feedback.push(`Question ${index + 1}: Correct!`);
+                    }else{
+                        incorrectCount++;
+                        feedback.push(`Question ${index + 1}: Incorrect. The correct answer is ${cards[index].answer}`);
+                    }
+                }
+            });
+            quizContentContainer.classList.add('gone');
+            quizResultsContainer.classList.remove('gone');
+            const quizScores = document.getElementById('score');
+            quizScores.innerHTML = `${correctCount}/${cards.length} = ${(correctCount/cards.length*100).toFixed(2)}%`;
+            const quizFeedback = document.querySelector('.quiz-feedback');
+            quizFeedback.innerHTML = feedback.map((feedback) => `<p>${feedback}</p>`).join('');
+            MathJax.typeset();
+            // scroll to top 
+            window.scrollTo(0, 0);
+        });
+
 
         function renderQuizQuestion(card, wrongAnswers, questionNumber) {
             let answers = wrongAnswers;
-            answers.push(card.answer);
+            if(wrongAnswers.hasOwnProperty("correct") && wrongAnswers["correct"]!=null){
+                answers.push(wrongAnswers["correct"]);
+            }else{
+                answers.push(card.answer);
+            }
+            let correctAnswer = answers[answers.length - 1];
             answers = answers.sort(() => Math.random() - 0.5);
             let retString = `<div id="questionForCard_${card.id}"><p class="font-semibold mb-2">Question ${questionNumber}: ${card.question}</p>
                     <div class="answer-options">
                         ${answers.map((answer, index) => {
                 let tempIndex = 0;
                 return `<label class="option-label flex">
-                            <input type="radio" name="question${questionNumber}" value="${String.fromCharCode(65 + index)}" class="mx-2"> 
+                            <input type="radio" name="question${questionNumber}" value="${correctAnswer==answers[index]}" class="mx-2"> 
                                 ${String.fromCharCode(65 + index)}. ${answers[index]}
                         </label>`
             }).join('')}

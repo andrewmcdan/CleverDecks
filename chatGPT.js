@@ -217,6 +217,7 @@ class ChatGPT {
             if (typeof card.question !== "string" || card.question === "") return false;
             if (typeof card.answer !== "string" || card.answer === "") return false;
             if (typeof card.collection !== "string" || card.collection === "") return false;
+            if (typeof card.difficulty === "string") card.difficulty = parseInt(card.difficulty);
             if (typeof card.difficulty !== "number" || card.difficulty < 1 || card.difficulty > flashCardMaxDifficulty) return false;
             return true;
         };
